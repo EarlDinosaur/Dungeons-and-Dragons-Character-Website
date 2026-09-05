@@ -26,23 +26,28 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Earl — Vesper Ashwood | D&D 5e Character Sheet",
+  title: "D&D 5e Campaign Companion — Hero Vault",
   description:
-    "Interactive character sheet for Earl (Vesper Ashwood), a Human Rogue Assassin wielding The Orphan's Tithe. Features full level 1-20 progression, soul harvesting mechanics, inventory management, and campaign journal.",
+    "Interactive D&D 5e campaign companion and hero vault for Vesper Ashwood, Aria Sil'aveth, and Cyrus Hyacinthus. Features interactive d20 dice rollers, spellbook engines, inventory tracking, and campaign quest log.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
   keywords: [
     "D&D",
     "5e",
     "character sheet",
-    "rogue",
-    "assassin",
+    "campaign companion",
+    "party manager",
     "interactive",
     "dark fantasy",
   ],
-  authors: [{ name: "Vesper Ashwood" }],
+  authors: [{ name: "EarlDinosaur" }],
   openGraph: {
-    title: "Earl — Vesper Ashwood | D&D 5e Character Sheet",
+    title: "D&D 5e Campaign Companion — Hero Vault",
     description:
-      "A dark-fantasy interactive character sheet for a Human Rogue Assassin.",
+      "Interactive D&D 5e campaign companion and hero vault for Vesper Ashwood, Aria Sil'aveth, and Cyrus Hyacinthus.",
     type: "website",
   },
 };
