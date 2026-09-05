@@ -1,26 +1,648 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================================
+   Dark Fantasy Theme — D&D Beyond-inspired
+   Palette: Deep Slate, Crimson, Gold, Parchment
+   ============================================================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #0a0a0f;
+  --color-foreground: #e8dcc8;
+  --color-surface: #12121a;
+  --color-surface-raised: #1a1a2e;
+  --color-surface-overlay: #252540;
+  --color-border-subtle: rgba(255, 215, 0, 0.08);
+  --color-border-accent: rgba(220, 38, 38, 0.3);
+
+  /* Crimson */
+  --color-crimson-950: #450a0a;
+  --color-crimson-900: #7f1d1d;
+  --color-crimson-800: #991b1b;
+  --color-crimson-700: #b91c1c;
+  --color-crimson-600: #dc2626;
+  --color-crimson-500: #ef4444;
+  --color-crimson-400: #f87171;
+  --color-crimson-300: #fca5a5;
+
+  /* Gold */
+  --color-gold-900: #78350f;
+  --color-gold-800: #92400e;
+  --color-gold-700: #b8860b;
+  --color-gold-600: #d4a017;
+  --color-gold-500: #eab308;
+  --color-gold-400: #fbbf24;
+  --color-gold-300: #fcd34d;
+  --color-gold-200: #fde68a;
+  --color-gold-100: #fef3c7;
+  --color-gold-bright: #ffd700;
+
+  /* Parchment Text */
+  --color-parchment: #e8dcc8;
+  --color-parchment-muted: #c4b69c;
+  --color-parchment-dim: #8a7e6b;
+
+  /* Purple (Awakened stage) */
+  --color-arcane-900: #581c87;
+  --color-arcane-700: #7e22ce;
+  --color-arcane-500: #a855f7;
+  --color-arcane-400: #c084fc;
+  --color-arcane-300: #d8b4fe;
+
+  /* Emerald (HP healthy) */
+  --color-vitality: #22c55e;
+  --color-vitality-dark: #15803d;
+
+  /* Fonts */
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'Crimson Text', serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-parchment);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
+
+/* ============================================================================
+   Custom Scrollbar
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-crimson-900);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-crimson-700);
+}
+
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-gold-bright);
+  line-height: 1.2;
+  letter-spacing: 0.025em;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* ============================================================================
+   Glassmorphism Cards
+   ============================================================================ */
+
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(18, 18, 26, 0.9) 0%,
+    rgba(26, 26, 46, 0.7) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 215, 0, 0.08);
+  border-radius: 12px;
+}
+
+.glass-card-crimson {
+  background: linear-gradient(
+    135deg,
+    rgba(69, 10, 10, 0.4) 0%,
+    rgba(18, 18, 26, 0.9) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 12px;
+}
+
+.glass-card-gold {
+  background: linear-gradient(
+    135deg,
+    rgba(120, 53, 15, 0.2) 0%,
+    rgba(18, 18, 26, 0.9) 100%
+  );
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 12px;
+}
+
+.glass-card-arcane {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 28, 135, 0.3) 0%,
+    rgba(18, 18, 26, 0.9) 100%
+  );
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 12px;
+}
+
+/* ============================================================================
+   Parchment Effect (Dossier)
+   ============================================================================ */
+
+.parchment {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 25, 0.95) 0%,
+    rgba(30, 27, 20, 0.98) 50%,
+    rgba(35, 30, 22, 0.95) 100%
+  );
+  border: 1px solid rgba(196, 182, 156, 0.15);
+  border-radius: 8px;
+  position: relative;
+}
+
+.parchment::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(139, 69, 19, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(160, 82, 45, 0.06) 0%, transparent 50%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Glow Effects
+   ============================================================================ */
+
+.glow-crimson {
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.1);
+}
+
+.glow-gold {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), 0 0 30px rgba(255, 215, 0, 0.1);
+}
+
+.glow-arcane {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3), 0 0 30px rgba(168, 85, 247, 0.1);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.text-glow-crimson {
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.5), 0 0 20px rgba(220, 38, 38, 0.2);
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes soul-orbit {
+  0% { transform: rotate(0deg) translateX(40px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(40px) rotate(-360deg); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blood-drip {
+  0% { height: 0; opacity: 0; }
+  30% { opacity: 1; }
+  100% { height: 20px; opacity: 0; }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-soul-orbit {
+  animation: soul-orbit 6s linear infinite;
+}
+
+/* ============================================================================
+   Stat Diamond Shape
+   ============================================================================ */
+
+.stat-diamond {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* ============================================================================
+   Progress Bar Base
+   ============================================================================ */
+
+.progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  animation: shimmer 2s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ============================================================================
+   Tab Styles
+   ============================================================================ */
+
+.tab-active {
+  color: var(--color-gold-bright);
+  border-bottom: 2px solid var(--color-gold-bright);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.tab-inactive {
+  color: var(--color-parchment-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tab-inactive:hover {
+  color: var(--color-parchment);
+  border-bottom-color: rgba(255, 215, 0, 0.3);
+}
+
+/* ============================================================================
+   Responsive utilities
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .glass-card, .glass-card-crimson, .glass-card-gold, .glass-card-arcane {
+    border-radius: 8px;
+  }
+}
+
+/* ============================================================================
+   Soul Counter Ring
+   ============================================================================ */
+
+.soul-ring {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--soul-color, #6b7280) var(--soul-fill, 0%),
+    rgba(255, 255, 255, 0.05) var(--soul-fill, 0%)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.soul-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+/* ============================================================================
+   Input Styles
+   ============================================================================ */
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  color: var(--color-parchment);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  outline: none;
+  width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.1);
+}
+
+select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c4b69c' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* ============================================================================
+   Button Base
+   ============================================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.btn-crimson {
+  background: linear-gradient(135deg, var(--color-crimson-800), var(--color-crimson-700));
+  color: white;
+  border-color: var(--color-crimson-600);
+}
+
+.btn-crimson:hover {
+  background: linear-gradient(135deg, var(--color-crimson-700), var(--color-crimson-600));
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--color-gold-800), var(--color-gold-700));
+  color: white;
+  border-color: var(--color-gold-600);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--color-gold-700), var(--color-gold-600));
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-parchment-muted);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-parchment);
+  border-color: rgba(255, 215, 0, 0.2);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.btn-icon {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+}
+
+/* ============================================================================
+   Encumbrance states
+   ============================================================================ */
+
+.encumbered-banner {
+  background: linear-gradient(90deg, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.1));
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  color: var(--color-crimson-400);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   Tooltip
+   ============================================================================ */
+
+.tooltip-content {
+  background: var(--color-surface-raised);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-parchment);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: 280px;
+  z-index: 50;
+}
+
+/* ============================================================================
+   Mystery Card
+   ============================================================================ */
+
+.mystery-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mystery-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 215, 0, 0.05),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.mystery-card:hover::after {
+  left: 100%;
+}
+
+/* ============================================================================
+   Aria's Celestial Night Sky Animations & Ornate Frame
+   ============================================================================ */
+
+@keyframes starDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: -70px 50px; }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+
+@keyframes cloudDrift {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(170vw); }
+}
+
+@keyframes moonFloat {
+  0%, 100% { transform: translate(0,0); }
+  50%      { transform: translate(-12px, 14px); }
+}
+
+@keyframes moonGlow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(242,239,224,0.25)); opacity: 0.9; }
+  50%      { filter: drop-shadow(0 0 38px rgba(242,239,224,0.45)); opacity: 1; }
+}
+
+@keyframes haloSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.starfield-anim {
+  animation: starDrift 260s linear infinite alternate, starTwinkle 6s ease-in-out infinite;
+}
+
+.cloud-anim-1 { animation: cloudDrift 170s linear infinite; }
+.cloud-anim-2 { animation: cloudDrift 230s linear infinite -90s; }
+.cloud-anim-3 { animation: cloudDrift 195s linear infinite -40s reverse; }
+
+.moon-anim-float { animation: moonFloat 70s ease-in-out infinite, moonGlow 8s ease-in-out infinite; }
+.moon-anim-spin { animation: haloSpin 260s linear infinite; }
+
+/* Ornate Corner SVG Frame */
+.frame-ornament {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2060%2060%27%3E%3Cpath%20d%3D%27M40%208%20A15%2015%200%201%200%2040%2040%20A10.5%2010.5%200%201%201%2040%208Z%27%20fill%3D%27%23d9b872%27%20opacity%3D%270.9%27/%3E%3Cpath%20d%3D%27M6%2054%20C9%2047%2013%2042%2019%2039%27%20fill%3D%27none%27%20stroke%3D%27%238f76d6%27%20stroke-width%3D%271.3%27%20opacity%3D%270.65%27/%3E%3Cpath%20d%3D%27M10%2046%20C13%2043%2017%2042%2020%2044%27%20fill%3D%27none%27%20stroke%3D%27%238f76d6%27%20stroke-width%3D%271%27%20opacity%3D%270.5%27/%3E%3Ccircle%20cx%3D%2719%27%20cy%3D%2739%27%20r%3D%273.4%27%20fill%3D%27%23a992e8%27%20opacity%3D%270.95%27/%3E%3Ccircle%20cx%3D%2713.5%27%20cy%3D%2735%27%20r%3D%272.1%27%20fill%3D%27%23cfd4ee%27%20opacity%3D%270.85%27/%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2735.5%27%20r%3D%272.1%27%20fill%3D%27%23cfd4ee%27%20opacity%3D%270.85%27/%3E%3Ccircle%20cx%3D%2712.5%27%20cy%3D%2742.5%27%20r%3D%272.1%27%20fill%3D%27%23cfd4ee%27%20opacity%3D%270.85%27/%3E%3Ccircle%20cx%3D%2724.5%27%20cy%3D%2743%27%20r%3D%272.1%27%20fill%3D%27%23cfd4ee%27%20opacity%3D%270.85%27/%3E%3Ccircle%20cx%3D%2719%27%20cy%3D%2739%27%20r%3D%271.3%27%20fill%3D%27%23d9b872%27/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.frame-ornament.tl { top: -8px; left: -8px; }
+.frame-ornament.tr { top: -8px; right: -8px; transform: scaleX(-1); }
+.frame-ornament.bl { bottom: -8px; left: -8px; transform: scaleY(-1); }
+.frame-ornament.br { bottom: -8px; right: -8px; transform: scale(-1,-1); }
+
+/* Starlight Shockwave Burst when switching moon phases */
+@keyframes moonShiftBurst {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.9), inset 0 0 30px rgba(169, 146, 232, 0.8);
+  }
+  50% {
+    opacity: 0.7;
+    border-color: rgba(169, 146, 232, 0.8);
+    box-shadow: 0 0 100px rgba(169, 146, 232, 0.6), inset 0 0 80px rgba(217, 184, 114, 0.6);
+  }
+  100% {
+    transform: scale(4.5);
+    opacity: 0;
+    border-color: transparent;
+    box-shadow: 0 0 150px transparent;
+  }
+}
+
+/* Mobile Scrollbar Hiding & Touch Tap Optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+

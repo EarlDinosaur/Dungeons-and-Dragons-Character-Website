@@ -1,69 +1,478 @@
-import Image from "next/image";
+'use client';
+
+import { useCharacter } from './providers';
+
+// Background UI components
+import TavernBackground from '@/components/ui/backgrounds/TavernBackground';
+import VesperShadowRealm from '@/components/ui/backgrounds/VesperShadowRealm';
+import AriaNightSky from '@/components/ui/backgrounds/AriaNightSky';
+import CyrusSolarSanctuary from '@/components/ui/backgrounds/CyrusSolarSanctuary';
+
+// Shared UI & Campaign components
+import TabNavigation from '@/components/ui/TabNavigation';
+import CampaignMainMenu from '@/components/campaign/CampaignMainMenu';
+import InventoryManager from '@/components/shared/InventoryManager';
+
+// Vesper Ashwood components
+import CharacterHeader from '@/components/characters/vesper/CharacterHeader';
+import StatBlock from '@/components/characters/vesper/StatBlock';
+import CombatActions from '@/components/characters/vesper/CombatActions';
+import SoulHarvester from '@/components/characters/vesper/SoulHarvester';
+import Dossier from '@/components/characters/vesper/Dossier';
+
+// Aria Sil'aveth components
+import AriaHeader from '@/components/characters/aria/AriaHeader';
+import AriaStatBlock from '@/components/characters/aria/AriaStatBlock';
+import LunarPhaseEngine from '@/components/characters/aria/LunarPhaseEngine';
+import SpellbookPanel from '@/components/characters/aria/SpellbookPanel';
+import AriaGrimoire from '@/components/characters/aria/AriaGrimoire';
+
+// Cyrus Hyacinthus components
+import CyrusHeader from '@/components/characters/cyrus/CyrusHeader';
+import CyrusStatBlock from '@/components/characters/cyrus/CyrusStatBlock';
+import CyrusOracleEngine from '@/components/characters/cyrus/CyrusOracleEngine';
+import CyrusGrimoire from '@/components/characters/cyrus/CyrusGrimoire';
+import CyrusSpellbookPanel from '@/components/characters/cyrus/CyrusSpellbookPanel';
+
+import type { AriaState } from '@/lib/aria-engine';
+import type { CyrusState } from '@/lib/cyrus-engine';
+import type { CharacterState, AbilityName } from '@/lib/types';
+import { getModifier } from '@/lib/character-engine';
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  const {
+    activeView,
+    activeCharacterId,
+    character,
+    activeTab,
+    setActiveTab,
+    setLevel,
+    setCurrentHP,
+    setTempHP,
+    setSouls,
+    longRest,
+    setInventory,
+    setCurrency,
+    setPlayerNotes,
+    setJournal,
+    setMysteries,
+    // Aria state
+    aria,
+    setAriaLevel,
+    setAriaHP,
+    setAriaTempHP,
+    setAriaLunarPhase,
+    setAriaSorceryPoints,
+    toggleAriaInnateSorcery,
+    useAriaSpellSlot,
+    restoreAriaSpellSlot,
+    ariaLongRest,
+    setAriaInventory,
+    setAriaCurrency,
+    setAriaNotes,
+    // Cyrus state
+    cyrus,
+    setCyrusLevel,
+    setCyrusHP,
+    setCyrusTempHP,
+    useCyrusSpellSlot,
+    restoreCyrusSpellSlot,
+    toggleCyrusRadiantSoul,
+    useCyrusHealingHands,
+    useCyrusEpiphany,
+    cyrusLongRest,
+    setCyrusInventory,
+    setCyrusCurrency,
+    setCyrusNotes,
+    isLoaded,
+  } = useCharacter();
+
+  // Show loading skeleton during hydration
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-2 border-[var(--color-gold-700)] border-t-[var(--color-gold-bright)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-[family-name:var(--font-heading)] text-[var(--color-parchment-dim)] uppercase tracking-widest">
+            Loading Campaign Suite...
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </div>
+    );
+  }
+
+  const isVesper = activeCharacterId === 'vesper';
+  const isCyrus = activeCharacterId === 'cyrus';
+
+  // Helper to map AriaState into a CharacterState interface for shared components like InventoryManager
+  const mapAriaToCharacterState = (ariaState: AriaState): CharacterState => {
+    const prof = Math.floor((ariaState.level - 1) / 4) + 2;
+
+    const makeScore = (name: AbilityName, base: number) => {
+      const mod = getModifier(base);
+      const isProf = ariaState.savingThrowProficiencies.includes(name);
+      return {
+        name,
+        label: name,
+        base,
+        modifier: mod,
+        total: base,
+        saveProficient: isProf,
+        saveBonus: mod + (isProf ? prof : 0),
+      };
+    };
+
+    return {
+      name: ariaState.name,
+      alias: ariaState.subline,
+      race: ariaState.race,
+      class: ariaState.characterClass,
+      subclass: ariaState.subclass,
+      level: ariaState.level,
+      background: ariaState.background,
+      alignment: ariaState.alignment,
+      experience: 64000,
+      proficiencyBonus: prof,
+      abilityScores: {
+        STR: makeScore('STR', ariaState.abilityScores.STR),
+        DEX: makeScore('DEX', ariaState.abilityScores.DEX),
+        CON: makeScore('CON', ariaState.abilityScores.CON),
+        INT: makeScore('INT', ariaState.abilityScores.INT),
+        WIS: makeScore('WIS', ariaState.abilityScores.WIS),
+        CHA: makeScore('CHA', ariaState.abilityScores.CHA),
+      },
+      skills: [
+        { name: 'Arcana', ability: 'INT', proficient: true, expertise: true, bonus: getModifier(ariaState.abilityScores.INT) + prof * 2 },
+        { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.INT) + prof },
+        { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.WIS) + prof },
+        { name: 'Persuasion', ability: 'CHA', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.CHA) + prof },
+        { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: getModifier(ariaState.abilityScores.WIS) },
+      ],
+      ac: ariaState.combat.ac,
+      initiative: ariaState.combat.initiative,
+      speed: ariaState.combat.speed,
+      passivePerception: 11,
+      combat: {
+        currentHP: ariaState.combat.currentHP,
+        maxHP: ariaState.combat.maxHP,
+        tempHP: ariaState.combat.tempHP,
+        hitDice: { total: ariaState.level, used: 0 },
+        deathSaves: ariaState.combat.deathSaves,
+        conditions: [],
+      },
+      sneakAttackDice: 0,
+      inventory: ariaState.inventory,
+      currency: ariaState.currency,
+      orphansTithe: {
+        currentSouls: 0,
+        vestigeStage: 'dormant',
+        phantomMurmursActive: false,
+        altarTraumaActive: false,
+      },
+      dossier: {
+        backstory: {
+          orphanageMassacre: ariaState.notes,
+          fatherMalachi: 'Bonds of Celestial Weaving: Connected to the Silver Moon council.',
+          apprenticeApothecary: 'Mastery over herbal and astral rearguard alchemy.',
+          guildScoutVincent: 'Allied with Vesper Ashwood during the Baldur\'s Gate infiltration.',
+          bossDexter: 'Neutral status with the Shadow Guilds.',
+        },
+        mysteries: ariaState.mysteries,
+        journal: ariaState.journal,
+        playerNotes: ariaState.notes,
+      },
+      version: 1,
+      lastSaved: new Date().toISOString(),
+    };
+  };
+
+  // Helper to map CyrusState into a CharacterState interface for shared components like InventoryManager
+  const mapCyrusToCharacterState = (cyrusState: CyrusState): CharacterState => {
+    const prof = Math.floor((cyrusState.level - 1) / 4) + 2;
+
+    const makeScore = (name: AbilityName, base: number) => {
+      const mod = getModifier(base);
+      const isProf = cyrusState.savingThrowProficiencies.includes(name);
+      return {
+        name,
+        label: name,
+        base,
+        modifier: mod,
+        total: base,
+        saveProficient: isProf,
+        saveBonus: mod + (isProf ? prof : 0),
+      };
+    };
+
+    return {
+      name: cyrusState.name,
+      alias: cyrusState.subline,
+      race: cyrusState.race,
+      class: cyrusState.characterClass,
+      subclass: cyrusState.subclass,
+      level: cyrusState.level,
+      background: cyrusState.background,
+      alignment: cyrusState.alignment,
+      experience: 6500,
+      proficiencyBonus: prof,
+      abilityScores: {
+        STR: makeScore('STR', cyrusState.abilityScores.STR),
+        DEX: makeScore('DEX', cyrusState.abilityScores.DEX),
+        CON: makeScore('CON', cyrusState.abilityScores.CON),
+        INT: makeScore('INT', cyrusState.abilityScores.INT),
+        WIS: makeScore('WIS', cyrusState.abilityScores.WIS),
+        CHA: makeScore('CHA', cyrusState.abilityScores.CHA),
+      },
+      skills: [
+        { name: 'Religion', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.INT) + prof },
+        { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) + prof },
+        { name: 'Medicine', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) + prof },
+        { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.INT) + prof },
+        { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) },
+      ],
+      ac: cyrusState.combat.ac,
+      initiative: cyrusState.combat.initiative,
+      speed: cyrusState.combat.speed,
+      passivePerception: 15,
+      combat: {
+        currentHP: cyrusState.combat.currentHP,
+        maxHP: cyrusState.combat.maxHP,
+        tempHP: cyrusState.combat.tempHP,
+        hitDice: { total: cyrusState.level, used: 0 },
+        deathSaves: cyrusState.combat.deathSaves,
+        conditions: [],
+      },
+      sneakAttackDice: 0,
+      inventory: cyrusState.inventory,
+      currency: cyrusState.currency,
+      orphansTithe: {
+        currentSouls: 0,
+        vestigeStage: 'dormant',
+        phantomMurmursActive: false,
+        altarTraumaActive: false,
+      },
+      dossier: {
+        backstory: {
+          orphanageMassacre: cyrusState.notes,
+          fatherMalachi: 'Oracle Temple Priest of Apollo',
+          apprenticeApothecary: 'Greek Divination & Solar Herbcraft',
+          guildScoutVincent: 'Allied with Vesper & Aria',
+          bossDexter: 'Neutral',
+        },
+        mysteries: [],
+        journal: [],
+        playerNotes: cyrusState.notes,
+      },
+      version: 1,
+      lastSaved: new Date().toISOString(),
+    };
+  };
+
+  const ariaCharState = mapAriaToCharacterState(aria);
+  const cyrusCharState = mapCyrusToCharacterState(cyrus);
+
+  return (
+    <>
+      {/* Dynamic Background Effect per View & Character */}
+      {activeView === 'menu' ? (
+        <TavernBackground />
+      ) : isVesper ? (
+        <VesperShadowRealm
+          currentSouls={character.orphansTithe.currentSouls}
+          vestigeStage={character.orphansTithe.vestigeStage}
+        />
+      ) : isCyrus ? (
+        <CyrusSolarSanctuary radiantActive={cyrus.oracleEngine.radiantSoulActive} />
+      ) : (
+        <AriaNightSky currentPhase={aria.lunarEngine.currentPhase} />
+      )}
+
+      {activeView === 'character' && (
+        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
+
+      <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
+        {/* VIEW 1: CAMPAIGN MAIN MENU */}
+        {activeView === 'menu' ? (
+          <CampaignMainMenu />
+        ) : (
+          /* VIEW 2: CHARACTER SHEET WORKSPACE */
+          <>
+            {/* Earl (Vesper Ashwood) Dashboard */}
+            {isVesper ? (
+              <>
+                <div className="mb-6">
+                  <CharacterHeader
+                    character={character}
+                    onLevelChange={setLevel}
+                    onHPChange={setCurrentHP}
+                    onTempHPChange={setTempHP}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up" key={`vesper-${activeTab}`}>
+                  {activeTab === 'character' && (
+                    <StatBlock character={character} />
+                  )}
+
+                  {activeTab === 'combat' && (
+                    <CombatActions character={character} />
+                  )}
+
+                  {activeTab === 'inventory' && (
+                    <InventoryManager
+                      character={character}
+                      onInventoryChange={setInventory}
+                      onCurrencyChange={setCurrency}
+                    />
+                  )}
+
+                  {activeTab === 'artifact' && (
+                    <SoulHarvester
+                      character={character}
+                      onSoulsChange={setSouls}
+                      onLongRest={longRest}
+                    />
+                  )}
+
+                  {activeTab === 'dossier' && (
+                    <Dossier
+                      character={character}
+                      onNotesChange={setPlayerNotes}
+                      onJournalChange={setJournal}
+                      onMysteriesChange={setMysteries}
+                    />
+                  )}
+                </div>
+              </>
+            ) : isCyrus ? (
+              /* Cyrus Hyacinthus Dashboard (Greek Oracle & Solar Light Cleric) */
+              <>
+                <div className="mb-6">
+                  <CyrusHeader
+                    cyrus={cyrus}
+                    onLevelChange={setCyrusLevel}
+                    onHPChange={setCyrusHP}
+                    onTempHPChange={setCyrusTempHP}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up" key={`cyrus-${activeTab}`}>
+                  {/* TAB 1: ORACLE SHEET */}
+                  {activeTab === 'character' && (
+                    <CyrusStatBlock cyrus={cyrus} />
+                  )}
+
+                  {/* TAB 2: DOMAIN SPELLS */}
+                  {activeTab === 'combat' && (
+                    <CyrusSpellbookPanel
+                      cyrus={cyrus}
+                      onUseSlot={useCyrusSpellSlot}
+                      onRestoreSlot={restoreCyrusSpellSlot}
+                      onLongRest={cyrusLongRest}
+                    />
+                  )}
+
+                  {/* TAB 3: SOLAR ENGINE (Radiant Soul & Channel Divinity) */}
+                  {activeTab === 'artifact' && (
+                    <CyrusOracleEngine
+                      cyrus={cyrus}
+                      onToggleRadiantSoul={toggleCyrusRadiantSoul}
+                      onUseHealingHands={useCyrusHealingHands}
+                      onUseEpiphany={useCyrusEpiphany}
+                      onUseSpellSlot={useCyrusSpellSlot}
+                      onRestoreSpellSlot={restoreCyrusSpellSlot}
+                      onLongRest={cyrusLongRest}
+                    />
+                  )}
+
+                  {/* TAB 4: EQUIPMENT */}
+                  {activeTab === 'inventory' && (
+                    <InventoryManager
+                      character={cyrusCharState}
+                      onInventoryChange={setCyrusInventory}
+                      onCurrencyChange={setCyrusCurrency}
+                    />
+                  )}
+
+                  {/* TAB 5: PROPHECIES & DOSSIER */}
+                  {activeTab === 'dossier' && (
+                    <CyrusGrimoire
+                      cyrus={cyrus}
+                      onNotesChange={setCyrusNotes}
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Aria Sil'aveth Dashboard (Personalized Aesthetics & Layout) */
+              <>
+                <div className="mb-6">
+                  <AriaHeader
+                    aria={aria}
+                    onLevelChange={setAriaLevel}
+                    onHPChange={setAriaHP}
+                    onTempHPChange={setAriaTempHP}
+                    onPhaseChange={setAriaLunarPhase}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up" key={`aria-${activeTab}`}>
+                  {/* TAB 1: OVERVIEW */}
+                  {activeTab === 'character' && (
+                    <AriaStatBlock aria={aria} />
+                  )}
+
+                  {/* TAB 2: SPELLBOOK */}
+                  {activeTab === 'combat' && (
+                    <SpellbookPanel
+                      aria={aria}
+                      onUseSlot={useAriaSpellSlot}
+                      onRestoreSlot={restoreAriaSpellSlot}
+                    />
+                  )}
+
+                  {/* TAB 3: LUNAR TIDES (Sorcery Points & Phase Engine) */}
+                  {activeTab === 'artifact' && (
+                    <LunarPhaseEngine
+                      aria={aria}
+                      onPhaseChange={setAriaLunarPhase}
+                      onSorceryPointsChange={setAriaSorceryPoints}
+                      onToggleInnateSorcery={toggleAriaInnateSorcery}
+                      onLongRest={ariaLongRest}
+                    />
+                  )}
+
+                  {/* TAB 4: INVENTORY */}
+                  {activeTab === 'inventory' && (
+                    <InventoryManager
+                      character={ariaCharState}
+                      onInventoryChange={setAriaInventory}
+                      onCurrencyChange={setAriaCurrency}
+                    />
+                  )}
+
+                  {/* TAB 5: GRIMOIRE */}
+                  {activeTab === 'dossier' && (
+                    <AriaGrimoire
+                      aria={aria}
+                      onNotesChange={setAriaNotes}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-12 pb-6 text-center">
+          <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-[var(--color-gold-700)] to-transparent mx-auto mb-3" />
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
+            The Ashen Pact — D&amp;D 5e Interactive Campaign Hub
+          </p>
+        </footer>
       </main>
-    </div>
+    </>
   );
 }
