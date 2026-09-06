@@ -1,11 +1,13 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { Shield, Zap, Footprints, Moon, Sparkles, Heart, Wand2, BookOpen, ArrowLeft, Scroll } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Shield, Zap, Footprints, Moon, Award, ArrowLeft, Scroll, Layers, Edit3, Plus, Trash2, X, Check } from 'lucide-react';
 import gsap from 'gsap';
 import HPQuickControl from '../../ui/HPQuickControl';
 import type { AriaState, LunarPhase } from '@/lib/aria-engine';
 import { getProficiencyBonus } from '@/lib/aria-engine';
+import { DND_CLASSES, getClassDefinition, formatHitDicePool } from '@/lib/class-database';
+import type { ClassLevel } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 
 interface AriaHeaderProps {
@@ -23,10 +25,22 @@ export default function AriaHeader({
   onTempHPChange,
   onPhaseChange,
 }: AriaHeaderProps) {
-  const { navigateToMenu, getPortraitUrl, openMediaPicker } = useCharacter();
+  const { navigateToMenu, getPortraitUrl, openMediaPicker, setClasses, setCombatOverrides } = useCharacter();
   const hpBarRef = useRef<HTMLDivElement>(null);
-  const levelRef = useRef<HTMLSelectElement>(null);
   const ariaPortrait = getPortraitUrl('aria');
+
+  // Modals State
+  const [isMulticlassModalOpen, setIsMulticlassModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+
+  // Draft classes state for Multiclass modal
+  const [draftClasses, setDraftClasses] = useState<ClassLevel[]>([]);
+
+  // Draft combat overrides state
+  const [draftAC, setDraftAC] = useState<number>(aria.combat.ac);
+  const [draftInit, setDraftInit] = useState<number>(aria.combat.initiative);
+  const [draftSpeed, setDraftSpeed] = useState<number>(aria.combat.speed);
+  const [draftProf, setDraftProf] = useState<number>(getProficiencyBonus(aria.level));
 
   const hpPercent = aria.combat.maxHP > 0
     ? (aria.combat.currentHP / aria.combat.maxHP) * 100
@@ -48,11 +62,67 @@ export default function AriaHeader({
     }
   }, [hpPercent, hpColor]);
 
-  const handleLevelChange = (newLevel: number) => {
-    if (levelRef.current) {
-      gsap.fromTo(levelRef.current, { scale: 1.3 }, { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+  const openMulticlassModal = () => {
+    const initial = aria.classes && aria.classes.length > 0
+      ? aria.classes
+      : [{ className: aria.characterClass || 'Sorcerer', subclass: aria.subclass || 'Lunar Sorcery', level: aria.level || 10, hitDice: 'd6' }];
+    setDraftClasses([...initial]);
+    setIsMulticlassModalOpen(true);
+  };
+
+  const handleSaveMulticlass = () => {
+    if (draftClasses.length === 0) return;
+    setClasses(draftClasses);
+    setIsMulticlassModalOpen(false);
+  };
+
+  const handleAddClass = () => {
+    setDraftClasses([
+      ...draftClasses,
+      { className: 'Wizard', subclass: 'Abjuration', level: 1, hitDice: 'd6' },
+    ]);
+  };
+
+  const handleUpdateClass = (index: number, field: keyof ClassLevel, value: string | number) => {
+    const updated = [...draftClasses];
+    const target = { ...updated[index] };
+
+    if (field === 'className') {
+      const def = getClassDefinition(value as string);
+      target.className = def.name;
+      target.hitDice = def.hitDie;
+      target.subclass = def.subclasses[0] || 'Custom Subclass';
+    } else if (field === 'level') {
+      target.level = Math.max(1, Number(value));
+    } else if (field === 'subclass') {
+      target.subclass = value as string;
     }
-    onLevelChange(newLevel);
+
+    updated[index] = target;
+    setDraftClasses(updated);
+  };
+
+  const handleRemoveClass = (index: number) => {
+    if (draftClasses.length <= 1) return;
+    setDraftClasses(draftClasses.filter((_, i) => i !== index));
+  };
+
+  const openStatsModal = () => {
+    setDraftAC(aria.combat.ac);
+    setDraftInit(aria.combat.initiative);
+    setDraftSpeed(aria.combat.speed);
+    setDraftProf(getProficiencyBonus(aria.level));
+    setIsStatsModalOpen(true);
+  };
+
+  const handleSaveStats = () => {
+    setCombatOverrides({
+      ac: draftAC,
+      initiative: draftInit,
+      speed: draftSpeed,
+      proficiencyBonus: draftProf,
+    });
+    setIsStatsModalOpen(false);
   };
 
   const profBonus = getProficiencyBonus(aria.level);
@@ -65,6 +135,12 @@ export default function AriaHeader({
   };
 
   const activePhaseInfo = phaseDetails[currentPhase] || phaseDetails.full;
+
+  const activeClasses = aria.classes && aria.classes.length > 0
+    ? aria.classes
+    : [{ className: aria.characterClass, subclass: aria.subclass, level: aria.level, hitDice: 'd6' }];
+
+  const hitDicePoolText = formatHitDicePool(activeClasses);
 
   return (
     <div className="relative p-6 rounded-2xl border border-[#d9b872]/50 bg-gradient-to-b from-[#1d2249]/90 via-[#14183a]/95 to-[#0d1026]/95 shadow-[0_0_50px_rgba(169,146,232,0.25)] font-['Spectral',serif]">
@@ -123,23 +199,15 @@ export default function AriaHeader({
                 {aria.name}
               </h1>
 
-              <span className="text-xs font-mono text-[#9aa1cc] bg-[#14183a] px-2 py-0.5 rounded border border-[#343a72] shrink-0">
-                LV
-                <select
-                  ref={levelRef}
-                  value={aria.level}
-                  onChange={(e) => handleLevelChange(Number(e.target.value))}
-                  className="!bg-transparent !border-none !p-0 !pl-1 !w-auto !text-[#d9b872] font-bold appearance-none cursor-pointer focus:outline-none inline"
-                  id="aria-level-selector"
-                  style={{ width: '30px' }}
-                >
-                  {Array.from({ length: 20 }, (_, i) => i + 1).map((lv) => (
-                    <option key={lv} value={lv} className="bg-[#14183a] text-white">
-                      {lv}
-                    </option>
-                  ))}
-                </select>
-              </span>
+              <button
+                onClick={openMulticlassModal}
+                className="text-xs font-mono text-[#a992e8] bg-[#14183a] hover:bg-[#171b3f] border border-[#343a72] px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                title="Manage Level & Multiclassing"
+              >
+                <Layers size={13} />
+                <span className="font-bold">Total Level {aria.level}</span>
+                <Edit3 size={11} className="opacity-70" />
+              </button>
             </div>
 
             <p className="text-xs text-[#d9b872] font-['Cormorant_Garamond',serif] italic">
@@ -150,12 +218,12 @@ export default function AriaHeader({
               <span className="bg-[#171b3f] text-[#a992e8] px-2 py-0.5 rounded border border-[#343a72] font-semibold text-[10px]">
                 {aria.race}
               </span>
-              <span className="bg-[#171b3f] text-[#d9b872] px-2 py-0.5 rounded border border-[#343a72] font-semibold text-[10px]">
-                {aria.characterClass}
-              </span>
-              <span className="bg-[#171b3f] text-[#e8e6ff] px-2 py-0.5 rounded border border-[#343a72] font-semibold text-[10px]">
-                {aria.subclass}
-              </span>
+              {activeClasses.map((c, i) => (
+                <span key={i} className="bg-[#171b3f] text-[#d9b872] px-2 py-0.5 rounded border border-[#343a72] font-semibold text-[10px]">
+                  {c.className} {c.level} {c.subclass && `(${c.subclass})`}
+                </span>
+              ))}
+              <span className="text-[10px] text-[#9aa1cc] font-mono">&bull; {hitDicePoolText}</span>
             </div>
           </div>
         </div>
@@ -176,7 +244,6 @@ export default function AriaHeader({
               {activePhaseInfo.desc}
             </p>
 
-            {/* Equal Height & Sized Phase Switcher Grid */}
             <div className="grid grid-cols-3 gap-1.5 pt-0.5">
               <button
                 onClick={() => onPhaseChange('full')}
@@ -214,23 +281,39 @@ export default function AriaHeader({
 
         {/* Right: Quick Stats Strip (4 cols) */}
         <div className="grid grid-cols-3 gap-2 lg:col-span-4 font-mono text-center">
-          <div className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57]">
-            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">AC</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57] hover:border-[#a992e8] transition-all cursor-pointer group"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">AC ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff]">{aria.combat.ac}</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57]">
-            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">INIT</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57] hover:border-[#a992e8] transition-all cursor-pointer group"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">INIT ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#a992e8]">+{aria.combat.initiative}</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57]">
-            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">SPEED</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57] hover:border-[#a992e8] transition-all cursor-pointer group"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">SPEED ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#cfd4ee]">{aria.combat.speed}&apos;</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57]">
-            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">PROF</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#14183a] border border-[#262b57] hover:border-[#a992e8] transition-all cursor-pointer group"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#9aa1cc] uppercase">PROF ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#d9b872]">+{profBonus}</span>
           </div>
 
@@ -258,6 +341,214 @@ export default function AriaHeader({
           characterName={aria.name}
         />
       </div>
+
+      {/* MULTICLASS MANAGER MODAL */}
+      {isMulticlassModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#14183a] border-2 border-[#a992e8] rounded-2xl p-6 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto font-['Spectral',serif]">
+            <button
+              onClick={() => setIsMulticlassModalOpen(false)}
+              className="absolute top-4 right-4 text-[#9aa1cc] hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#343a72]">
+              <Layers className="text-[#a992e8]" size={20} />
+              <h2 className="text-xl font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif]">
+                Aria Multiclassing &amp; Level Manager
+              </h2>
+            </div>
+
+            <p className="text-xs text-[#9aa1cc] mb-4 font-mono">
+              Configure Aria&apos;s classes from the 5e Class Catalog. Spells, slots, and stats adjust automatically.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              {draftClasses.map((c, idx) => {
+                const classDef = getClassDefinition(c.className);
+                return (
+                  <div key={idx} className="bg-[#0d1026] border border-[#262b57] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold text-[#d9b872] uppercase tracking-wider font-mono">
+                        Class #{idx + 1}
+                      </span>
+                      {draftClasses.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveClass(idx)}
+                          className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 cursor-pointer font-mono"
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                          Class Name
+                        </label>
+                        <select
+                          value={c.className}
+                          onChange={(e) => handleUpdateClass(idx, 'className', e.target.value)}
+                          className="w-full bg-[#14183a] border border-[#343a72] rounded-lg p-2 text-white font-semibold focus:border-[#a992e8]"
+                        >
+                          {Object.keys(DND_CLASSES).map((cls) => (
+                            <option key={cls} value={cls}>
+                              {cls} ({DND_CLASSES[cls].hitDie})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                          Subclass / Archetype
+                        </label>
+                        <select
+                          value={c.subclass || ''}
+                          onChange={(e) => handleUpdateClass(idx, 'subclass', e.target.value)}
+                          className="w-full bg-[#14183a] border border-[#343a72] rounded-lg p-2 text-white focus:border-[#a992e8]"
+                        >
+                          {classDef.subclasses.map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                          Level
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={c.level}
+                          onChange={(e) => handleUpdateClass(idx, 'level', e.target.value)}
+                          className="w-full bg-[#14183a] border border-[#343a72] rounded-lg p-2 text-white font-bold text-center focus:border-[#a992e8]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#343a72]">
+              <button
+                onClick={handleAddClass}
+                className="px-3 py-1.5 bg-[#0d1026] hover:bg-[#171b3f] text-[#a992e8] border border-[#343a72] rounded-xl text-xs font-mono font-bold flex items-center gap-1.5"
+              >
+                <Plus size={14} /> Add Multiclass
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsMulticlassModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-[#9aa1cc] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveMulticlass}
+                  className="px-4 py-2 bg-[#a992e8] hover:bg-[#8f76d6] text-black rounded-xl text-xs font-bold font-mono flex items-center gap-1.5"
+                >
+                  <Check size={14} /> Apply Multiclassing
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COMBAT STATS OVERRIDE MODAL */}
+      {isStatsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#14183a] border-2 border-[#a992e8] rounded-2xl p-6 max-w-md w-full shadow-2xl relative font-['Spectral',serif]">
+            <button
+              onClick={() => setIsStatsModalOpen(false)}
+              className="absolute top-4 right-4 text-[#9aa1cc] hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#343a72]">
+              <Edit3 className="text-[#a992e8]" size={20} />
+              <h2 className="text-xl font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif]">
+                Aria Combat Stats Overrides
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs font-mono mb-6">
+              <div>
+                <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                  Armor Class (AC)
+                </label>
+                <input
+                  type="number"
+                  value={draftAC}
+                  onChange={(e) => setDraftAC(Number(e.target.value))}
+                  className="w-full bg-[#0d1026] border border-[#343a72] rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                  Initiative Bonus
+                </label>
+                <input
+                  type="number"
+                  value={draftInit}
+                  onChange={(e) => setDraftInit(Number(e.target.value))}
+                  className="w-full bg-[#0d1026] border border-[#343a72] rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                  Speed (ft)
+                </label>
+                <input
+                  type="number"
+                  value={draftSpeed}
+                  onChange={(e) => setDraftSpeed(Number(e.target.value))}
+                  className="w-full bg-[#0d1026] border border-[#343a72] rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#9aa1cc] mb-1">
+                  Proficiency Bonus
+                </label>
+                <input
+                  type="number"
+                  value={draftProf}
+                  onChange={(e) => setDraftProf(Number(e.target.value))}
+                  className="w-full bg-[#0d1026] border border-[#343a72] rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#343a72]">
+              <button
+                onClick={() => setIsStatsModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs text-[#9aa1cc] hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveStats}
+                className="px-4 py-2 bg-[#a992e8] hover:bg-[#8f76d6] text-black rounded-xl text-xs font-bold font-mono flex items-center gap-1.5"
+              >
+                <Check size={14} /> Save Overrides
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

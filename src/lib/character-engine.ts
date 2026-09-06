@@ -350,3 +350,97 @@ export function getDefaultInventory(): import('./types').InventoryItem[] {
     },
   ];
 }
+
+/**
+ * Get default attack options for Earl.
+ */
+export function getDefaultAttacks(): import('./types').AttackOption[] {
+  return [
+    {
+      id: 'orphans-tithe-attack',
+      name: "The Orphan's Tithe",
+      attackBonus: 7,
+      damage: '1d4 + 4',
+      damageType: 'Piercing',
+      range: 'Melee (5 ft)',
+      notes: 'Vestige blade. +1 to hit/dmg. On crit, target suffers Soul Bleed.',
+      equipped: true,
+    },
+    {
+      id: 'shortsword-attack',
+      name: 'Shortsword',
+      attackBonus: 6,
+      damage: '1d6 + 3',
+      damageType: 'Piercing',
+      range: 'Melee (5 ft)',
+      notes: 'Finesse, Light',
+      equipped: true,
+    },
+    {
+      id: 'dagger-throw',
+      name: 'Throwing Dagger',
+      attackBonus: 6,
+      damage: '1d4 + 3',
+      damageType: 'Piercing',
+      range: '20/60 ft',
+      notes: 'Finesse, Light, Thrown',
+      equipped: false,
+    },
+  ];
+}
+
+/**
+ * Get default feats and class features for Earl.
+ */
+export function getDefaultFeats(): import('./types').CustomFeat[] {
+  return [
+    {
+      id: 'feat-alert',
+      title: 'Alert Feat',
+      description: '+5 bonus to initiative. You cannot be surprised while conscious. Other creatures don\'t get advantage on attack rolls against you as a result of being unseen by you.',
+      source: 'Human Bonus Feat',
+      level: 1,
+    },
+    {
+      id: 'feat-assassinate',
+      title: 'Assassinate',
+      description: 'You have advantage on attack rolls against any creature that hasn\'t taken a turn in combat yet. Any hit you score against a surprised creature is a critical hit.',
+      source: 'Rogue (Assassin)',
+      level: 3,
+    },
+    {
+      id: 'feat-cunning-action',
+      title: 'Cunning Action',
+      description: 'You can take a Bonus Action on each of your turns in combat to Dash, Disengage, or Hide.',
+      source: 'Rogue Class Trait',
+      level: 2,
+    },
+    {
+      id: 'feat-uncanny-dodge',
+      title: 'Uncanny Dodge',
+      description: 'When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack\'s damage against you.',
+      source: 'Rogue Class Trait',
+      level: 5,
+    },
+    {
+      id: 'feat-evasion',
+      title: 'Evasion',
+      description: 'When you are subjected to an effect that allows you to make a DEX saving throw to take only half damage, you take no damage on a success, and half damage on a failure.',
+      source: 'Rogue Class Trait',
+      level: 7,
+    },
+  ];
+}
+
+/**
+ * Get default non-stat proficiencies for Earl.
+ */
+export function getDefaultProficiencies(): import('./types').NonStatProficiencies {
+  return {
+    armor: ['Light Armor'],
+    weapons: ['Simple Weapons', 'Hand Crossbows', 'Longswords', 'Rapiers', 'Shortswords'],
+    tools: ["Thieves' Tools", "Poisoner's Kit", "Disguise Kit"],
+    languages: ['Common', 'Elvish', 'Thieves\' Cant'],
+  };
+}
+

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CharacterState, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId } from '@/lib/types';
+import type { CharacterState, AbilityName, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId } from '@/lib/types';
 import { createDefaultCharacterState, recalculateForLevel, saveCharacterState, loadCharacterState } from '@/lib/persistence';
 import { isPhantomMurmursActive, getMaxSouls, getVestigeStage } from '@/lib/orphans-tithe';
 import type { AriaState, LunarPhase } from '@/lib/aria-engine';
@@ -9,6 +9,7 @@ import { createDefaultAriaState, calculateAriaStats } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { createDefaultCyrusState, calculateCyrusStats } from '@/lib/cyrus-engine';
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
+import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
@@ -84,6 +85,24 @@ interface CharacterContextType {
   setJournal: (entries: JournalEntry[]) => void;
   setMysteries: (mysteries: CampaignMystery[]) => void;
 
+  // New Progression & Field Editability Actions
+  updateAbilityBaseScore: (ability: AbilityName, newBase: number) => void;
+  toggleSkillProficiency: (skillName: import('@/lib/types').SkillName) => void;
+  setCombatOverrides: (overrides: Partial<import('@/lib/types').CombatOverrides>) => void;
+  setClasses: (classes: import('@/lib/types').ClassLevel[]) => void;
+  addAttack: (attack: Omit<import('@/lib/types').AttackOption, 'id'>) => void;
+  editAttack: (attack: import('@/lib/types').AttackOption) => void;
+  deleteAttack: (id: string) => void;
+  addSpell: (spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => void;
+  deleteSpell: (id: string) => void;
+  useVesperSpellSlot: (level: number) => void;
+  restoreVesperSpellSlot: (level: number) => void;
+  setVesperSpellSlotMax: (level: number, max: number) => void;
+  addFeat: (feat: Omit<import('@/lib/types').CustomFeat, 'id'>) => void;
+  deleteFeat: (id: string) => void;
+  updateProficiencies: (category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => void;
+
+
   // Aria's state & actions
   aria: AriaState;
   setAriaLevel: (level: number) => void;
@@ -94,6 +113,7 @@ interface CharacterContextType {
   toggleAriaInnateSorcery: () => void;
   useAriaSpellSlot: (level: number) => void;
   restoreAriaSpellSlot: (level: number) => void;
+  setAriaSpellSlotMax: (level: number, max: number) => void;
   ariaLongRest: () => void;
   setAriaInventory: (items: InventoryItem[]) => void;
   setAriaCurrency: (currency: Currency) => void;
@@ -106,6 +126,7 @@ interface CharacterContextType {
   setCyrusTempHP: (hp: number) => void;
   useCyrusSpellSlot: (level: number) => void;
   restoreCyrusSpellSlot: (level: number) => void;
+  setCyrusSpellSlotMax: (level: number, max: number) => void;
   toggleCyrusRadiantSoul: () => void;
   useCyrusHealingHands: () => void;
   useCyrusEpiphany: () => void;
@@ -377,6 +398,497 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     }));
   }, [updateCharacter]);
 
+  // Extended Editable Actions
+  const updateAbilityBaseScore = useCallback((ability: AbilityName, newBase: number) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => {
+        const nextScores = { ...prev.abilityScores, [ability]: newBase };
+        return calculateAriaStats({ ...prev, abilityScores: nextScores });
+      });
+      showToast('Ability Score Updated', `Aria's ${ability} set to ${newBase}`, 'level');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => {
+        const nextScores = { ...prev.abilityScores, [ability]: newBase };
+        return calculateCyrusStats({ ...prev, abilityScores: nextScores });
+      });
+      showToast('Ability Score Updated', `Cyrus's ${ability} set to ${newBase}`, 'level');
+    } else {
+      updateCharacter((prev) => {
+        const updatedScores = { ...prev.abilityScores };
+        const current = updatedScores[ability];
+        if (!current) return prev;
+        const total = newBase;
+        const modifier = Math.floor((total - 10) / 2);
+        const saveBonus = modifier + (current.saveProficient ? prev.proficiencyBonus : 0);
+
+        updatedScores[ability] = {
+          ...current,
+          base: newBase,
+          total,
+          modifier,
+          saveBonus,
+        };
+
+        // Recalculate skill bonuses
+        const updatedSkills = prev.skills.map((skill) => {
+          if (skill.ability === ability) {
+            let bonus = modifier;
+            if (skill.expertise) bonus += prev.proficiencyBonus * 2;
+            else if (skill.proficient) bonus += prev.proficiencyBonus;
+            return { ...skill, bonus };
+          }
+          return skill;
+        });
+
+        return {
+          ...prev,
+          abilityScores: updatedScores,
+          skills: updatedSkills,
+        };
+      });
+      showToast('Ability Score Updated', `${ability} updated to ${newBase}`, 'level');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const toggleSkillProficiency = useCallback((skillName: import('@/lib/types').SkillName) => {
+    const all18Skills: Array<{ name: import('@/lib/types').SkillName; ability: import('@/lib/types').AbilityName }> = [
+      { name: 'Acrobatics', ability: 'DEX' },
+      { name: 'Animal Handling', ability: 'WIS' },
+      { name: 'Arcana', ability: 'INT' },
+      { name: 'Athletics', ability: 'STR' },
+      { name: 'Deception', ability: 'CHA' },
+      { name: 'History', ability: 'INT' },
+      { name: 'Insight', ability: 'WIS' },
+      { name: 'Intimidation', ability: 'CHA' },
+      { name: 'Investigation', ability: 'INT' },
+      { name: 'Medicine', ability: 'WIS' },
+      { name: 'Nature', ability: 'INT' },
+      { name: 'Perception', ability: 'WIS' },
+      { name: 'Performance', ability: 'CHA' },
+      { name: 'Persuasion', ability: 'CHA' },
+      { name: 'Religion', ability: 'INT' },
+      { name: 'Sleight of Hand', ability: 'DEX' },
+      { name: 'Stealth', ability: 'DEX' },
+      { name: 'Survival', ability: 'WIS' },
+    ];
+
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => {
+        const existingMap = new Map((prev.skills || []).map((s) => [s.name, s]));
+        const fullSkills = all18Skills.map((def) => {
+          const existing = existingMap.get(def.name);
+          if (existing) return existing;
+          return {
+            name: def.name,
+            ability: def.ability,
+            proficient: ['Arcana', 'History', 'Insight', 'Persuasion'].includes(def.name),
+            expertise: def.name === 'Arcana',
+            bonus: 0,
+          };
+        });
+        const updatedSkills = fullSkills.map((s) => {
+          if (s.name === skillName) {
+            let proficient = s.proficient;
+            let expertise = s.expertise;
+            if (!proficient && !expertise) proficient = true;
+            else if (proficient && !expertise) expertise = true;
+            else { proficient = false; expertise = false; }
+            return { ...s, proficient, expertise };
+          }
+          return s;
+        });
+        return { ...prev, skills: updatedSkills };
+      });
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => {
+        const existingMap = new Map((prev.skills || []).map((s) => [s.name, s]));
+        const fullSkills = all18Skills.map((def) => {
+          const existing = existingMap.get(def.name);
+          if (existing) return existing;
+          return {
+            name: def.name,
+            ability: def.ability,
+            proficient: prev.skillProficiencies ? prev.skillProficiencies.includes(def.name) : ['Religion', 'Insight', 'Medicine', 'History'].includes(def.name),
+            expertise: false,
+            bonus: 0,
+          };
+        });
+        const updatedSkills = fullSkills.map((s) => {
+          if (s.name === skillName) {
+            let proficient = s.proficient;
+            let expertise = s.expertise;
+            if (!proficient && !expertise) proficient = true;
+            else if (proficient && !expertise) expertise = true;
+            else { proficient = false; expertise = false; }
+            return { ...s, proficient, expertise };
+          }
+          return s;
+        });
+        return { ...prev, skills: updatedSkills };
+      });
+    } else {
+      updateCharacter((prev) => {
+        const updatedSkills = prev.skills.map((s) => {
+          if (s.name === skillName) {
+            let proficient = s.proficient;
+            let expertise = s.expertise;
+            if (!proficient && !expertise) {
+              proficient = true;
+            } else if (proficient && !expertise) {
+              expertise = true;
+            } else {
+              proficient = false;
+              expertise = false;
+            }
+
+            const abilityMod = prev.abilityScores[s.ability]?.modifier || 0;
+            let bonus = abilityMod;
+            if (expertise) bonus += prev.proficiencyBonus * 2;
+            else if (proficient) bonus += prev.proficiencyBonus;
+
+            return { ...s, proficient, expertise, bonus };
+          }
+          return s;
+        });
+
+        return { ...prev, skills: updatedSkills };
+      });
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus]);
+
+  const setCombatOverrides = useCallback((overrides: Partial<import('@/lib/types').CombatOverrides>) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        overrides: { ...(prev.overrides || {}), ...overrides },
+        combat: {
+          ...prev.combat,
+          ac: overrides.ac ?? prev.combat.ac,
+          initiative: overrides.initiative ?? prev.combat.initiative,
+          speed: overrides.speed ?? prev.combat.speed,
+        },
+      }));
+      showToast('Stats Updated', "Aria's combat stats updated", 'info');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        overrides: { ...(prev.overrides || {}), ...overrides },
+        combat: {
+          ...prev.combat,
+          ac: overrides.ac ?? prev.combat.ac,
+          initiative: overrides.initiative ?? prev.combat.initiative,
+          speed: overrides.speed ?? prev.combat.speed,
+        },
+      }));
+      showToast('Stats Updated', "Cyrus's combat stats updated", 'info');
+    } else {
+      updateCharacter((prev) => {
+        const nextOverrides = { ...(prev.overrides || {}), ...overrides };
+        const ac = nextOverrides.ac ?? prev.ac;
+        const initiative = nextOverrides.initiative ?? prev.initiative;
+        const speed = nextOverrides.speed ?? prev.speed;
+        const proficiencyBonus = nextOverrides.proficiencyBonus ?? prev.proficiencyBonus;
+
+        return {
+          ...prev,
+          overrides: nextOverrides,
+          ac,
+          initiative,
+          speed,
+          proficiencyBonus,
+        };
+      });
+      showToast('Stats Updated', 'Combat stats updated', 'info');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const setClasses = useCallback((classes: import('@/lib/types').ClassLevel[]) => {
+    const totalLevel = classes.reduce((sum, c) => sum + c.level, 0);
+    const primary = classes[0];
+
+    // Compute auto-injected features & proficiencies from the class config
+    const injected = computeInjectedFeatures(classes);
+
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => {
+        const base = calculateAriaStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        const merged = mergeInjectedWithManual(
+          base.feats || [],
+          base.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+        return { ...base, feats: merged.feats, proficiencies: merged.proficiencies };
+      });
+      showToast('Classes Updated', `Aria's Multiclass saved (Total Lv ${totalLevel}). Features auto-injected!`, 'level');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => {
+        const base = calculateCyrusStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        const merged = mergeInjectedWithManual(
+          base.feats || [],
+          base.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+        return { ...base, feats: merged.feats, proficiencies: merged.proficiencies };
+      });
+      showToast('Classes Updated', `Cyrus's Multiclass saved (Total Lv ${totalLevel}). Features auto-injected!`, 'level');
+    } else {
+      updateCharacter((prev) => {
+        const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
+        const primaryClass = classes[0] || { className: 'Rogue', subclass: 'Assassin', level: totalLevel, hitDice: 'd8' };
+
+        const nextState = recalculateForLevel(
+          {
+            ...prev,
+            class: primaryClass.className,
+            subclass: primaryClass.subclass || '',
+            classes,
+          },
+          totalLevel
+        );
+
+        const merged = mergeInjectedWithManual(
+          nextState.feats || [],
+          nextState.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+
+        return {
+          ...nextState,
+          feats: merged.feats,
+          proficiencies: merged.proficiencies,
+          alias: title ? `Multiclass: ${title}` : prev.alias,
+        };
+      });
+      showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const addAttack = useCallback((attack: Omit<import('@/lib/types').AttackOption, 'id'>) => {
+    const newAttack = { ...attack, id: (attack as any).id || `attack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    } else {
+      updateCharacter((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    }
+    showToast('Attack Added', `${attack.name} added`, 'power');
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const editAttack = useCallback((attack: import('@/lib/types').AttackOption) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)),
+      }));
+    }
+    showToast('Attack Updated', `${attack.name} updated`, 'info');
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const deleteAttack = useCallback((id: string) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        attacks: (prev.attacks || []).filter((a) => a.id !== id),
+      }));
+    }
+    showToast('Attack Removed', 'Attack option deleted', 'info');
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
+    const newSpell = { ...spell, id: (spell as any).id || `spell-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to Aria's spellbook`, 'power');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to Cyrus's spellbook`, 'power');
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const deleteSpell = useCallback((id: string) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const useVesperSpellSlot = useCallback((level: number) => {
+    updateCharacter((prev) => {
+      const current = prev.spellcasting?.slots[level];
+      if (!current || current.used >= current.max) return prev;
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...current, used: current.used + 1 },
+          },
+        },
+      };
+    });
+  }, [updateCharacter]);
+
+  const restoreVesperSpellSlot = useCallback((level: number) => {
+    updateCharacter((prev) => {
+      const current = prev.spellcasting?.slots[level];
+      if (!current || current.used <= 0) return prev;
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...current, used: current.used - 1 },
+          },
+        },
+      };
+    });
+  }, [updateCharacter]);
+
+  const setVesperSpellSlotMax = useCallback((level: number, max: number) => {
+    updateCharacter((prev) => {
+      const current = prev.spellcasting?.slots[level] || { max: 0, used: 0 };
+      const newMax = Math.max(0, Math.floor(max));
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: {
+              ...current,
+              max: newMax,
+              used: Math.min(current.used, newMax),
+            },
+          },
+        },
+      };
+    });
+    showToastNotification('Spell Slots Updated', `Level ${level} max slots set to ${max}`, 'info');
+  }, [updateCharacter, showToastNotification]);
+
+  const addFeat = useCallback((feat: Omit<import('@/lib/types').CustomFeat, 'id'>) => {
+    const newFeat = { ...feat, id: (feat as any).id || `feat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    } else {
+      updateCharacter((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    }
+    showToast('Feat/Trait Added', `${feat.title} added`, 'power');
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const deleteFeat = useCallback((id: string) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        feats: (prev.feats || []).filter((f) => f.id !== id),
+      }));
+    }
+    showToast('Feat Removed', 'Feat/trait removed', 'info');
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+
+  const updateProficiencies = useCallback((category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus]);
+
+
   // Aria Actions
   const setAriaLevel = useCallback((level: number) => {
     updateAria((prev) => calculateAriaStats({ ...prev, level }));
@@ -465,6 +977,23 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     });
   }, [updateAria]);
 
+  const setAriaSpellSlotMax = useCallback((level: number, max: number) => {
+    updateAria((prev) => {
+      const currentSlots = prev.spellcasting.slots[level as 1 | 2 | 3 | 4 | 5] || { max: 0, used: 0 };
+      const newMax = Math.max(0, Math.floor(max));
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...currentSlots, max: newMax, used: Math.min(currentSlots.used, newMax) },
+          },
+        },
+      };
+    });
+  }, [updateAria]);
+
   const ariaLongRest = useCallback(() => {
     updateAria((prev) => {
       const resetSlots = { ...prev.spellcasting.slots };
@@ -529,8 +1058,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const useCyrusSpellSlot = useCallback((level: number) => {
     updateCyrus((prev) => {
-      const currentSlots = prev.spellcasting.slots[level as 1 | 2];
-      if (!currentSlots || currentSlots.used >= currentSlots.max) return prev;
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      if (currentSlots.used >= currentSlots.max) return prev;
       return {
         ...prev,
         spellcasting: {
@@ -546,8 +1075,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const restoreCyrusSpellSlot = useCallback((level: number) => {
     updateCyrus((prev) => {
-      const currentSlots = prev.spellcasting.slots[level as 1 | 2];
-      if (!currentSlots || currentSlots.used <= 0) return prev;
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      if (currentSlots.used <= 0) return prev;
       return {
         ...prev,
         spellcasting: {
@@ -555,6 +1084,23 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           slots: {
             ...prev.spellcasting.slots,
             [level]: { ...currentSlots, used: currentSlots.used - 1 },
+          },
+        },
+      };
+    });
+  }, [updateCyrus]);
+
+  const setCyrusSpellSlotMax = useCallback((level: number, max: number) => {
+    updateCyrus((prev) => {
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      const newMax = Math.max(0, Math.floor(max));
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...currentSlots, max: newMax, used: Math.min(currentSlots.used, newMax) },
           },
         },
       };
@@ -670,6 +1216,21 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setPlayerNotes,
         setJournal,
         setMysteries,
+        updateAbilityBaseScore,
+        toggleSkillProficiency,
+        setCombatOverrides,
+        setClasses,
+        addAttack,
+        editAttack,
+        deleteAttack,
+        addSpell,
+        deleteSpell,
+        useVesperSpellSlot,
+        restoreVesperSpellSlot,
+        setVesperSpellSlotMax,
+        addFeat,
+        deleteFeat,
+        updateProficiencies,
         aria,
         setAriaLevel,
         setAriaHP,
@@ -679,6 +1240,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         toggleAriaInnateSorcery,
         useAriaSpellSlot,
         restoreAriaSpellSlot,
+        setAriaSpellSlotMax,
         ariaLongRest,
         setAriaInventory,
         setAriaCurrency,
@@ -689,6 +1251,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setCyrusTempHP,
         useCyrusSpellSlot,
         restoreCyrusSpellSlot,
+        setCyrusSpellSlotMax,
         toggleCyrusRadiantSoul,
         useCyrusHealingHands,
         useCyrusEpiphany,

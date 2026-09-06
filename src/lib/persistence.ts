@@ -1,7 +1,3 @@
-// ============================================================================
-// Persistence Layer — localStorage with hydration safety
-// ============================================================================
-
 import type { CharacterState } from './types';
 import {
   calculateAbilityScores,
@@ -13,8 +9,12 @@ import {
   calculatePassivePerception,
   calculateSkills,
   getDefaultInventory,
+  getDefaultAttacks,
+  getDefaultFeats,
+  getDefaultProficiencies,
 } from './character-engine';
 import { getVestigeStage } from './orphans-tithe';
+import { calculateMulticlassSpellcasterLevel, getMulticlassSpellSlots } from './class-database';
 
 const STORAGE_KEY = 'vesper-ashwood-character-state';
 const SCHEMA_VERSION = 1;
@@ -74,12 +74,17 @@ function getDefaultDossier(): CharacterState['dossier'] {
  * Create the default character state for Earl (Vesper Ashwood).
  */
 export function createDefaultCharacterState(): CharacterState {
-  const level = 1;
+  const level = 10;
   const abilities = calculateAbilityScores(level);
   const profBonus = calculateProficiencyBonus(level);
   const conMod = abilities.CON.modifier;
   const dexMod = abilities.DEX.modifier;
   const maxHP = calculateHP(level, conMod);
+
+  const defaultClasses = [
+    { className: 'Rogue', subclass: 'Assassin', level: 10, hitDice: 'd8' },
+  ];
+  const casterLevel = calculateMulticlassSpellcasterLevel(defaultClasses);
 
   return {
     name: 'Earl',
@@ -90,28 +95,41 @@ export function createDefaultCharacterState(): CharacterState {
     level,
     background: 'Criminal / Spy',
     alignment: 'Neutral Evil',
-    experience: 0,
+    experience: 64000,
+
+    classes: defaultClasses,
 
     proficiencyBonus: profBonus,
     abilityScores: abilities,
     skills: calculateSkills(level, abilities),
-    ac: calculateAC(dexMod),
+    ac: calculateAC(dexMod, true),
     initiative: calculateInitiative(dexMod),
     speed: 30,
     passivePerception: calculatePassivePerception(abilities.WIS.modifier, profBonus, true),
+    overrides: {},
 
     combat: {
       currentHP: maxHP,
       maxHP,
       tempHP: 0,
-      hitDice: { total: level, used: 0 },
+      hitDice: { total: level, used: 0, diceType: 'd8' },
       deathSaves: { successes: 0, failures: 0 },
       conditions: [],
     },
     sneakAttackDice: calculateSneakAttackDice(level),
+    attacks: getDefaultAttacks(),
+
+    spellcasting: {
+      spellSaveDC: 8 + profBonus + abilities.INT.modifier,
+      spellAttackBonus: profBonus + abilities.INT.modifier,
+      slots: getMulticlassSpellSlots(casterLevel),
+      spells: [],
+    },
+    feats: getDefaultFeats(),
+    proficiencies: getDefaultProficiencies(),
 
     inventory: getDefaultInventory(),
-    currency: { cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 },
+    currency: { cp: 0, sp: 0, ep: 0, gp: 150, pp: 0 },
 
     orphansTithe: {
       currentSouls: 0,
@@ -128,17 +146,22 @@ export function createDefaultCharacterState(): CharacterState {
 }
 
 /**
- * Recalculate all derived stats when level changes.
+ * Recalculate all derived stats when level or classes change.
  */
 export function recalculateForLevel(state: CharacterState, newLevel: number): CharacterState {
   const abilities = calculateAbilityScores(newLevel);
-  const profBonus = calculateProficiencyBonus(newLevel);
+  const profBonus = state.overrides?.proficiencyBonus ?? calculateProficiencyBonus(newLevel);
   const conMod = abilities.CON.modifier;
   const dexMod = abilities.DEX.modifier;
   const maxHP = calculateHP(newLevel, conMod);
 
-  // Preserve current HP ratio when max HP changes
   const hpRatio = state.combat.maxHP > 0 ? state.combat.currentHP / state.combat.maxHP : 1;
+
+  const currentClasses = state.classes && state.classes.length > 0
+    ? state.classes
+    : [{ className: state.class || 'Rogue', subclass: state.subclass || 'Assassin', level: newLevel, hitDice: 'd8' }];
+
+  const casterLevel = calculateMulticlassSpellcasterLevel(currentClasses);
 
   return {
     ...state,
@@ -146,9 +169,9 @@ export function recalculateForLevel(state: CharacterState, newLevel: number): Ch
     proficiencyBonus: profBonus,
     abilityScores: abilities,
     skills: calculateSkills(newLevel, abilities),
-    ac: calculateAC(dexMod, newLevel >= 5), // Studded leather at level 5+
-    initiative: calculateInitiative(dexMod, state.orphansTithe.phantomMurmursActive ? -2 : 0),
-    speed: 30,
+    ac: state.overrides?.ac ?? calculateAC(dexMod, newLevel >= 5),
+    initiative: state.overrides?.initiative ?? calculateInitiative(dexMod, state.orphansTithe?.phantomMurmursActive ? -2 : 0),
+    speed: state.overrides?.speed ?? 30,
     passivePerception: calculatePassivePerception(abilities.WIS.modifier, profBonus, true),
     combat: {
       ...state.combat,
@@ -156,7 +179,13 @@ export function recalculateForLevel(state: CharacterState, newLevel: number): Ch
       maxHP,
       hitDice: { ...state.combat.hitDice, total: newLevel },
     },
-    sneakAttackDice: calculateSneakAttackDice(newLevel),
+    sneakAttackDice: calculateSneakAttackDice(
+      currentClasses.find((c) => c.className.toLowerCase() === 'rogue')?.level || 0
+    ),
+    spellcasting: {
+      ...state.spellcasting,
+      slots: getMulticlassSpellSlots(casterLevel),
+    },
     orphansTithe: {
       ...state.orphansTithe,
       vestigeStage: getVestigeStage(newLevel),
@@ -178,19 +207,38 @@ export function saveCharacterState(state: CharacterState): void {
 }
 
 /**
- * Load state from localStorage (hydration-safe).
+ * Load state from localStorage (hydration-safe migration).
  */
 export function loadCharacterState(): CharacterState | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as CharacterState;
-    if (parsed.version !== SCHEMA_VERSION) {
-      // Future: migration logic
-      return null;
-    }
-    return parsed;
+    const parsed = JSON.parse(raw) as Partial<CharacterState>;
+
+    // Migrate missing properties smoothly
+    const defaults = createDefaultCharacterState();
+
+    return {
+      ...defaults,
+      ...parsed,
+      classes: parsed.classes && parsed.classes.length > 0 ? parsed.classes : defaults.classes,
+      attacks: parsed.attacks && parsed.attacks.length > 0 ? parsed.attacks : defaults.attacks,
+      spellcasting: {
+        spellSaveDC: parsed.spellcasting?.spellSaveDC ?? defaults.spellcasting.spellSaveDC,
+        spellAttackBonus: parsed.spellcasting?.spellAttackBonus ?? defaults.spellcasting.spellAttackBonus,
+        slots: { ...defaults.spellcasting.slots, ...parsed.spellcasting?.slots },
+        spells: parsed.spellcasting?.spells ?? defaults.spellcasting.spells,
+      },
+      feats: parsed.feats && parsed.feats.length > 0 ? parsed.feats : defaults.feats,
+      proficiencies: {
+        armor: parsed.proficiencies?.armor ?? defaults.proficiencies.armor,
+        weapons: parsed.proficiencies?.weapons ?? defaults.proficiencies.weapons,
+        tools: parsed.proficiencies?.tools ?? defaults.proficiencies.tools,
+        languages: parsed.proficiencies?.languages ?? defaults.proficiencies.languages,
+      },
+      overrides: parsed.overrides ?? {},
+    };
   } catch (e) {
     console.error('Failed to load character state:', e);
     return null;
@@ -204,3 +252,4 @@ export function clearCharacterState(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);
 }
+

@@ -13,7 +13,7 @@ export interface OracleSpell {
   school: string;
   castingTime: string;
   range: string;
-  target: number;
+  target?: number | string;
   components: string;
   duration: string;
   description: string;
@@ -73,10 +73,7 @@ export interface CyrusState {
     spellcastingAbility: string;
     spellSaveDC: number;
     spellAttackBonus: number;
-    slots: {
-      1: { max: number; used: number };
-      2: { max: number; used: number };
-    };
+    slots: Record<number, { max: number; used: number }>;
     spells: OracleSpell[];
   };
 
@@ -87,6 +84,12 @@ export interface CyrusState {
   notes: string;
   journal: JournalEntry[];
   mysteries: CampaignMystery[];
+  classes?: import('./types').ClassLevel[];
+  overrides?: import('./types').CombatOverrides;
+  skills?: import('./types').Skill[];
+  attacks?: import('./types').AttackOption[];
+  feats?: import('./types').CustomFeat[];
+  proficiencies?: import('./types').NonStatProficiencies;
 }
 
 export function getProficiencyBonus(level: number): number {
@@ -97,15 +100,29 @@ export function getProficiencyBonus(level: number): number {
   return 2;
 }
 
-export function getOracleSpellSlots(level: number) {
+export function getOracleSpellSlots(level: number): Record<number, { max: number; used: number }> {
   // Oracle (full caster) spell slots
-  const slots = {
+  const slots: Record<number, { max: number; used: number }> = {
     1: { max: 0, used: 0 },
     2: { max: 0, used: 0 },
+    3: { max: 0, used: 0 },
+    4: { max: 0, used: 0 },
+    5: { max: 0, used: 0 },
+    6: { max: 0, used: 0 },
+    7: { max: 0, used: 0 },
+    8: { max: 0, used: 0 },
+    9: { max: 0, used: 0 },
   };
 
   if (level >= 1) slots[1].max = level >= 3 ? 4 : level === 2 ? 3 : 2;
   if (level >= 3) slots[2].max = level >= 4 ? 3 : 2;
+  if (level >= 5) slots[3].max = level >= 6 ? 3 : 2;
+  if (level >= 7) slots[4].max = level >= 8 ? 3 : 2;
+  if (level >= 9) slots[5].max = level >= 10 ? 3 : 1;
+  if (level >= 11) slots[6].max = level >= 19 ? 2 : 1;
+  if (level >= 13) slots[7].max = level >= 20 ? 2 : 1;
+  if (level >= 15) slots[8].max = 1;
+  if (level >= 17) slots[9].max = 1;
 
   return slots;
 }
@@ -132,6 +149,18 @@ export function calculateCyrusStats(state: CyrusState): CyrusState {
 
   const slots = getOracleSpellSlots(level);
 
+  const mergedSlots: Record<number, { max: number; used: number }> = {
+    1: { max: state.spellcasting?.slots?.[1]?.max ?? 4, used: state.spellcasting?.slots?.[1]?.used || 0 },
+    2: { max: state.spellcasting?.slots?.[2]?.max ?? 2, used: state.spellcasting?.slots?.[2]?.used || 0 },
+    3: { max: state.spellcasting?.slots?.[3]?.max ?? 0, used: state.spellcasting?.slots?.[3]?.used || 0 },
+    4: { max: state.spellcasting?.slots?.[4]?.max ?? 0, used: state.spellcasting?.slots?.[4]?.used || 0 },
+    5: { max: state.spellcasting?.slots?.[5]?.max ?? 0, used: state.spellcasting?.slots?.[5]?.used || 0 },
+    6: { max: state.spellcasting?.slots?.[6]?.max ?? 0, used: state.spellcasting?.slots?.[6]?.used || 0 },
+    7: { max: state.spellcasting?.slots?.[7]?.max ?? 0, used: state.spellcasting?.slots?.[7]?.used || 0 },
+    8: { max: state.spellcasting?.slots?.[8]?.max ?? 0, used: state.spellcasting?.slots?.[8]?.used || 0 },
+    9: { max: state.spellcasting?.slots?.[9]?.max ?? 0, used: state.spellcasting?.slots?.[9]?.used || 0 },
+  };
+
   return {
     ...state,
     combat: {
@@ -151,10 +180,7 @@ export function calculateCyrusStats(state: CyrusState): CyrusState {
       ...state.spellcasting,
       spellSaveDC,
       spellAttackBonus,
-      slots: {
-        1: { ...slots[1], used: Math.min(state.spellcasting.slots[1]?.used || 0, slots[1].max) },
-        2: { ...slots[2], used: Math.min(state.spellcasting.slots[2]?.used || 0, slots[2].max) },
-      },
+      slots: mergedSlots,
     },
   };
 }

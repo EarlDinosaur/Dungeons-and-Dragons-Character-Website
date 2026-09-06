@@ -17,8 +17,11 @@ import InventoryManager from '@/components/shared/InventoryManager';
 import CharacterHeader from '@/components/characters/vesper/CharacterHeader';
 import StatBlock from '@/components/characters/vesper/StatBlock';
 import CombatActions from '@/components/characters/vesper/CombatActions';
+import SpellbookPanelVesper from '@/components/characters/vesper/SpellbookPanelVesper';
+import ProgressionPanel from '@/components/characters/vesper/ProgressionPanel';
 import SoulHarvester from '@/components/characters/vesper/SoulHarvester';
 import Dossier from '@/components/characters/vesper/Dossier';
+
 
 // Aria Sil'aveth components
 import AriaHeader from '@/components/characters/aria/AriaHeader';
@@ -38,6 +41,27 @@ import type { AriaState } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import type { CharacterState, AbilityName } from '@/lib/types';
 import { getModifier } from '@/lib/character-engine';
+
+const ALL_SKILLS_LIST: Array<{ name: import('@/lib/types').SkillName; ability: AbilityName }> = [
+  { name: 'Acrobatics', ability: 'DEX' },
+  { name: 'Animal Handling', ability: 'WIS' },
+  { name: 'Arcana', ability: 'INT' },
+  { name: 'Athletics', ability: 'STR' },
+  { name: 'Deception', ability: 'CHA' },
+  { name: 'History', ability: 'INT' },
+  { name: 'Insight', ability: 'WIS' },
+  { name: 'Intimidation', ability: 'CHA' },
+  { name: 'Investigation', ability: 'INT' },
+  { name: 'Medicine', ability: 'WIS' },
+  { name: 'Nature', ability: 'INT' },
+  { name: 'Perception', ability: 'WIS' },
+  { name: 'Performance', ability: 'CHA' },
+  { name: 'Persuasion', ability: 'CHA' },
+  { name: 'Religion', ability: 'INT' },
+  { name: 'Sleight of Hand', ability: 'DEX' },
+  { name: 'Stealth', ability: 'DEX' },
+  { name: 'Survival', ability: 'WIS' },
+];
 
 export default function Home() {
   const {
@@ -141,16 +165,32 @@ export default function Home() {
         WIS: makeScore('WIS', ariaState.abilityScores.WIS),
         CHA: makeScore('CHA', ariaState.abilityScores.CHA),
       },
-      skills: [
-        { name: 'Arcana', ability: 'INT', proficient: true, expertise: true, bonus: getModifier(ariaState.abilityScores.INT) + prof * 2 },
-        { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.INT) + prof },
-        { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.WIS) + prof },
-        { name: 'Persuasion', ability: 'CHA', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.CHA) + prof },
-        { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: getModifier(ariaState.abilityScores.WIS) },
-      ],
-      ac: ariaState.combat.ac,
-      initiative: ariaState.combat.initiative,
-      speed: ariaState.combat.speed,
+      skills: ALL_SKILLS_LIST.map((def) => {
+        const found = ariaState.skills?.find((s) => s.name === def.name);
+        const proficient = found ? found.proficient : ['Arcana', 'History', 'Insight', 'Persuasion'].includes(def.name);
+        const expertise = found ? found.expertise : def.name === 'Arcana';
+        const abilityMod = getModifier(ariaState.abilityScores[def.ability]);
+        let bonus = abilityMod;
+        if (expertise) bonus += prof * 2;
+        else if (proficient) bonus += prof;
+        return { name: def.name, ability: def.ability, proficient, expertise, bonus };
+      }),
+      classes: ariaState.classes && ariaState.classes.length > 0
+        ? ariaState.classes
+        : [{ className: ariaState.characterClass, subclass: ariaState.subclass, level: ariaState.level, hitDice: 'd6' }],
+      attacks: ariaState.attacks || [],
+      spellcasting: {
+        spellSaveDC: ariaState.spellcasting.spellSaveDC,
+        spellAttackBonus: ariaState.spellcasting.spellAttackBonus,
+        slots: ariaState.spellcasting.slots,
+        spells: ariaState.spellcasting.spells.map(s => ({ ...s, prepared: true })),
+      },
+      feats: ariaState.feats || [],
+      proficiencies: ariaState.proficiencies || { armor: ['Robes'], weapons: ['Daggers', 'Staves'], tools: ['Celestial Weaving Tools'], languages: ['Common', 'Elvish', 'Celestial'] },
+      overrides: ariaState.overrides,
+      ac: ariaState.overrides?.ac ?? ariaState.combat.ac,
+      initiative: ariaState.overrides?.initiative ?? ariaState.combat.initiative,
+      speed: ariaState.overrides?.speed ?? ariaState.combat.speed,
       passivePerception: 11,
       combat: {
         currentHP: ariaState.combat.currentHP,
@@ -214,6 +254,19 @@ export default function Home() {
       background: cyrusState.background,
       alignment: cyrusState.alignment,
       experience: 6500,
+      classes: cyrusState.classes && cyrusState.classes.length > 0
+        ? cyrusState.classes
+        : [{ className: cyrusState.characterClass, subclass: cyrusState.subclass, level: cyrusState.level, hitDice: 'd8' }],
+      attacks: cyrusState.attacks || [],
+      spellcasting: {
+        spellSaveDC: cyrusState.spellcasting.spellSaveDC,
+        spellAttackBonus: cyrusState.spellcasting.spellAttackBonus,
+        slots: cyrusState.spellcasting.slots,
+        spells: cyrusState.spellcasting.spells.map(s => ({ ...s, prepared: true })),
+      },
+      feats: cyrusState.feats || [],
+      proficiencies: cyrusState.proficiencies || { armor: ['Light', 'Medium', 'Heavy', 'Shields'], weapons: ['Simple', 'Martial'], tools: ['Herbalism Kit'], languages: ['Common', 'Celestial', 'Greek'] },
+      overrides: cyrusState.overrides,
       proficiencyBonus: prof,
       abilityScores: {
         STR: makeScore('STR', cyrusState.abilityScores.STR),
@@ -223,16 +276,19 @@ export default function Home() {
         WIS: makeScore('WIS', cyrusState.abilityScores.WIS),
         CHA: makeScore('CHA', cyrusState.abilityScores.CHA),
       },
-      skills: [
-        { name: 'Religion', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.INT) + prof },
-        { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) + prof },
-        { name: 'Medicine', ability: 'WIS', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) + prof },
-        { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: getModifier(cyrusState.abilityScores.INT) + prof },
-        { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: getModifier(cyrusState.abilityScores.WIS) },
-      ],
-      ac: cyrusState.combat.ac,
-      initiative: cyrusState.combat.initiative,
-      speed: cyrusState.combat.speed,
+      skills: ALL_SKILLS_LIST.map((def) => {
+        const found = cyrusState.skills?.find((s) => s.name === def.name);
+        const proficient = found ? found.proficient : (cyrusState.skillProficiencies ? cyrusState.skillProficiencies.includes(def.name) : ['Religion', 'Insight', 'Medicine', 'History'].includes(def.name));
+        const expertise = found ? found.expertise : false;
+        const abilityMod = getModifier(cyrusState.abilityScores[def.ability]);
+        let bonus = abilityMod;
+        if (expertise) bonus += prof * 2;
+        else if (proficient) bonus += prof;
+        return { name: def.name, ability: def.ability, proficient, expertise, bonus };
+      }),
+      ac: cyrusState.overrides?.ac ?? cyrusState.combat.ac,
+      initiative: cyrusState.overrides?.initiative ?? cyrusState.combat.initiative,
+      speed: cyrusState.overrides?.speed ?? cyrusState.combat.speed,
       passivePerception: 15,
       combat: {
         currentHP: cyrusState.combat.currentHP,
@@ -319,6 +375,14 @@ export default function Home() {
                     <CombatActions character={character} />
                   )}
 
+                  {activeTab === 'spells' && (
+                    <SpellbookPanelVesper character={character} />
+                  )}
+
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={character} />
+                  )}
+
                   {activeTab === 'inventory' && (
                     <InventoryManager
                       character={character}
@@ -363,14 +427,17 @@ export default function Home() {
                     <CyrusStatBlock cyrus={cyrus} />
                   )}
 
-                  {/* TAB 2: DOMAIN SPELLS */}
+                  {/* TAB 2: COMBAT & DOMAIN SPELLS */}
                   {activeTab === 'combat' && (
-                    <CyrusSpellbookPanel
-                      cyrus={cyrus}
-                      onUseSlot={useCyrusSpellSlot}
-                      onRestoreSlot={restoreCyrusSpellSlot}
-                      onLongRest={cyrusLongRest}
-                    />
+                    <div className="space-y-6">
+                      <CombatActions character={cyrusCharState} />
+                      <CyrusSpellbookPanel
+                        cyrus={cyrus}
+                        onUseSlot={useCyrusSpellSlot}
+                        onRestoreSlot={restoreCyrusSpellSlot}
+                        onLongRest={cyrusLongRest}
+                      />
+                    </div>
                   )}
 
                   {/* TAB 3: SOLAR ENGINE (Radiant Soul & Channel Divinity) */}
@@ -402,6 +469,11 @@ export default function Home() {
                       onNotesChange={setCyrusNotes}
                     />
                   )}
+
+                  {/* TAB 6: FEATS & PROGRESSION */}
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={cyrusCharState} />
+                  )}
                 </div>
               </>
             ) : (
@@ -423,13 +495,16 @@ export default function Home() {
                     <AriaStatBlock aria={aria} />
                   )}
 
-                  {/* TAB 2: SPELLBOOK */}
+                  {/* TAB 2: COMBAT & SPELLBOOK */}
                   {activeTab === 'combat' && (
-                    <SpellbookPanel
-                      aria={aria}
-                      onUseSlot={useAriaSpellSlot}
-                      onRestoreSlot={restoreAriaSpellSlot}
-                    />
+                    <div className="space-y-6">
+                      <CombatActions character={ariaCharState} />
+                      <SpellbookPanel
+                        aria={aria}
+                        onUseSlot={useAriaSpellSlot}
+                        onRestoreSlot={restoreAriaSpellSlot}
+                      />
+                    </div>
                   )}
 
                   {/* TAB 3: LUNAR TIDES (Sorcery Points & Phase Engine) */}
@@ -458,6 +533,11 @@ export default function Home() {
                       aria={aria}
                       onNotesChange={setAriaNotes}
                     />
+                  )}
+
+                  {/* TAB 6: FEATS & PROGRESSION */}
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={ariaCharState} />
                   )}
                 </div>
               </>
