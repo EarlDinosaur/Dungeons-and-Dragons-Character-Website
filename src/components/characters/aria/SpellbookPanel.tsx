@@ -233,52 +233,74 @@ export default function SpellbookPanel({
         </button>
       </div>
 
-      {/* d20 Roll Animation Banner */}
+      {/* d20 Roll Animation Modal Overlay */}
       {(isRolling || activeRoll) && (
-        <SpotlightCard className="p-6 border-[#a992e8] bg-gradient-to-r from-[#171b3f] via-[#1d2249] to-[#0d1026] text-center relative overflow-hidden">
-          {isRolling ? (
-            <div className="py-6 flex flex-col items-center justify-center">
-              <Dices size={40} className="text-[#a992e8] animate-spin mb-2" />
-              <p className="text-sm font-bold text-[#e8e6ff] font-[family-name:var(--font-heading)]">
-                Weaving Astral Starlight...
-              </p>
-            </div>
-          ) : activeRoll ? (
-            <div className="space-y-3">
-              <div className="text-xs uppercase tracking-widest text-[#d9b872] font-bold">
-                Spell Attack Result — {activeRoll.spellName}
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md p-6 border-2 border-[#a992e8] bg-[#14183a] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(169,146,232,0.4)]">
+            <button
+              onClick={() => {
+                setIsRolling(false);
+                setActiveRoll(null);
+              }}
+              className="absolute top-3 right-3 text-[#9aa1cc] hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
 
-              <div className="flex items-center justify-center gap-6">
-                <div>
-                  <span className="text-3xl font-extrabold font-[family-name:var(--font-mono)] text-[#e8e6ff]">
-                    {activeRoll.totalHit}
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center">
+                <Dices size={44} className="text-[#a992e8] animate-spin mb-2" />
+                <p className="text-sm font-bold text-[#e8e6ff] font-[family-name:var(--font-heading)]">
+                  Weaving Astral Starlight...
+                </p>
+              </div>
+            ) : activeRoll ? (
+              <div className="space-y-4 font-[family-name:var(--font-mono)]">
+                <div className="border-b border-[#343a72] pb-3">
+                  <span className="text-xs uppercase tracking-widest text-[#d9b872] font-bold block mb-1">
+                    Spell Attack Result — {activeRoll.spellName}
                   </span>
-                  <span className="block text-[10px] text-[#9aa1cc]">
-                    (d20: {activeRoll.d20} + {aria.spellcasting.spellAttackBonus})
-                  </span>
+
+                  <div className="flex items-center justify-center gap-6 mt-2">
+                    <div>
+                      <span className="text-4xl font-extrabold text-[#e8e6ff]">
+                        {activeRoll.totalHit}
+                      </span>
+                      <span className="block text-[10px] text-[#9aa1cc] mt-1">
+                        (d20: {activeRoll.d20} + {aria.spellcasting.spellAttackBonus})
+                      </span>
+                    </div>
+
+                    {activeRoll.damageDice && (
+                      <div className="border-l border-[#343a72] pl-6">
+                        <span className="text-4xl font-extrabold text-[#a992e8]">
+                          {activeRoll.damageTotal}
+                        </span>
+                        <span className="block text-[10px] text-[#9aa1cc] mt-1">
+                          Damage ({activeRoll.damageDice})
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {activeRoll.damageDice && (
-                  <div className="border-l border-[#343a72] pl-6">
-                    <span className="text-3xl font-extrabold font-[family-name:var(--font-mono)] text-[#a992e8]">
-                      {activeRoll.damageTotal}
-                    </span>
-                    <span className="block text-[10px] text-[#9aa1cc]">
-                      Damage ({activeRoll.damageDice})
-                    </span>
+                {activeRoll.isCrit && (
+                  <div className="p-3 bg-[#1d2249] border border-[#d9b872] rounded-xl text-[#d9b872] font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(217,184,114,0.4)]">
+                    <Sparkles size={16} /> 🌟 CRITICAL HIT! Double Damage Dice!
                   </div>
                 )}
-              </div>
 
-              {activeRoll.isCrit && (
-                <span className="inline-block text-xs font-bold text-[#ffd700] bg-[rgba(255,215,0,0.2)] px-3 py-1 rounded-full border border-[#ffd700]">
-                  🌟 CRITICAL HIT! Double Damage Dice Applied!
-                </span>
-              )}
-            </div>
-          ) : null}
-        </SpotlightCard>
+                <button
+                  onClick={() => setActiveRoll(null)}
+                  className="w-full py-2.5 bg-[#a992e8] hover:bg-[#8f76d6] text-black font-bold text-xs rounded-xl transition-all cursor-pointer shadow-[0_0_10px_rgba(169,146,232,0.4)]"
+                >
+                  Dismiss Result
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* Spell Catalog Grid */}

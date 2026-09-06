@@ -713,9 +713,9 @@ export default function CombatActions({ character }: CombatActionsProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {(character.attacks || []).map((atk) => (
+          {(character.attacks || []).map((atk, index) => (
             <SpotlightCard
-              key={atk.id}
+              key={`${atk.id || 'attack'}-${index}`}
               className={cn('p-4 relative group border transition-all', atk.equipped !== false ? 'border-[rgba(220,38,38,0.3)]' : 'border-white/5 opacity-70')}
               spotlightColor="rgba(220, 38, 38, 0.08)"
             >

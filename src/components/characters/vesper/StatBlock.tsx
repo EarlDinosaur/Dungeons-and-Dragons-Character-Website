@@ -110,53 +110,68 @@ export default function StatBlock({ character }: StatBlockProps) {
 
   return (
     <div className="space-y-6">
-      {/* ============== D20 INTERACTIVE ROLLER FEEDBACK CARD ============== */}
+      {/* ============== D20 INTERACTIVE ROLLER CENTERED SCREEN MODAL ============== */}
       {(isRolling || activeCheckRoll) && (
-        <SpotlightCard className="p-5 border-2 border-[var(--color-crimson-500)] bg-[linear-gradient(135deg,rgba(30,10,12,0.98)_0%,rgba(15,5,6,0.98)_100%)] text-center relative overflow-hidden shadow-[0_0_30px_rgba(200,40,40,0.3)] animate-fade-in-up">
-          {isRolling ? (
-            <div className="py-4 flex items-center justify-center gap-3">
-              <Dices size={30} className="text-[var(--color-crimson-400)] animate-spin" />
-              <span className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)] uppercase tracking-wider">
-                Rolling d20 check for {character.name}...
-              </span>
-            </div>
-          ) : activeCheckRoll ? (
-            <div className="flex items-center justify-between gap-4 font-[family-name:var(--font-mono)]">
-              <div className="text-left">
-                <span className="text-[10px] text-[var(--color-parchment-dim)] uppercase tracking-widest block font-bold">
-                  {activeCheckRoll.label} Check Result
-                </span>
-                <span className="text-3xl font-extrabold font-[family-name:var(--font-heading)] text-[var(--color-gold-bright)] text-glow-gold">
-                  {activeCheckRoll.total}
-                </span>
-                <span className="text-[11px] text-[var(--color-parchment-muted)] ml-2">
-                  (d20: {activeCheckRoll.d20} {activeCheckRoll.modifier >= 0 ? `+ ${activeCheckRoll.modifier}` : `- ${Math.abs(activeCheckRoll.modifier)}`})
+        <div
+          onClick={() => { if (!isRolling) setActiveCheckRoll(null); }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="p-6 border-2 border-[var(--color-gold-400)] bg-[var(--color-surface)] text-center relative max-w-md w-full shadow-2xl rounded-2xl animate-scale-up"
+          >
+            <button
+              onClick={() => setActiveCheckRoll(null)}
+              className="absolute top-4 right-4 text-[var(--color-parchment-dim)] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
+
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center gap-3">
+                <Dices size={44} className="text-[var(--color-gold-400)] animate-spin" />
+                <span className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)] uppercase tracking-wider">
+                  Rolling d20 check for {character.name}...
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                {activeCheckRoll.isNat20 && (
-                  <span className="text-xs font-bold text-[var(--color-gold-bright)] bg-amber-950/90 px-3 py-1 rounded-full border border-[var(--color-gold-400)] shadow-[0_0_12px_rgba(255,215,0,0.5)]">
-                    💀 CRITICAL HIT (Natural 20)!
+            ) : activeCheckRoll ? (
+              <div className="space-y-4 font-[family-name:var(--font-mono)]">
+                <div className="border-b border-[rgba(255,215,0,0.2)] pb-3">
+                  <span className="text-xs text-[var(--color-parchment-dim)] uppercase tracking-widest block font-bold font-[family-name:var(--font-heading)] mb-1">
+                    {activeCheckRoll.label} Check Result
                   </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-5xl font-extrabold font-[family-name:var(--font-heading)] text-[var(--color-gold-bright)] text-glow-gold">
+                      {activeCheckRoll.total}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--color-parchment-muted)] mt-2">
+                    (d20 Roll: <strong>{activeCheckRoll.d20}</strong> {activeCheckRoll.modifier >= 0 ? `+ Modifier: ${activeCheckRoll.modifier}` : `- Modifier: ${Math.abs(activeCheckRoll.modifier)}`})
+                  </p>
+                </div>
+
+                {activeCheckRoll.isNat20 && (
+                  <div className="p-3 bg-amber-950/80 border border-[var(--color-gold-400)] rounded-xl text-amber-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,215,0,0.4)]">
+                    <Sparkles size={16} /> NATURAL 20! CRITICAL SUCCESS!
+                  </div>
                 )}
                 {activeCheckRoll.isNat1 && (
-                  <span className="text-xs font-bold text-red-300 bg-red-950/90 px-3 py-1 rounded-full border border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]">
-                    ⚠️ CRITICAL FAIL (Natural 1)!
-                  </span>
+                  <div className="p-3 bg-red-950/80 border border-red-500 rounded-xl text-red-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                    ⚠️ NATURAL 1! CRITICAL FAIL!
+                  </div>
                 )}
 
                 <button
                   onClick={() => setActiveCheckRoll(null)}
-                  className="p-1.5 rounded-lg text-[var(--color-parchment-dim)] hover:text-white hover:bg-white/10 transition-colors"
-                  title="Close Roll Result"
+                  className="btn btn-gold btn-sm w-full text-xs py-2 mt-2 font-bold cursor-pointer"
                 >
-                  <RotateCcw size={15} />
+                  Dismiss Result
                 </button>
               </div>
-            </div>
-          ) : null}
-        </SpotlightCard>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* Ability Scores */}

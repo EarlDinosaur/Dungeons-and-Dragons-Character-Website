@@ -290,53 +290,75 @@ export default function CyrusSpellbookPanel({
       </div>
 
       {/* ====================================================================
-         3. D20 ROLL ANIMATION BANNER
+         3. D20 ROLL ANIMATION MODAL OVERLAY
          ==================================================================== */}
       {(isRolling || activeRoll) && (
-        <SpotlightCard className="p-6 border-2 border-[#daa520] bg-[linear-gradient(135deg,rgba(35,28,10,0.98)_0%,rgba(18,14,6,0.98)_100%)] text-center relative overflow-hidden shadow-[0_0_40px_rgba(218,165,32,0.3)]">
-          {isRolling ? (
-            <div className="py-6 flex flex-col items-center justify-center">
-              <Dices size={42} className="text-[#daa520] animate-spin mb-2" />
-              <p className="text-sm font-bold text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                Channeling Divine Sunfire of Apollo...
-              </p>
-            </div>
-          ) : activeRoll ? (
-            <div className="space-y-3 font-mono">
-              <div className="text-xs uppercase tracking-widest text-[#daa520] font-bold">
-                Spell Attack Result — {activeRoll.spellName}
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md p-6 border-2 border-[#daa520] bg-[linear-gradient(135deg,rgba(35,28,10,0.98)_0%,rgba(18,14,6,0.98)_100%)] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(218,165,32,0.4)]">
+            <button
+              onClick={() => {
+                setIsRolling(false);
+                setActiveRoll(null);
+              }}
+              className="absolute top-3 right-3 text-amber-200/60 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
 
-              <div className="flex items-center justify-center gap-6">
-                <div>
-                  <span className="text-4xl font-extrabold font-['Cormorant_Garamond',serif] text-amber-100">
-                    {activeRoll.totalHit}
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center">
+                <Dices size={44} className="text-[#daa520] animate-spin mb-2" />
+                <p className="text-sm font-bold text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                  Channeling Divine Sunfire of Apollo...
+                </p>
+              </div>
+            ) : activeRoll ? (
+              <div className="space-y-4 font-mono">
+                <div className="border-b border-[#daa520]/30 pb-3">
+                  <span className="text-xs uppercase tracking-widest text-[#daa520] font-bold block mb-1">
+                    Spell Attack Result — {activeRoll.spellName}
                   </span>
-                  <span className="block text-[10px] text-amber-200/60">
-                    To Hit (d20: {activeRoll.d20} + {cyrus.spellcasting.spellAttackBonus})
-                  </span>
+
+                  <div className="flex items-center justify-center gap-6 mt-2">
+                    <div>
+                      <span className="text-4xl font-extrabold font-['Cormorant_Garamond',serif] text-amber-100">
+                        {activeRoll.totalHit}
+                      </span>
+                      <span className="block text-[10px] text-amber-200/60 mt-1">
+                        To Hit (d20: {activeRoll.d20} + {cyrus.spellcasting.spellAttackBonus})
+                      </span>
+                    </div>
+
+                    {activeRoll.damageDice && (
+                      <div className="border-l border-[#daa520]/30 pl-6">
+                        <span className="text-4xl font-extrabold font-['Cormorant_Garamond',serif] text-[#daa520]">
+                          {activeRoll.damageTotal}
+                        </span>
+                        <span className="block text-[10px] text-amber-200/60 mt-1">
+                          Damage ({activeRoll.damageDice} {activeRoll.blisteringBonus > 0 && `+ ${activeRoll.blisteringBonus} Blistering`})
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {activeRoll.damageDice && (
-                  <div className="border-l border-[#daa520]/30 pl-6">
-                    <span className="text-4xl font-extrabold font-['Cormorant_Garamond',serif] text-[#daa520]">
-                      {activeRoll.damageTotal}
-                    </span>
-                    <span className="block text-[10px] text-amber-200/60">
-                      Damage ({activeRoll.damageDice} {activeRoll.blisteringBonus > 0 && `+ ${activeRoll.blisteringBonus} Blistering`})
-                    </span>
+                {activeRoll.isCrit && (
+                  <div className="p-3 bg-amber-950/80 border border-amber-400 rounded-xl text-amber-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(218,165,32,0.4)]">
+                    ☀️ CRITICAL DIVINE STRIKE! Double Damage Dice Applied!
                   </div>
                 )}
-              </div>
 
-              {activeRoll.isCrit && (
-                <span className="inline-block text-xs font-bold text-amber-300 bg-[rgba(255,215,0,0.2)] px-4 py-1 rounded-full border border-amber-400 shadow-md">
-                  ☀️ CRITICAL DIVINE STRIKE! Double Damage Dice Applied!
-                </span>
-              )}
-            </div>
-          ) : null}
-        </SpotlightCard>
+                <button
+                  onClick={() => setActiveRoll(null)}
+                  className="w-full py-2.5 bg-[#daa520] hover:bg-amber-400 text-black font-bold text-xs rounded-xl font-mono transition-all cursor-pointer shadow-[0_0_12px_rgba(218,165,32,0.4)]"
+                >
+                  Dismiss Result
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* ====================================================================

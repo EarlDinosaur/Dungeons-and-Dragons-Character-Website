@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Sparkles, CheckSquare, Square, Eye, Award, Moon, Dices, RotateCcw, Edit3, Check } from 'lucide-react';
+import { Shield, Sparkles, CheckSquare, Square, Eye, Award, Moon, Dices, RotateCcw, Edit3, Check, X } from 'lucide-react';
 import type { AriaState } from '@/lib/aria-engine';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import { getModifier } from '@/lib/character-engine';
@@ -84,53 +84,68 @@ export default function AriaStatBlock({ aria }: AriaStatBlockProps) {
 
   return (
     <div className="space-y-6 font-['Spectral',serif]">
-      {/* ============== D20 INTERACTIVE ROLLER FEEDBACK CARD ============== */}
+      {/* ============== D20 INTERACTIVE ROLLER CENTERED SCREEN MODAL ============== */}
       {(isRolling || activeCheckRoll) && (
-        <SpotlightCard className="p-5 border-2 border-[#a992e8] bg-gradient-to-b from-[#171b3f] to-[#14183a] text-center relative overflow-hidden shadow-[0_0_30px_rgba(169,146,232,0.3)] animate-fade-in-up">
-          {isRolling ? (
-            <div className="py-4 flex items-center justify-center gap-3">
-              <Dices size={30} className="text-[#a992e8] animate-spin" />
-              <span className="text-sm font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                Channeling Starlight &amp; Rolling d20 for Aria...
-              </span>
-            </div>
-          ) : activeCheckRoll ? (
-            <div className="flex items-center justify-between gap-4 font-mono">
-              <div className="text-left">
-                <span className="text-[10px] text-[#9aa1cc] uppercase tracking-widest block font-bold">
-                  {activeCheckRoll.label} Check Result
-                </span>
-                <span className="text-3xl font-extrabold font-['Cormorant_Garamond',serif] text-[#d9b872]">
-                  {activeCheckRoll.total}
-                </span>
-                <span className="text-[11px] text-[#cfd4ee] ml-2">
-                  (d20: {activeCheckRoll.d20} {activeCheckRoll.modifier >= 0 ? `+ ${activeCheckRoll.modifier}` : `- ${Math.abs(activeCheckRoll.modifier)}`})
+        <div
+          onClick={() => { if (!isRolling) setActiveCheckRoll(null); }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="p-6 border-2 border-[#a992e8] bg-[#14183a] text-center relative max-w-md w-full shadow-2xl rounded-2xl animate-scale-up"
+          >
+            <button
+              onClick={() => setActiveCheckRoll(null)}
+              className="absolute top-4 right-4 text-[#9aa1cc] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
+
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center gap-3">
+                <Dices size={44} className="text-[#a992e8] animate-spin" />
+                <span className="text-sm font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                  Channeling Starlight &amp; Rolling d20 for Aria...
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                {activeCheckRoll.isNat20 && (
-                  <span className="text-xs font-bold text-[#d9b872] bg-[#1d2249] px-3 py-1 rounded-full border border-[#d9b872] shadow-[0_0_12px_rgba(217,184,114,0.5)]">
-                    🌕 LUNAR CRITICAL (Natural 20)!
+            ) : activeCheckRoll ? (
+              <div className="space-y-4 font-mono">
+                <div className="border-b border-[#343a72] pb-3">
+                  <span className="text-xs text-[#9aa1cc] uppercase tracking-widest block font-bold font-['Cormorant_Garamond',serif] mb-1">
+                    {activeCheckRoll.label} Check Result
                   </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-5xl font-extrabold font-['Cormorant_Garamond',serif] text-[#d9b872]">
+                      {activeCheckRoll.total}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#cfd4ee] mt-2">
+                    (d20 Roll: <strong>{activeCheckRoll.d20}</strong> {activeCheckRoll.modifier >= 0 ? `+ Modifier: ${activeCheckRoll.modifier}` : `- Modifier: ${Math.abs(activeCheckRoll.modifier)}`})
+                  </p>
+                </div>
+
+                {activeCheckRoll.isNat20 && (
+                  <div className="p-3 bg-[#1d2249] border border-[#d9b872] rounded-xl text-[#d9b872] font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(217,184,114,0.4)]">
+                    <Sparkles size={16} /> 🌕 LUNAR CRITICAL (Natural 20)!
+                  </div>
                 )}
                 {activeCheckRoll.isNat1 && (
-                  <span className="text-xs font-bold text-red-300 bg-red-950/80 px-3 py-1 rounded-full border border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]">
+                  <div className="p-3 bg-red-950/80 border border-red-500 rounded-xl text-red-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
                     🌑 ECLIPSE FAIL (Natural 1)!
-                  </span>
+                  </div>
                 )}
 
                 <button
                   onClick={() => setActiveCheckRoll(null)}
-                  className="p-1.5 rounded-lg text-[#9aa1cc] hover:text-white hover:bg-white/10 transition-colors"
-                  title="Close Roll Result"
+                  className="w-full py-2 bg-[#a992e8] hover:bg-[#8f76d6] text-black font-bold text-xs rounded-xl font-mono transition-all cursor-pointer shadow-[0_0_10px_rgba(169,146,232,0.4)]"
                 >
-                  <RotateCcw size={15} />
+                  Dismiss Result
                 </button>
               </div>
-            </div>
-          ) : null}
-        </SpotlightCard>
+            ) : null}
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

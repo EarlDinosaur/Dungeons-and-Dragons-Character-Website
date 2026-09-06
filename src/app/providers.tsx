@@ -676,7 +676,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const addAttack = useCallback((attack: Omit<import('@/lib/types').AttackOption, 'id'>) => {
-    const newAttack = { ...attack, id: `attack-${Date.now()}` };
+    const newAttack = { ...attack, id: (attack as any).id || `attack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else if (activeCharacterId === 'cyrus') {
@@ -716,7 +716,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
-    const newSpell = { ...spell, id: `spell-${Date.now()}` };
+    const newSpell = { ...spell, id: (spell as any).id || `spell-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({
         ...prev,
@@ -835,7 +835,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [updateCharacter, showToastNotification]);
 
   const addFeat = useCallback((feat: Omit<import('@/lib/types').CustomFeat, 'id'>) => {
-    const newFeat = { ...feat, id: `feat-${Date.now()}` };
+    const newFeat = { ...feat, id: (feat as any).id || `feat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else if (activeCharacterId === 'cyrus') {

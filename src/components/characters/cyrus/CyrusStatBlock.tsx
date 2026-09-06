@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Eye, Flame, Sparkles, Star, Swords, Dices, RotateCcw, Edit3, Check, CheckSquare, Square } from 'lucide-react';
+import { Shield, Eye, Flame, Sparkles, Star, Swords, Dices, RotateCcw, Edit3, Check, CheckSquare, Square, X } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { getProficiencyBonus } from '@/lib/cyrus-engine';
@@ -99,53 +99,65 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
 
   return (
     <div className="space-y-6 font-['Spectral',serif]">
-      {/* ============== D20 INTERACTIVE ROLLER FEEDBACK CARD ============== */}
+      {/* ============== D20 INTERACTIVE ROLLER MODAL OVERLAY ============== */}
       {(isRolling || activeCheckRoll) && (
-        <SpotlightCard className="p-5 border-2 border-[#daa520] bg-[linear-gradient(135deg,rgba(35,28,10,0.98)_0%,rgba(18,14,6,0.98)_100%)] text-center relative overflow-hidden shadow-[0_0_30px_rgba(218,165,32,0.3)] animate-fade-in-up">
-          {isRolling ? (
-            <div className="py-4 flex items-center justify-center gap-3">
-              <Dices size={30} className="text-[#daa520] animate-spin" />
-              <span className="text-sm font-bold text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                Consulting the Solar Oracles of Apollo...
-              </span>
-            </div>
-          ) : activeCheckRoll ? (
-            <div className="flex items-center justify-between gap-4 font-mono">
-              <div className="text-left">
-                <span className="text-[10px] text-[#b89d5e] uppercase tracking-widest block font-bold">
-                  {activeCheckRoll.label} Check Result
-                </span>
-                <span className="text-3xl font-extrabold font-['Cormorant_Garamond',serif] text-amber-100">
-                  {activeCheckRoll.total}
-                </span>
-                <span className="text-[11px] text-amber-200/60 ml-2">
-                  (d20: {activeCheckRoll.d20} {activeCheckRoll.modifier >= 0 ? `+ ${activeCheckRoll.modifier}` : `- ${Math.abs(activeCheckRoll.modifier)}`})
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md p-6 border-2 border-[#daa520] bg-[linear-gradient(135deg,rgba(35,28,10,0.98)_0%,rgba(18,14,6,0.98)_100%)] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(218,165,32,0.4)]">
+            <button
+              onClick={() => {
+                setIsRolling(false);
+                setActiveCheckRoll(null);
+              }}
+              className="absolute top-3 right-3 text-amber-200/60 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
+
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center gap-3">
+                <Dices size={44} className="text-[#daa520] animate-spin" />
+                <span className="text-sm font-bold text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                  Consulting the Solar Oracles of Apollo...
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                {activeCheckRoll.isNat20 && (
-                  <span className="text-xs font-bold text-amber-300 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-400">
-                    🌟 NATURAL 20!
+            ) : activeCheckRoll ? (
+              <div className="space-y-4 font-mono">
+                <div className="border-b border-[#daa520]/30 pb-3">
+                  <span className="text-xs text-[#b89d5e] uppercase tracking-widest block font-bold font-['Cormorant_Garamond',serif] mb-1">
+                    {activeCheckRoll.label} Check Result
                   </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-5xl font-extrabold font-['Cormorant_Garamond',serif] text-amber-100">
+                      {activeCheckRoll.total}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-200/70 mt-2">
+                    (d20 Roll: <strong>{activeCheckRoll.d20}</strong> {activeCheckRoll.modifier >= 0 ? `+ Modifier: ${activeCheckRoll.modifier}` : `- Modifier: ${Math.abs(activeCheckRoll.modifier)}`})
+                  </p>
+                </div>
+
+                {activeCheckRoll.isNat20 && (
+                  <div className="p-3 bg-amber-950/80 border border-amber-400 rounded-xl text-amber-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(218,165,32,0.4)]">
+                    🌟 SOLAR CRITICAL (Natural 20)!
+                  </div>
                 )}
                 {activeCheckRoll.isNat1 && (
-                  <span className="text-xs font-bold text-red-300 bg-red-950/80 px-3 py-1 rounded-full border border-red-500">
+                  <div className="p-3 bg-red-950/80 border border-red-500 rounded-xl text-red-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
                     ⚠️ NATURAL 1!
-                  </span>
+                  </div>
                 )}
 
                 <button
                   onClick={() => setActiveCheckRoll(null)}
-                  className="p-1.5 rounded-lg text-amber-200/60 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Close Roll Result"
+                  className="w-full py-2.5 bg-[#daa520] hover:bg-amber-400 text-black font-bold text-xs rounded-xl font-mono transition-all cursor-pointer shadow-[0_0_15px_rgba(218,165,32,0.4)]"
                 >
-                  <RotateCcw size={15} />
+                  Dismiss Result
                 </button>
               </div>
-            </div>
-          ) : null}
-        </SpotlightCard>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* ============== ABILITY SCORES ============== */}

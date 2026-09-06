@@ -32,6 +32,15 @@ export default function SpellbookPanelVesper({ character }: SpellbookPanelVesper
     damageDice: '',
   });
 
+  const [activeRoll, setActiveRoll] = useState<{
+    spellName: string;
+    d20: number;
+    totalHit: number;
+    damageDice: string;
+    isCrit: boolean;
+  } | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+
   const handleCreateSpell = () => {
     if (!spellForm.name.trim()) return;
     addSpell(spellForm);
@@ -50,14 +59,23 @@ export default function SpellbookPanelVesper({ character }: SpellbookPanelVesper
   };
 
   const rollSpellCheck = (spellName: string, damageDice?: string) => {
-    const d20 = Math.floor(Math.random() * 20) + 1;
-    const atkBonus = character.spellcasting?.spellAttackBonus || 0;
-    const total = d20 + atkBonus;
-    showToastNotification(
-      `${spellName} Cast`,
-      `Spell Attack Roll: ${total} (d20: ${d20} + ${atkBonus})${damageDice ? ` | Damage: ${damageDice}` : ''}`,
-      'power'
-    );
+    setIsRolling(true);
+    setActiveRoll(null);
+    setTimeout(() => {
+      const d20 = Math.floor(Math.random() * 20) + 1;
+      const atkBonus = character.spellcasting?.spellAttackBonus || 7;
+      const totalHit = d20 + atkBonus;
+      const isCrit = d20 === 20;
+
+      setActiveRoll({
+        spellName,
+        d20,
+        totalHit,
+        damageDice: damageDice || '',
+        isCrit,
+      });
+      setIsRolling(false);
+    }, 400);
   };
 
   const slots = character.spellcasting?.slots || {};
@@ -69,6 +87,75 @@ export default function SpellbookPanelVesper({ character }: SpellbookPanelVesper
 
   return (
     <div className="space-y-6 animate-fade-in-up">
+      {/* d20 Roll Animation Modal Overlay */}
+      {(isRolling || activeRoll) && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-[family-name:var(--font-body)]">
+          <div className="w-full max-w-md p-6 border-2 border-[var(--color-arcane-500)] bg-[var(--color-surface-dark)] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.4)]">
+            <button
+              onClick={() => {
+                setIsRolling(false);
+                setActiveRoll(null);
+              }}
+              className="absolute top-3 right-3 text-[var(--color-parchment-dim)] hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Close Roll Result"
+            >
+              <X size={20} />
+            </button>
+
+            {isRolling ? (
+              <div className="py-6 flex flex-col items-center justify-center">
+                <Dices size={44} className="text-[var(--color-arcane-400)] animate-spin mb-2" />
+                <p className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)]">
+                  Weaving Eldritch Magic...
+                </p>
+              </div>
+            ) : activeRoll ? (
+              <div className="space-y-4 font-[family-name:var(--font-mono)]">
+                <div className="border-b border-[var(--color-border)] pb-3">
+                  <span className="text-xs uppercase tracking-widest text-[var(--color-gold-400)] font-bold block mb-1">
+                    Spell Cast Result — {activeRoll.spellName}
+                  </span>
+
+                  <div className="flex items-center justify-center gap-6 mt-2">
+                    <div>
+                      <span className="text-4xl font-extrabold text-[var(--color-parchment)]">
+                        {activeRoll.totalHit}
+                      </span>
+                      <span className="block text-[10px] text-[var(--color-parchment-dim)] mt-1">
+                        Spell Attack (d20: {activeRoll.d20} + {character.spellcasting?.spellAttackBonus || 7})
+                      </span>
+                    </div>
+
+                    {activeRoll.damageDice && (
+                      <div className="border-l border-[var(--color-border)] pl-6">
+                        <span className="text-2xl font-bold text-[var(--color-arcane-300)]">
+                          {activeRoll.damageDice}
+                        </span>
+                        <span className="block text-[10px] text-[var(--color-parchment-dim)] mt-1">
+                          Damage Dice
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {activeRoll.isCrit && (
+                  <div className="p-3 bg-purple-950/80 border border-purple-400 rounded-xl text-purple-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                    <Sparkles size={16} /> 🌟 ELDRITCH CRITICAL (Natural 20)!
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setActiveRoll(null)}
+                  className="w-full py-2.5 bg-[var(--color-gold-500)] hover:bg-[var(--color-gold-400)] text-black font-bold text-xs rounded-xl transition-all cursor-pointer shadow-[0_0_10px_rgba(255,215,0,0.4)]"
+                >
+                  Dismiss Result
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
       {/* Spellcasting Header & DC Summary */}
       <SpotlightCard className="p-5 border-2 border-[var(--color-arcane-500)]/40" spotlightColor="rgba(168, 85, 247, 0.08)">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
