@@ -280,26 +280,49 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 1: EARL (VESPER ASHWOOD)
              ================================================================ */}
-          <SpotlightCard className="p-6 border border-[var(--color-crimson-500)]/40 bg-[linear-gradient(135deg,rgba(26,18,18,0.95)_0%,rgba(14,10,10,0.98)_100%)] relative group hover:border-[var(--color-crimson-400)] shadow-[0_12px_35px_rgba(0,0,0,0.7)] transition-all duration-300 rounded-2xl flex flex-col justify-between">
-            <div className="space-y-4">
+          <div className="medieval-card p-6 border-2 border-[var(--color-crimson-500)]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(26,16,18,0.98)_0%,rgba(14,8,10,0.99)_100%)] relative group hover:border-[var(--color-crimson-400)] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(220,38,38,0.18)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+            {/* Corner Filigree Glyphs */}
+            <span className="medieval-corner tl text-[var(--color-crimson-400)]/70">❖</span>
+            <span className="medieval-corner tr text-[var(--color-crimson-400)]/70">❖</span>
+            <span className="medieval-corner bl text-[var(--color-crimson-400)]/70">❖</span>
+            <span className="medieval-corner br text-[var(--color-crimson-400)]/70">❖</span>
+
+            {/* Inner Hairline Filigree Border */}
+            <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/20 rounded-xl pointer-events-none group-hover:border-[var(--color-crimson-400)]/40 transition-colors" />
+
+            {/* Heraldic Top Ribbon Banner */}
+            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(220,38,38,0.25)] to-red-950/90 border-b border-[var(--color-crimson-500)]/40 flex items-center justify-between shadow-xs">
+              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[var(--color-crimson-300)] flex items-center gap-1.5">
+                <span>⚜</span> Shadow Guild Oath
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[var(--color-gold-400)] font-semibold">
+                Silent Blade
+              </span>
+            </div>
+
+            <div className="space-y-4 relative z-10">
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)]/60 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[var(--color-crimson-400)] transition-all duration-300">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[var(--color-crimson-400)] transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('vesper')}
                       alt="Earl (Vesper Ashwood)"
-                      className="w-full h-full object-cover object-top"
+                      className="w-full h-full object-cover object-top transform group-hover:scale-105 transition-transform duration-500"
                     />
+                  </div>
+                  {/* Embossed Wax Seal Stamp */}
+                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-red-700 via-red-800 to-red-950 border border-red-400 text-xs text-amber-200">
+                    🗡️
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-bold text-amber-100 font-['Cormorant_Garamond',serif] leading-tight">
+                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Earl
                     </h3>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-black/60 border border-[var(--color-crimson-500)]/40 text-[var(--color-crimson-300)] uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-[var(--color-crimson-500)]/50 text-rose-200 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {character.level}
                     </span>
                   </div>
@@ -308,67 +331,89 @@ export default function CampaignMainMenu() {
                     <Flame size={12} className="text-[var(--color-crimson-500)]" /> Human &bull; Rogue Assassin
                   </p>
 
-                  <p className="text-xs text-[var(--color-gold-400)] italic">
+                  <p className="text-xs text-[var(--color-gold-400)] italic font-serif">
                     &ldquo;Vesper Ashwood&rdquo;
                   </p>
                 </div>
               </div>
 
-              {/* Lore introduction */}
-              <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
-                Deadly assassin of the Ashen Pact, wielding the soul-stealing vestige dagger Orphan&apos;s Tithe.
-              </p>
+              {/* Aged Parchment Lore Fragment */}
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[var(--color-crimson-500)] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic">
+                &ldquo;Deadly assassin of the Ashen Pact, wielding the soul-stealing vestige dagger Orphan&apos;s Tithe.&rdquo;
+              </div>
 
-              {/* Clean 3-Col Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+              {/* Clean 3-Col Medieval Stat Plaque */}
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[var(--color-crimson-500)]/30 text-center font-mono text-xs">
                 <div>
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider">HP</span>
-                  <span className="font-bold text-[var(--color-crimson-400)]">{character.combat.currentHP}/{character.combat.maxHP}</span>
+                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-rose-400 text-sm">{character.combat.currentHP}/{character.combat.maxHP}</span>
+                </div>
+                <div className="border-x border-[var(--color-crimson-500)]/20">
+                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-sm">{character.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider">AC</span>
-                  <span className="font-bold text-[var(--color-gold-400)]">{character.ac}</span>
-                </div>
-                <div>
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider">SNEAK</span>
-                  <span className="font-bold text-amber-200">5d6</span>
+                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Sneak Atk</span>
+                  <span className="font-black text-amber-200 text-sm">5d6</span>
                 </div>
               </div>
             </div>
 
-            <GlowButton
+            <button
               onClick={() => navigateToCharacter('vesper')}
-              variant="crimson"
-              fullWidth
-              className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
+              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
-              OPEN EARL&apos;S SHEET <ArrowRight size={14} />
-            </GlowButton>
-          </SpotlightCard>
+              <span>📜 Inspect Hero Sheet</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
 
           {/* ================================================================
              ROSTER CARD 2: ARIA SIL'AVETH
              ================================================================ */}
-          <SpotlightCard className="p-6 border border-[#a992e8]/40 bg-[linear-gradient(135deg,rgba(20,18,34,0.95)_0%,rgba(12,10,22,0.98)_100%)] relative group hover:border-[#a992e8] shadow-[0_12px_35px_rgba(0,0,0,0.7)] transition-all duration-300 rounded-2xl flex flex-col justify-between">
-            <div className="space-y-4">
+          <div className="medieval-card p-6 border-2 border-[#a992e8]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(169,146,232,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(20,18,34,0.98)_0%,rgba(12,10,22,0.99)_100%)] relative group hover:border-[#a992e8] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(169,146,232,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+            {/* Corner Filigree Glyphs */}
+            <span className="medieval-corner tl text-[#a992e8]/70">❖</span>
+            <span className="medieval-corner tr text-[#a992e8]/70">❖</span>
+            <span className="medieval-corner bl text-[#a992e8]/70">❖</span>
+            <span className="medieval-corner br text-[#a992e8]/70">❖</span>
+
+            {/* Inner Hairline Filigree Border */}
+            <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none group-hover:border-[#a992e8]/40 transition-colors" />
+
+            {/* Heraldic Top Ribbon Banner */}
+            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-[#171b3f]/90 via-[rgba(169,146,232,0.25)] to-[#171b3f]/90 border-b border-[#a992e8]/40 flex items-center justify-between shadow-xs">
+              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[#c7c2e6] flex items-center gap-1.5">
+                <span>🌙</span> Silver Moon Conclave
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#d9b872] font-semibold">
+                Astral Weaver
+              </span>
+            </div>
+
+            <div className="space-y-4 relative z-10">
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[#a992e8]/60 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[#a992e8] transition-all duration-300">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[#a992e8]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[#a992e8] transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('aria')}
                       alt="Aria Sil'aveth"
-                      className="w-full h-full object-cover object-[center_20%]"
+                      className="w-full h-full object-cover object-[center_20%] transform group-hover:scale-105 transition-transform duration-500"
                     />
+                  </div>
+                  {/* Embossed Wax Seal Stamp */}
+                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-indigo-800 via-purple-900 to-[#0d1026] border border-[#a992e8] text-xs text-[#d9b872]">
+                    🌙
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-bold text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Aria Sil&apos;aveth
                     </h3>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-black/60 border border-[#a992e8]/40 text-[#c7c2e6] uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#171b3f]/80 border border-[#a992e8]/50 text-[#c7c2e6] uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {aria.level}
                     </span>
                   </div>
@@ -377,67 +422,89 @@ export default function CampaignMainMenu() {
                     <Sparkles size={12} className="text-[#a992e8]" /> High Elf &bull; Sorcerer Lunar
                   </p>
 
-                  <p className="text-xs text-[#a992e8]/80 italic">
+                  <p className="text-xs text-[#d9b872] italic font-serif">
                     &ldquo;{aria.subline}&rdquo;
                   </p>
                 </div>
               </div>
 
-              {/* Lore introduction */}
-              <p className="text-xs text-[#cfd4ee] leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
-                High elven lunar sorceress who channels cosmic starfire and moon tides to manipulate magic.
-              </p>
+              {/* Aged Parchment Lore Fragment */}
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#a992e8] text-xs text-[#cfd4ee] leading-relaxed italic">
+                &ldquo;High elven lunar sorceress who channels cosmic starfire and moon tides to manipulate magic.&rdquo;
+              </div>
 
-              {/* Clean 3-Col Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+              {/* Clean 3-Col Medieval Stat Plaque */}
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[#a992e8]/30 text-center font-mono text-xs">
                 <div>
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider">HP</span>
-                  <span className="font-bold text-[#c9707a]">{aria.combat.currentHP}/{aria.combat.maxHP}</span>
+                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-[#c9707a] text-sm">{aria.combat.currentHP}/{aria.combat.maxHP}</span>
+                </div>
+                <div className="border-x border-[#a992e8]/20">
+                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[#d9b872] text-sm">{aria.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider">AC</span>
-                  <span className="font-bold text-[#d9b872]">{aria.combat.ac}</span>
-                </div>
-                <div>
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider">SPELL DC</span>
-                  <span className="font-bold text-[#a992e8]">{aria.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-[#a992e8] text-sm">{aria.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
-            <GlowButton
+            <button
               onClick={() => navigateToCharacter('aria')}
-              variant="gold"
-              fullWidth
-              className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
+              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
-              OPEN ARIA&apos;S SHEET <ArrowRight size={14} />
-            </GlowButton>
-          </SpotlightCard>
+              <span>📜 Inspect Hero Sheet</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
 
           {/* ================================================================
              ROSTER CARD 3: CYRUS HYACINTHUS
              ================================================================ */}
-          <SpotlightCard className="p-6 border border-amber-500/40 bg-[linear-gradient(135deg,rgba(30,22,12,0.95)_0%,rgba(18,14,8,0.98)_100%)] relative group hover:border-amber-400 shadow-[0_12px_35px_rgba(0,0,0,0.7)] transition-all duration-300 rounded-2xl flex flex-col justify-between">
-            <div className="space-y-4">
+          <div className="medieval-card p-6 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(30,22,12,0.98)_0%,rgba(18,14,8,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(218,165,32,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+            {/* Corner Filigree Glyphs */}
+            <span className="medieval-corner tl text-amber-400/70">❖</span>
+            <span className="medieval-corner tr text-amber-400/70">❖</span>
+            <span className="medieval-corner bl text-amber-400/70">❖</span>
+            <span className="medieval-corner br text-amber-400/70">❖</span>
+
+            {/* Inner Hairline Filigree Border */}
+            <div className="absolute inset-[5px] border border-amber-500/20 rounded-xl pointer-events-none group-hover:border-amber-400/40 transition-colors" />
+
+            {/* Heraldic Top Ribbon Banner */}
+            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(218,165,32,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between shadow-xs">
+              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-amber-300 flex items-center gap-1.5">
+                <span>☀️</span> Temple of Apollo
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#d9b872] font-semibold">
+                Solar Oracle
+              </span>
+            </div>
+
+            <div className="space-y-4 relative z-10">
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-amber-400/60 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('cyrus')}
                       alt="Cyrus Hyacinthus"
-                      className="w-full h-full object-cover object-[center_20%]"
+                      className="w-full h-full object-cover object-[center_20%] transform group-hover:scale-105 transition-transform duration-500"
                     />
+                  </div>
+                  {/* Embossed Wax Seal Stamp */}
+                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-xs text-amber-100">
+                    ☀️
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-bold text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Cyrus Hyacinthus
                     </h3>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-black/60 border border-amber-500/40 text-amber-300 uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {cyrus.level}
                     </span>
                   </div>
@@ -446,67 +513,89 @@ export default function CampaignMainMenu() {
                     <Sparkles size={12} className="text-amber-400" /> Aasimar &bull; Light Cleric
                   </p>
 
-                  <p className="text-xs text-amber-300/80 italic">
+                  <p className="text-xs text-amber-200/90 italic font-serif">
                     &ldquo;{cyrus.subline}&rdquo;
                   </p>
                 </div>
               </div>
 
-              {/* Lore introduction */}
-              <p className="text-xs text-amber-100/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
-                Solar oracle of Apollo blessed with radiant wings, divine sunfire, and prophetic foresight.
-              </p>
+              {/* Aged Parchment Lore Fragment */}
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic">
+                &ldquo;Solar oracle of Apollo blessed with radiant wings, divine sunfire, and prophetic foresight.&rdquo;
+              </div>
 
-              {/* Clean 3-Col Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+              {/* Clean 3-Col Medieval Stat Plaque */}
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono text-xs">
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider">HP</span>
-                  <span className="font-bold text-amber-400">{cyrus.combat.currentHP}/{cyrus.combat.maxHP}</span>
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-amber-400 text-sm">{cyrus.combat.currentHP}/{cyrus.combat.maxHP}</span>
+                </div>
+                <div className="border-x border-amber-500/20">
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-sm">{cyrus.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider">AC</span>
-                  <span className="font-bold text-[var(--color-gold-400)]">{cyrus.combat.ac}</span>
-                </div>
-                <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider">SPELL DC</span>
-                  <span className="font-bold text-amber-300">{cyrus.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-amber-300 text-sm">{cyrus.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
-            <GlowButton
+            <button
               onClick={() => navigateToCharacter('cyrus')}
-              variant="gold"
-              fullWidth
-              className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
+              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
-              OPEN CYRUS&apos; SHEET <ArrowRight size={14} />
-            </GlowButton>
-          </SpotlightCard>
+              <span>📜 Inspect Hero Sheet</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
 
           {/* ================================================================
              ROSTER CARD 4: WYN'EL AELUIN
              ================================================================ */}
-          <SpotlightCard className="p-6 border border-red-500/40 bg-[linear-gradient(135deg,rgba(38,10,18,0.95)_0%,rgba(18,4,8,0.98)_100%)] relative group hover:border-red-400 shadow-[0_12px_35px_rgba(239,68,68,0.25)] transition-all duration-300 rounded-2xl flex flex-col justify-between">
-            <div className="space-y-4">
+          <div className="medieval-card p-6 border-2 border-red-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(239,68,68,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(38,10,18,0.98)_0%,rgba(18,4,8,0.99)_100%)] relative group hover:border-red-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(239,68,68,0.25)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+            {/* Corner Filigree Glyphs */}
+            <span className="medieval-corner tl text-red-400/70">❖</span>
+            <span className="medieval-corner tr text-red-400/70">❖</span>
+            <span className="medieval-corner bl text-red-400/70">❖</span>
+            <span className="medieval-corner br text-red-400/70">❖</span>
+
+            {/* Inner Hairline Filigree Border */}
+            <div className="absolute inset-[5px] border border-red-500/20 rounded-xl pointer-events-none group-hover:border-red-400/40 transition-colors" />
+
+            {/* Heraldic Top Ribbon Banner */}
+            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(239,68,68,0.25)] to-red-950/90 border-b border-red-500/40 flex items-center justify-between shadow-xs">
+              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-rose-300 flex items-center gap-1.5">
+                <span>👑</span> House Aeluin Crown
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-300 font-semibold">
+                Archfey Exile
+              </span>
+            </div>
+
+            <div className="space-y-4 relative z-10">
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-red-500/60 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-red-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('wynel')}
                       alt="Wyn'el Aeluin"
-                      className="w-full h-full object-cover object-[center_20%]"
+                      className="w-full h-full object-cover object-[center_20%] transform group-hover:scale-105 transition-transform duration-500"
                     />
+                  </div>
+                  {/* Embossed Wax Seal Stamp */}
+                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-rose-700 via-red-800 to-red-950 border border-red-400 text-xs text-amber-200">
+                    👑
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-bold text-rose-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                    <h3 className="text-2xl font-black text-rose-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Wyn’el Aeluin
                     </h3>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-black/60 border border-red-500/40 text-rose-300 uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/50 text-rose-300 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {wynel.level}
                     </span>
                   </div>
@@ -515,79 +604,103 @@ export default function CampaignMainMenu() {
                     <Flame size={12} className="text-red-400" /> Half-Elf &bull; Archfey Warlock
                   </p>
 
-                  <p className="text-xs text-rose-300/80 italic">
+                  <p className="text-xs text-rose-300/80 italic font-serif">
                     &ldquo;Prince of House Aeluin&rdquo;
                   </p>
                 </div>
               </div>
 
-              {/* Lore introduction */}
-              <p className="text-xs text-rose-100/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
-                Exiled noble prince bound to the Crimson Heart-Tattoo, wielding scarlet chaos magic and eldritch secrets.
-              </p>
+              {/* Aged Parchment Lore Fragment */}
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-red-500 text-xs text-rose-100/90 leading-relaxed italic">
+                &ldquo;Exiled noble prince bound to the Crimson Heart-Tattoo, wielding scarlet chaos magic and eldritch secrets.&rdquo;
+              </div>
 
-              {/* Clean 3-Col Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+              {/* Clean 3-Col Medieval Stat Plaque */}
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-red-500/30 text-center font-mono text-xs">
                 <div>
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">HP</span>
-                  <span className="font-bold text-red-400">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-red-400 text-sm">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
+                </div>
+                <div className="border-x border-red-500/20">
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-sm">{wynel.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">AC</span>
-                  <span className="font-bold text-[var(--color-gold-400)]">{wynel.combat.ac}</span>
-                </div>
-                <div>
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">SPELL DC</span>
-                  <span className="font-bold text-rose-300">{wynel.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-rose-300 text-sm">{wynel.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
-            <GlowButton
+            <button
               onClick={() => navigateToCharacter('wynel')}
-              variant="gold"
-              fullWidth
-              className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
+              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
-              OPEN WYN&apos;EL&apos;S SHEET <ArrowRight size={14} />
-            </GlowButton>
-          </SpotlightCard>
+              <span>📜 Inspect Hero Sheet</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
 
           {/* ================================================================
              ROSTER CARDS 3..N: CUSTOM GUILD MEMBERS
              ================================================================ */}
           {customMembers.map((member) => (
-            <SpotlightCard
+            <div
               key={member.id}
-              className="p-6 border border-[#d9b872]/30 bg-[linear-gradient(135deg,rgba(24,20,16,0.92)_0%,rgba(14,11,8,0.96)_100%)] relative group hover:border-[#d9b872] shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between"
+              className="medieval-card p-6 border-2 border-[#d9b872]/40 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.1)_0%,transparent_70%),linear-gradient(145deg,rgba(24,20,16,0.98)_0%,rgba(14,11,8,0.99)_100%)] relative group hover:border-[#d9b872] shadow-[0_16px_45px_rgba(0,0,0,0.85)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden"
             >
-              <div className="space-y-4">
+              {/* Corner Filigree Glyphs */}
+              <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
+              <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
+              <span className="medieval-corner bl text-[#d9b872]/70">❖</span>
+              <span className="medieval-corner br text-[#d9b872]/70">❖</span>
+
+              {/* Inner Hairline Filigree Border */}
+              <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none group-hover:border-[#d9b872]/40 transition-colors" />
+
+              {/* Heraldic Top Ribbon Banner */}
+              <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-[#2a1e12]/90 via-[rgba(218,165,32,0.2)] to-[#2a1e12]/90 border-b border-[#d9b872]/30 flex items-center justify-between shadow-xs">
+                <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[#d9b872] flex items-center gap-1.5">
+                  <span>🛡️</span> Ashen Pact Companion
+                </span>
+                <span className="text-[9px] font-mono uppercase tracking-widest text-amber-200/80 font-semibold">
+                  {member.role || 'Guild Initiate'}
+                </span>
+              </div>
+
+              <div className="space-y-4 relative z-10">
                 {/* Header & Portrait Block */}
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 rounded-2xl bg-black/80 border-2 border-[#d9b872]/60 flex items-center justify-center text-3xl shadow-inner shrink-0 overflow-hidden">
-                    {member.avatar.startsWith('http') || member.avatar.startsWith('/') ? (
-                      <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{member.avatar}</span>
-                    )}
+                  <div className="relative shrink-0">
+                    <div className="w-20 h-20 rounded-2xl bg-black/80 border-2 border-[#d9b872]/60 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
+                      {member.avatar.startsWith('http') || member.avatar.startsWith('/') ? (
+                        <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{member.avatar}</span>
+                      )}
+                    </div>
+                    {/* Embossed Wax Seal Stamp */}
+                    <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-700 via-amber-800 to-[#1e150b] border border-[#d9b872] text-xs text-amber-100">
+                      🛡️
+                    </div>
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-xl font-bold text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                      <h3 className="text-xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
                         {member.name}
                       </h3>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleOpenMemberModal(member)}
-                          className="text-gray-400 hover:text-amber-300 p-1 transition-colors"
+                          className="text-gray-400 hover:text-amber-300 p-1 transition-colors cursor-pointer"
                           title="Edit Member"
                         >
                           <Edit3 size={14} />
                         </button>
                         <button
                           onClick={() => handleDeleteMember(member.id)}
-                          className="text-gray-400 hover:text-red-400 p-1 transition-colors"
+                          className="text-gray-400 hover:text-red-400 p-1 transition-colors cursor-pointer"
                           title="Remove Member"
                         >
                           <Trash2 size={14} />
@@ -596,76 +709,82 @@ export default function CampaignMainMenu() {
                     </div>
 
                     <p className="text-xs font-mono text-[#d9b872] font-semibold">
-                      {member.race} &bull; {member.characterClass} (Lv {member.level})
+                      {member.race} &bull; {member.characterClass}
                     </p>
 
-                    <p className="text-xs text-[var(--color-parchment-muted)] italic">
+                    <p className="text-xs text-[var(--color-parchment-muted)] italic font-serif">
                       Played by {member.playerName}
                     </p>
                   </div>
                 </div>
 
                 {member.notes && (
-                  <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5 line-clamp-2">
+                  <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#d9b872] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic line-clamp-2">
                     &ldquo;{member.notes}&rdquo;
-                  </p>
+                  </div>
                 )}
 
-                {/* Quick Stats Strip */}
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+                {/* Quick Stats Plaque */}
+                <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[#d9b872]/20 text-center font-mono text-xs">
                   <div>
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider">HP</span>
-                    <span className="font-bold text-emerald-400">{member.currentHP}/{member.maxHP}</span>
+                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Vitality</span>
+                    <span className="font-black text-emerald-400 text-sm">{member.currentHP}/{member.maxHP}</span>
+                  </div>
+                  <div className="border-x border-[#d9b872]/20">
+                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Armor</span>
+                    <span className="font-black text-amber-300 text-sm">{member.ac}</span>
                   </div>
                   <div>
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider">AC</span>
-                    <span className="font-bold text-amber-300">{member.ac}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider">LEVEL</span>
-                    <span className="font-bold text-amber-100">Lv {member.level}</span>
+                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Rank</span>
+                    <span className="font-black text-amber-100 text-sm">Lv {member.level}</span>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => handleOpenMemberModal(member)}
-                className="w-full mt-4 py-2 px-3 bg-black/40 hover:bg-[#8b5a2b]/40 text-amber-200 border border-[#d9b872]/30 rounded-xl text-xs font-mono transition-colors flex items-center justify-center gap-1.5"
+                className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
               >
-                <Edit3 size={13} /> Edit Member Sheet
+                <Edit3 size={13} /> Edit Companion Sheet
               </button>
-            </SpotlightCard>
+            </div>
           ))}
 
           {/* ================================================================
              EMPTY UNASSIGNED TAVERN PEGS / GUILD SEATS (UP TO 6+1 MEMBERS)
              ================================================================ */}
           {Array.from({ length: emptySlotsCount }).map((_, idx) => {
-            const slotNum = customMembers.length + idx + 3;
+            const slotNum = customMembers.length + idx + 5;
             const isGuestSlot = slotNum >= 7;
 
             return (
               <div
                 key={`empty-slot-${idx}`}
                 onClick={() => handleOpenMemberModal(undefined, idx)}
-                className="p-6 border-2 border-dashed border-[#d9b872]/30 hover:border-[#d9b872] bg-[rgba(18,14,10,0.6)] hover:bg-[rgba(28,22,16,0.85)] rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[260px] shadow-sm"
+                className="p-6 border-2 border-dashed border-[#d9b872]/30 hover:border-[#d9b872] bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.06)_0%,transparent_70%),linear-gradient(145deg,rgba(18,14,10,0.85)_0%,rgba(10,8,6,0.95)_100%)] hover:bg-[linear-gradient(145deg,rgba(28,22,16,0.95)_0%,rgba(16,12,8,0.98)_100%)] rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[260px] shadow-lg relative overflow-hidden"
               >
-                <div className="w-14 h-14 rounded-full bg-black/60 border border-[#d9b872]/40 flex items-center justify-center text-[#d9b872] text-xl mb-3 group-hover:scale-110 group-hover:border-[#d9b872] transition-transform">
+                {/* Corner Filigree Glyphs */}
+                <span className="medieval-corner tl text-[#d9b872]/40">❖</span>
+                <span className="medieval-corner tr text-[#d9b872]/40">❖</span>
+                <span className="medieval-corner bl text-[#d9b872]/40">❖</span>
+                <span className="medieval-corner br text-[#d9b872]/40">❖</span>
+
+                <div className="w-14 h-14 rounded-full bg-black/70 border border-[#d9b872]/40 flex items-center justify-center text-[#d9b872] text-2xl mb-3 group-hover:scale-110 group-hover:border-[#d9b872] transition-transform shadow-inner">
                   {isGuestSlot ? '🍺' : '⚔️'}
                 </div>
 
-                <h4 className="text-lg font-bold text-[#d9b872] font-['Cormorant_Garamond',serif] uppercase tracking-wider mb-1">
+                <h4 className="text-xl font-bold text-[#d9b872] font-['Cormorant_Garamond',serif] uppercase tracking-wider mb-1">
                   {isGuestSlot ? `Guest Companion Seat` : `Guild Seat #${slotNum}`}
                 </h4>
 
-                <p className="text-xs text-[var(--color-parchment-muted)] max-w-[200px] mb-4">
+                <p className="text-xs text-[var(--color-parchment-muted)] max-w-[200px] mb-4 italic">
                   {isGuestSlot
-                    ? 'Reserved for occasional party guests & visiting allies.'
-                    : `Reserved for Party Member #${slotNum}. Click to add character.`}
+                    ? 'Reserved for visiting allies & guest adventurers.'
+                    : `Unassigned hero slot. Click to recruit party member #${slotNum}.`}
                 </p>
 
-                <span className="inline-flex items-center gap-1 bg-[#8b5a2b]/40 group-hover:bg-[#8b5a2b] text-amber-200 border border-[#d9b872]/40 px-3 py-1 rounded-xl text-xs font-mono transition-colors">
-                  <Plus size={13} /> {isGuestSlot ? 'Add Guest Adventurer' : 'Add Party Member'}
+                <span className="medieval-writ-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono text-amber-200">
+                  <Plus size={13} /> {isGuestSlot ? 'Recruit Guest Adventurer' : 'Recruit Party Member'}
                 </span>
               </div>
             );
@@ -678,135 +797,164 @@ export default function CampaignMainMenu() {
          ==================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Treasury Card */}
-        <SpotlightCard className="p-6 glass-card border border-[#d9b872]/40 bg-[linear-gradient(135deg,rgba(22,18,14,0.95)_0%,rgba(14,12,10,0.98)_100%)] flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#d9b872]/20">
+        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] flex flex-col justify-between rounded-2xl relative overflow-hidden">
+          {/* Corner Filigrees */}
+          <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner bl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner br text-[#d9b872]/70">❖</span>
+
+          {/* Inner Hairline Border */}
+          <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#d9b872]/30">
               <Coins size={22} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+              <h3 className="text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
                 Guild Treasury &amp; Vault
               </h3>
             </div>
 
-            <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed mb-4">
-              Shared coffers of The Ashen Pact stored securely in the tavern vault.
+            <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed mb-4 italic">
+              Shared coffers of The Ashen Pact stored securely within the enchanted tavern vault.
             </p>
 
             <div className="grid grid-cols-2 gap-3 text-center font-mono">
-              <div className="p-3.5 rounded-xl bg-black/70 border border-[#d9b872]/30 shadow-inner">
-                <span className="block text-[10px] text-gray-400 uppercase tracking-widest">Gold (GP)</span>
-                <span className="text-2xl font-bold text-amber-300">{partyGold} GP</span>
+              <div className="medieval-stat-plaque p-4 rounded-xl border border-[#d9b872]/30 shadow-inner">
+                <span className="block text-[10px] text-amber-200/60 uppercase tracking-widest font-bold">Gold (GP)</span>
+                <span className="text-2xl font-black text-amber-300 font-['Cormorant_Garamond',serif]">{partyGold} GP</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-black/70 border border-[#d9b872]/30 shadow-inner">
-                <span className="block text-[10px] text-gray-400 uppercase tracking-widest">Platinum (PP)</span>
-                <span className="text-2xl font-bold text-indigo-200">{partyPlatinum} PP</span>
+              <div className="medieval-stat-plaque p-4 rounded-xl border border-[#d9b872]/30 shadow-inner">
+                <span className="block text-[10px] text-indigo-200/60 uppercase tracking-widest font-bold">Platinum (PP)</span>
+                <span className="text-2xl font-black text-indigo-200 font-['Cormorant_Garamond',serif]">{partyPlatinum} PP</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 p-3 rounded-xl bg-[rgba(217,184,114,0.06)] border border-[#d9b872]/20 text-xs text-amber-200/90 italic flex items-center gap-2">
+          <div className="relative z-10 mt-6 p-3 rounded-xl bg-[rgba(217,184,114,0.08)] border border-[#d9b872]/30 text-xs text-amber-200/90 italic flex items-center gap-2">
             <Shield size={16} className="text-amber-400 shrink-0" />
-            <span>Vault guarded by Guild Oath magic.</span>
+            <span>Vault sealed by Ashen Pact ancient oath wards.</span>
           </div>
-        </SpotlightCard>
+        </div>
 
         {/* EDITABLE ACTIVE QUEST BOARD */}
-        <SpotlightCard className="p-6 glass-card border border-[#d9b872]/40 bg-[linear-gradient(135deg,rgba(22,18,14,0.95)_0%,rgba(14,12,10,0.98)_100%)] lg:col-span-2">
-          <div className="flex items-center justify-between gap-3 mb-4 pb-2 border-b border-[#d9b872]/20">
-            <div className="flex items-center gap-2">
-              <BookOpen size={22} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                Active Tavern Quest Mysteries
-              </h3>
+        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] lg:col-span-2 rounded-2xl relative overflow-hidden">
+          {/* Corner Filigrees */}
+          <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner bl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner br text-[#d9b872]/70">❖</span>
+
+          {/* Inner Hairline Border */}
+          <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between gap-3 mb-4 pb-2 border-b border-[#d9b872]/30">
+              <div className="flex items-center gap-2">
+                <BookOpen size={22} className="text-amber-400" />
+                <h3 className="text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                  Active Tavern Quest Mysteries
+                </h3>
+              </div>
+
+              <button
+                onClick={() => handleOpenQuestModal()}
+                className="medieval-writ-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold text-amber-200 transition-all cursor-pointer"
+              >
+                <Plus size={13} className="text-amber-300" />
+                Post New Quest Scroll
+              </button>
             </div>
 
-            <button
-              onClick={() => handleOpenQuestModal()}
-              className="flex items-center gap-1 bg-[#8b5a2b]/80 hover:bg-[#8b5a2b] text-amber-100 border border-[#d9b872]/50 px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all shadow"
-            >
-              <Plus size={13} className="text-amber-300" />
-              Post New Quest
-            </button>
-          </div>
-
-          <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
-            {mysteries.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[var(--color-parchment-muted)] italic bg-black/40 rounded-xl border border-white/5">
-                No active quests pinned to the board. Click &ldquo;Post New Quest&rdquo; to add campaign bounties!
-              </div>
-            ) : (
-              mysteries.map((quest) => (
-                <div
-                  key={quest.id}
-                  className={`p-4 rounded-xl border transition-all text-xs relative ${
-                    quest.resolved
-                      ? 'bg-black/40 border-gray-800 opacity-60'
-                      : 'bg-black/60 border-[#d9b872]/25 hover:border-[#d9b872]/60 shadow-md'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4
-                        className={`font-bold text-sm font-['Cormorant_Garamond',serif] ${
-                          quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
-                        }`}
-                      >
-                        {quest.title}
-                      </h4>
-
-                      <button
-                        onClick={() => handleToggleQuestResolved(quest)}
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase transition-colors ${
-                          quest.resolved
-                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
-                            : 'bg-amber-950/60 text-amber-300 border-amber-700/50'
-                        }`}
-                      >
-                        {quest.resolved ? '✓ Resolved Quest' : '📜 Active Quest'}
-                      </button>
-                    </div>
-
-                    {/* Quest Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleOpenQuestModal(quest)}
-                        className="p-1 text-gray-400 hover:text-amber-300 transition-colors"
-                        title="Edit Quest"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteQuest(quest.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete Quest"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-[12px] text-[var(--color-parchment-muted)] leading-relaxed mb-2">
-                    {quest.description}
-                  </p>
-
-                  {/* Clues */}
-                  {quest.clues && quest.clues.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
-                      <span className="text-[10px] font-mono uppercase text-amber-400/80 font-bold block">
-                        Discovered Clues:
-                      </span>
-                      {quest.clues.map((clue, idx) => (
-                        <div key={idx} className="text-[11px] text-amber-100/80 italic flex items-center gap-1.5">
-                          <span className="text-amber-400 text-xs">&bull;</span> {clue}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
+              {mysteries.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[var(--color-parchment-muted)] italic bg-black/40 rounded-xl border border-white/5">
+                  No active quests pinned to the board. Click &ldquo;Post New Quest Scroll&rdquo; to add campaign bounties!
                 </div>
-              ))
-            )}
+              ) : (
+                mysteries.map((quest) => (
+                  <div
+                    key={quest.id}
+                    className={`p-4 rounded-xl border transition-all text-xs relative ${
+                      quest.resolved
+                        ? 'bg-black/40 border-stone-800 opacity-60'
+                        : 'medieval-parchment-scroll border-[#d9b872]/40 hover:border-[#d9b872] shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm">📌</span>
+                        <h4
+                          className={`font-bold text-base font-['Cormorant_Garamond',serif] ${
+                            quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
+                          }`}
+                        >
+                          {quest.title}
+                        </h4>
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border font-bold ${
+                            quest.resolved
+                              ? 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                              : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                          }`}
+                        >
+                          {quest.resolved ? 'RESOLVED' : 'ACTIVE BOUNTY'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleToggleQuestResolved(quest)}
+                          className={`p-1 rounded transition-colors cursor-pointer ${
+                            quest.resolved
+                              ? 'text-zinc-500 hover:text-amber-300'
+                              : 'text-amber-400 hover:text-emerald-400'
+                          }`}
+                          title={quest.resolved ? 'Reactivate Quest' : 'Mark Quest Resolved'}
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenQuestModal(quest)}
+                          className="text-gray-400 hover:text-amber-300 p-1 transition-colors cursor-pointer"
+                          title="Edit Quest Scroll"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuest(quest.id)}
+                          className="text-gray-400 hover:text-red-400 p-1 transition-colors cursor-pointer"
+                          title="Remove Quest Scroll"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed italic mb-2">
+                      &ldquo;{quest.description}&rdquo;
+                    </p>
+
+                    {quest.clues && quest.clues.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-[#d9b872]/20 space-y-1">
+                        <span className="text-[10px] font-mono text-amber-300/80 uppercase font-bold block">
+                          📜 Clues &amp; Objectives:
+                        </span>
+                        <ul className="list-disc list-inside space-y-0.5 text-[11px] text-[var(--color-parchment)] font-serif">
+                          {quest.clues.map((clue, cIdx) => (
+                            <li key={cIdx}>{clue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </SpotlightCard>
+        </div>
       </div>
+
 
       {/* ====================================================================
          MODAL 1: ADD / EDIT CUSTOM PARTY MEMBER

@@ -16,7 +16,13 @@ export default function CampaignNavBar() {
       {/* Decorative Top Accent Line */}
       <div
         className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent ${
-          isVesper ? 'via-[var(--color-crimson-500)]' : 'via-[#a992e8]'
+          isVesper
+            ? 'via-[var(--color-crimson-500)]'
+            : activeCharacterId === 'cyrus'
+            ? 'via-amber-400'
+            : activeCharacterId === 'wynel'
+            ? 'via-rose-500'
+            : 'via-[#a992e8]'
         } to-transparent opacity-75`}
       />
 
@@ -44,7 +50,7 @@ export default function CampaignNavBar() {
             title="Custom Mobile Media & Wallpaper Picker"
           >
             <Camera size={14} className="text-[var(--color-gold-400)]" />
-            <span>Media Picker</span>
+            <span>Media Customizer</span>
           </button>
 
           {/* Dedicated Active Character Dossier Badge */}
@@ -52,6 +58,10 @@ export default function CampaignNavBar() {
             className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border text-xs font-[family-name:var(--font-mono)] shadow-md ${
               isVesper
                 ? 'bg-[rgba(69,10,10,0.4)] border-[var(--color-crimson-700)]/60 text-[var(--color-parchment)]'
+                : activeCharacterId === 'cyrus'
+                ? 'bg-[rgba(45,30,10,0.5)] border-amber-500/60 text-amber-100'
+                : activeCharacterId === 'wynel'
+                ? 'bg-[rgba(55,12,18,0.5)] border-red-500/60 text-rose-100'
                 : 'bg-[rgba(29,34,73,0.5)] border-[#343a72] text-[#e8e6ff]'
             }`}
           >
@@ -65,6 +75,10 @@ export default function CampaignNavBar() {
             <div className="flex items-center gap-1.5">
               {isVesper ? (
                 <Shield size={12} className="text-[var(--color-crimson-400)]" />
+              ) : activeCharacterId === 'cyrus' ? (
+                <span className="text-amber-400 text-xs">☀️</span>
+              ) : activeCharacterId === 'wynel' ? (
+                <span className="text-rose-400 text-xs">👑</span>
               ) : (
                 <Sparkles size={12} className="text-[#a992e8]" />
               )}

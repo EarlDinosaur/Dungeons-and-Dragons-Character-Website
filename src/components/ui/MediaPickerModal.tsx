@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, Image as ImageIcon, RotateCcw, X, Check, Upload, Sparkles, Smartphone } from 'lucide-react';
 import SpotlightCard from './SpotlightCard';
 import { useCharacter } from '@/app/providers';
@@ -12,6 +12,9 @@ interface MediaPickerModalProps {
 }
 
 const PRESET_WALLPAPERS = [
+  { id: 'wynel-sigil', name: "Scarlet Feywild Sigil (Wyn'el)", url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
+  { id: 'wynel-fey-grove', name: "Eldritch Archfey Grove (Wyn'el)", url: 'https://images.unsplash.com/photo-1511497584788-87676104235f?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
+  { id: 'wynel-blood-moon', name: "Crimson Moon Keep (Wyn'el)", url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
   { id: 'cyrus-temple', name: 'Celestial Solar Temple (Default Cyrus)', url: '/images/cyrus-bg.jpg', hero: 'cyrus' },
   { id: 'golden-sanctuary', name: 'Sunfire Sanctuary', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80', hero: 'cyrus' },
   { id: 'night-sky', name: 'Starlight Constellations (Default Aria)', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80', hero: 'aria' },
@@ -22,10 +25,20 @@ const PRESET_WALLPAPERS = [
 ];
 
 export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portraits' }: MediaPickerModalProps) {
-  const { customMedia, setCustomPortrait, setCustomBackground, resetMedia, getPortraitUrl, getBackgroundUrl } = useCharacter();
+  const { customMedia, setCustomPortrait, setCustomBackground, resetMedia, getPortraitUrl, getBackgroundUrl, activeCharacterId } = useCharacter();
   const [activeTab, setActiveTab] = useState<'portraits' | 'backgrounds'>(defaultTab);
-  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'menu'>('cyrus');
+  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'wynel' | 'menu'>(
+    (activeCharacterId as any) && ['vesper', 'aria', 'cyrus', 'wynel'].includes(activeCharacterId)
+      ? (activeCharacterId as any)
+      : 'cyrus'
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen && activeCharacterId && ['vesper', 'aria', 'cyrus', 'wynel'].includes(activeCharacterId)) {
+      setSelectedCharacter(activeCharacterId as any);
+    }
+  }, [isOpen, activeCharacterId]);
 
   if (!isOpen) return null;
 
@@ -121,10 +134,19 @@ export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portra
           <span className="text-[10px] font-mono text-[#b89d5e] uppercase shrink-0 mr-1 font-bold">
             Target Hero:
           </span>
-          {(['cyrus', 'aria', 'vesper', 'menu'] as const).map((hero) => {
+          {(['cyrus', 'aria', 'vesper', 'wynel', 'menu'] as const).map((hero) => {
             const isMenu = hero === 'menu';
             if (activeTab === 'portraits' && isMenu) return null; // No portrait for menu
-            const label = hero === 'cyrus' ? '☀️ Cyrus' : hero === 'aria' ? '🌙 Aria' : hero === 'vesper' ? '🗡️ Vesper' : '📜 Guildhall Menu';
+            const label =
+              hero === 'cyrus'
+                ? '☀️ Cyrus'
+                : hero === 'aria'
+                ? '🌙 Aria'
+                : hero === 'vesper'
+                ? '🗡️ Vesper'
+                : hero === 'wynel'
+                ? "👑 Wyn'el"
+                : '📜 Guildhall Menu';
             const isSelected = selectedCharacter === hero;
             return (
               <button

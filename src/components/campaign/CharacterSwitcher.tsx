@@ -40,6 +40,10 @@ export default function CharacterSwitcher() {
                   isActive
                     ? char.id === 'vesper'
                       ? 'bg-[rgba(220,38,38,0.15)] border-[var(--color-crimson-500)] shadow-[0_0_15px_rgba(220,38,38,0.3)] text-white scale-[1.02]'
+                      : char.id === 'cyrus'
+                      ? 'bg-[rgba(218,165,32,0.18)] border-amber-500 shadow-[0_0_15px_rgba(218,165,32,0.35)] text-white scale-[1.02]'
+                      : char.id === 'wynel'
+                      ? 'bg-[rgba(239,68,68,0.18)] border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.35)] text-white scale-[1.02]'
                       : 'bg-[rgba(169,146,232,0.18)] border-[#a992e8] shadow-[0_0_15px_rgba(169,146,232,0.35)] text-white scale-[1.02]'
                     : 'bg-black/40 border-[rgba(255,255,255,0.08)] hover:border-white/20 text-[var(--color-parchment-muted)] hover:text-white'
                 }`}
@@ -53,6 +57,10 @@ export default function CharacterSwitcher() {
                       isActive
                         ? char.id === 'vesper'
                           ? 'border-[var(--color-crimson-400)]'
+                          : char.id === 'cyrus'
+                          ? 'border-amber-400'
+                          : char.id === 'wynel'
+                          ? 'border-red-400'
                           : 'border-[#a992e8]'
                         : 'border-white/10'
                     }`}
@@ -76,7 +84,13 @@ export default function CharacterSwitcher() {
                 {isActive && (
                   <div
                     className={`w-2 h-2 rounded-full absolute top-2 right-2 animate-pulse ${
-                      char.id === 'vesper' ? 'bg-[var(--color-crimson-500)]' : 'bg-[#a992e8]'
+                      char.id === 'vesper'
+                        ? 'bg-[var(--color-crimson-500)]'
+                        : char.id === 'cyrus'
+                        ? 'bg-amber-400'
+                        : char.id === 'wynel'
+                        ? 'bg-red-500'
+                        : 'bg-[#a992e8]'
                     }`}
                   />
                 )}

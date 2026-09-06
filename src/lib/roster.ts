@@ -30,7 +30,7 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
   },
   {
     id: 'aria',
-    name: 'Aria Sil\'aveth',
+    name: "Aria Sil'aveth",
     title: 'of The World',
     race: 'High Elf',
     characterClass: 'Sorcerer',
@@ -41,5 +41,33 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
     portraitUrl: '/aria-portrait.png',
     primaryColor: '#a992e8', // Lavender
     accentColor: '#d9b872',  // Gold
+  },
+  {
+    id: 'cyrus',
+    name: 'Cyrus Hyacinthus',
+    title: 'Temple of Apollo',
+    race: 'Aasimar',
+    characterClass: 'Cleric',
+    subclass: 'Light Domain',
+    level: 10,
+    player: 'Friend',
+    isUser: false,
+    portraitUrl: '/cyrus-portrait.png',
+    primaryColor: '#eab308', // Gold
+    accentColor: '#fbbf24',
+  },
+  {
+    id: 'wynel',
+    name: "Wyn'el Aeluin",
+    title: 'Prince of House Aeluin',
+    race: 'Half-Elf',
+    characterClass: 'Warlock',
+    subclass: 'Archfey Patron',
+    level: 3,
+    player: 'Friend',
+    isUser: false,
+    portraitUrl: '/wynel-portrait.png',
+    primaryColor: '#ef4444', // Scarlet
+    accentColor: '#f43f5e',
   },
 ];

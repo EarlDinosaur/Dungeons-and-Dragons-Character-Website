@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
-import { Dices, RotateCcw, Edit2, Check, X, Shield, Sparkles } from 'lucide-react';
+import { Dices, RotateCcw, Edit2, Check, X, Shield, Sparkles, Flame } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import { formatModifier } from '@/lib/character-engine';
 import type { CharacterState, AbilityName, SkillName } from '@/lib/types';
@@ -174,71 +174,77 @@ export default function StatBlock({ character }: StatBlockProps) {
         </div>
       )}
 
-      {/* Ability Scores */}
-      <div>
-        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1 min-w-[200px]">
-            <span className="w-8 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-            Ability Scores
-            <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-          </h2>
+      {/* ============== 1. ABILITY SCORES & CHECKS CARD ============== */}
+      <SpotlightCard className="p-5 glass-card border-2 border-[var(--color-crimson-500)]/40 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(26,14,18,0.98)_0%,rgba(12,6,8,0.99)_100%)] shadow-[0_12px_40px_rgba(220,38,38,0.2)] rounded-2xl relative overflow-hidden">
+        {/* Corner Filigrees */}
+        <span className="medieval-corner tl text-[var(--color-crimson-400)]/60">❖</span>
+        <span className="medieval-corner tr text-[var(--color-crimson-400)]/60">❖</span>
+        <span className="medieval-corner bl text-[var(--color-crimson-400)]/60">❖</span>
+        <span className="medieval-corner br text-[var(--color-crimson-400)]/60">❖</span>
 
-          <div className="flex items-center gap-2">
-            {!isEditingScores ? (
-              <button
-                onClick={handleStartEditScores}
-                className="text-xs font-[family-name:var(--font-mono)] text-[var(--color-gold-400)] bg-[rgba(255,215,0,0.08)] hover:bg-[rgba(255,215,0,0.18)] border border-[rgba(255,215,0,0.25)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
-              >
-                <Edit2 size={12} /> Edit Scores
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5">
+        {/* Inner Hairline Border */}
+        <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/20 rounded-xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-[var(--color-crimson-500)]/25">
+            <div className="flex items-center gap-2">
+              <Flame size={18} className="text-[var(--color-crimson-400)]" />
+              <h3 className="text-xl font-bold text-rose-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                Ability Scores &amp; Checks
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isEditingScores ? (
                 <button
-                  onClick={handleSaveScores}
-                  className="btn btn-gold btn-sm text-xs flex items-center gap-1"
+                  onClick={handleStartEditScores}
+                  className="text-xs font-mono text-[var(--color-gold-400)] bg-black/60 hover:bg-[#1e0a0e] border border-[var(--color-crimson-500)]/40 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
                 >
-                  <Check size={12} /> Save
+                  <Edit2 size={12} /> Edit Scores
                 </button>
-                <button
-                  onClick={() => setIsEditingScores(false)}
-                  className="p-1 text-[var(--color-parchment-dim)] hover:text-white"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleSaveScores}
+                    className="btn btn-gold btn-sm text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check size={12} /> Save
+                  </button>
+                  <button
+                    onClick={() => setIsEditingScores(false)}
+                    className="p-1 text-[var(--color-parchment-dim)] hover:text-white cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div ref={statsRef} className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {abilities.map((ability) => (
-            <SpotlightCard
-              key={ability.name}
-              className="stat-card !p-0 group transition-transform hover:scale-[1.03]"
-              spotlightColor={ABILITY_COLORS[ability.name]}
-            >
-              <div
-                className="w-full flex flex-col items-center p-4 rounded-xl text-center relative"
-                style={{
-                  background: ABILITY_COLORS[ability.name],
-                  borderColor: ABILITY_BORDER_COLORS[ability.name],
-                }}
-              >
-                <span className="text-[10px] uppercase tracking-[0.15em] font-[family-name:var(--font-heading)] text-[var(--color-parchment-dim)] mb-1 group-hover:text-[var(--color-gold-400)] transition-colors">
-                  {ability.name}
-                </span>
-
-                <button
-                  onClick={() => !isEditingScores && rollCheck(`${ability.label} (${ability.name})`, ability.modifier)}
-                  className={cn("focus:outline-none", !isEditingScores && "cursor-pointer")}
+          <div ref={statsRef} className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {abilities.map((ability) => {
+              const isKeyStat = ability.name === 'DEX' || ability.name === 'INT';
+              return (
+                <div
+                  key={ability.name}
+                  className={`stat-card relative p-3 rounded-xl text-center border transition-all ${
+                    isKeyStat
+                      ? 'bg-[rgba(220,38,38,0.14)] border-[var(--color-crimson-500)]/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
+                      : 'bg-black/50 border-white/10 hover:border-white/20'
+                  }`}
                 >
-                  <span className="text-3xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)] group-hover:scale-110 transition-transform">
-                    {formatModifier(ability.modifier)}
+                  <span className="block text-[10px] font-mono uppercase tracking-widest text-[var(--color-crimson-300)] mb-1 font-bold">
+                    {ability.name}
                   </span>
-                </button>
 
-                {/* Score Circle / Edit Input */}
-                <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center mt-2 border-[rgba(255,215,0,0.3)] bg-black/40">
+                  <button
+                    onClick={() => !isEditingScores && rollCheck(`${ability.label} (${ability.name}) Check`, ability.modifier)}
+                    className="text-3xl font-bold font-['Cormorant_Garamond',serif] text-rose-100 block leading-none hover:scale-110 transition-transform cursor-pointer w-full my-1"
+                    title="Click to roll ability check"
+                  >
+                    {formatModifier(ability.modifier)}
+                  </button>
+
                   {isEditingScores ? (
                     <input
                       type="number"
@@ -251,154 +257,193 @@ export default function StatBlock({ character }: StatBlockProps) {
                           [ability.name]: Math.max(1, Math.min(30, Number(e.target.value))),
                         })
                       }
-                      className="w-8 text-center text-sm font-[family-name:var(--font-mono)] font-bold text-[var(--color-gold-bright)] bg-transparent border-none focus:outline-none"
+                      className="w-12 bg-black/90 border border-red-500 rounded text-xs font-mono text-rose-200 text-center mt-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-red-400 mx-auto"
                     />
                   ) : (
-                    <span className="text-sm font-[family-name:var(--font-mono)] text-[var(--color-parchment-muted)] font-bold">
+                    <span className="text-[11px] font-mono text-rose-200/60 mt-1 block font-bold">
                       {ability.total}
                     </span>
                   )}
-                </div>
-              </div>
-            </SpotlightCard>
-          ))}
-        </div>
-      </div>
 
-      {/* Saving Throws */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1">
-            <span className="w-8 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-            Saving Throws
-            <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-          </h2>
-          <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)]">
-            Click to roll Saving Throw
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {abilities.map((ability) => (
-            <button
-              key={`save-${ability.name}`}
-              onClick={() => rollCheck(`${ability.label} Saving Throw`, ability.saveBonus)}
-              className={cn(
-                'flex items-center justify-between px-3 py-2 rounded-lg transition-all text-left cursor-pointer hover:-translate-y-0.5 active:scale-95',
-                ability.saveProficient
-                  ? 'bg-[rgba(255,215,0,0.08)] border border-[rgba(255,215,0,0.25)] hover:border-[var(--color-gold-400)]'
-                  : 'bg-[rgba(255,255,255,0.02)] border border-transparent hover:bg-[rgba(255,255,255,0.06)] hover:border-white/10'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  'w-2.5 h-2.5 rounded-full',
-                  ability.saveProficient ? 'bg-[var(--color-gold-500)] shadow-[0_0_8px_var(--color-gold-400)]' : 'bg-[rgba(255,255,255,0.1)]'
-                )} />
-                <span className="text-sm text-[var(--color-parchment-muted)]">{ability.label}</span>
-              </div>
-              <span className={cn(
-                'font-[family-name:var(--font-mono)] text-sm font-semibold',
-                ability.saveProficient ? 'text-[var(--color-gold-400)]' : 'text-[var(--color-parchment-dim)]'
-              )}>
-                {formatModifier(ability.saveBonus)}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Skills */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1">
-            <span className="w-8 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-            Skills
-            <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-          </h2>
-          <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)]">
-            Tap dot to toggle proficiency &bull; Tap title to roll
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-          {character.skills.map((skill) => (
-            <div
-              key={skill.name}
-              className={cn(
-                'flex items-center justify-between px-3 py-1.5 rounded-lg transition-all text-sm text-left',
-                skill.expertise
-                  ? 'bg-[rgba(168,85,247,0.12)] border border-[rgba(168,85,247,0.3)] hover:border-[var(--color-arcane-400)]'
-                  : skill.proficient
-                  ? 'bg-[rgba(255,215,0,0.08)] border border-[rgba(255,215,0,0.2)] hover:border-[var(--color-gold-400)]'
-                  : 'border border-transparent hover:bg-[rgba(255,255,255,0.05)] hover:border-white/10'
-              )}
-            >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* Proficiency toggle button */}
-                <button
-                  onClick={() => toggleSkillProficiency(skill.name)}
-                  className="flex items-center gap-0.5 p-1 rounded hover:bg-white/10 cursor-pointer"
-                  title="Toggle None -> Proficient -> Expertise"
-                >
-                  <div className={cn(
-                    'w-3 h-3 rounded-full border transition-colors',
-                    skill.expertise
-                      ? 'bg-[var(--color-arcane-500)] border-[var(--color-arcane-400)] shadow-[0_0_8px_#a855f7]'
-                      : skill.proficient
-                      ? 'bg-[var(--color-gold-500)] border-[var(--color-gold-400)] shadow-[0_0_8px_#ffd700]'
-                      : 'border-[rgba(255,255,255,0.2)] bg-transparent'
-                  )} />
-                  {skill.expertise && (
-                    <div className="w-3 h-3 rounded-full bg-[var(--color-arcane-500)] border border-[var(--color-arcane-400)]" />
+                  {ability.saveProficient && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-crimson-600)] border border-red-400 rounded-full flex items-center justify-center shadow-md" title="Saving Throw Proficiency">
+                      <Shield size={9} className="text-white" />
+                    </div>
                   )}
-                </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </SpotlightCard>
 
-                <button
-                  onClick={() => rollCheck(`${skill.name} Skill`, skill.bonus)}
-                  className="flex items-center gap-2 text-left truncate cursor-pointer flex-1"
-                >
-                  <span className={cn(
-                    'truncate',
-                    skill.proficient ? 'text-[var(--color-parchment)] font-semibold' : 'text-[var(--color-parchment-dim)]'
-                  )}>
-                    {skill.name}
-                  </span>
-                  <span className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
-                    ({skill.ability})
-                  </span>
-                </button>
-              </div>
+      {/* ============== 2. SAVING THROWS CARD ============== */}
+      <SpotlightCard className="p-5 glass-card border border-[var(--color-crimson-500)]/30 bg-[linear-gradient(135deg,rgba(22,14,16,0.95)_0%,rgba(12,8,10,0.98)_100%)] shadow-md rounded-2xl relative overflow-hidden">
+        {/* Corner Filigrees */}
+        <span className="medieval-corner tl text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner tr text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner bl text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner br text-[var(--color-crimson-400)]/40">❖</span>
 
+        {/* Inner Hairline Border */}
+        <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/15 rounded-xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-[var(--color-crimson-500)]/20">
+            <div className="flex items-center gap-2">
+              <Shield size={18} className="text-[var(--color-crimson-400)]" />
+              <h3 className="text-xl font-bold text-rose-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                Saving Throws
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-rose-300/70">
+              Click to roll Saving Throw
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {abilities.map((ability) => (
               <button
-                onClick={() => rollCheck(`${skill.name} Skill`, skill.bonus)}
+                key={`save-${ability.name}`}
+                onClick={() => rollCheck(`${ability.label} Saving Throw`, ability.saveBonus)}
                 className={cn(
-                  'font-[family-name:var(--font-mono)] font-semibold text-sm cursor-pointer ml-2',
-                  skill.expertise
-                    ? 'text-[var(--color-arcane-400)]'
-                    : skill.proficient
-                    ? 'text-[var(--color-gold-400)]'
-                    : 'text-[var(--color-parchment-dim)]'
+                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer hover:-translate-y-0.5 active:scale-95 shadow-sm',
+                  ability.saveProficient
+                    ? 'bg-[rgba(220,38,38,0.18)] border border-[var(--color-crimson-500)]/60 hover:border-red-400 shadow-[0_0_12px_rgba(220,38,38,0.2)]'
+                    : 'bg-black/40 border border-white/5 hover:bg-black/60 hover:border-white/15'
                 )}
               >
-                {formatModifier(skill.bonus)}
+                <div className="flex items-center gap-2.5">
+                  <div className={cn(
+                    'w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold border transition-colors',
+                    ability.saveProficient ? 'bg-[var(--color-crimson-500)] border-red-300 text-white shadow-[0_0_8px_#dc2626]' : 'bg-transparent border-stone-600'
+                  )}>
+                    {ability.saveProficient && '✓'}
+                  </div>
+                  <span className={cn(
+                    'text-xs font-serif',
+                    ability.saveProficient ? 'text-rose-100 font-bold' : 'text-[var(--color-parchment-muted)]'
+                  )}>
+                    {ability.label}
+                  </span>
+                </div>
+                <span className={cn(
+                  'font-mono text-sm font-bold',
+                  ability.saveProficient ? 'text-amber-300' : 'text-[var(--color-parchment-dim)]'
+                )}>
+                  {formatModifier(ability.saveBonus)}
+                </span>
               </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      </SpotlightCard>
 
-        <div className="flex items-center gap-4 mt-3 text-[10px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-[family-name:var(--font-heading)]">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-[var(--color-gold-500)]" />
-            Proficient
+      {/* ============== 3. PROFICIENCIES & SKILLS CARD ============== */}
+      <SpotlightCard className="p-5 glass-card border border-[var(--color-crimson-500)]/30 bg-[linear-gradient(135deg,rgba(22,14,16,0.95)_0%,rgba(12,8,10,0.98)_100%)] shadow-md rounded-2xl relative overflow-hidden">
+        {/* Corner Filigrees */}
+        <span className="medieval-corner tl text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner tr text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner bl text-[var(--color-crimson-400)]/40">❖</span>
+        <span className="medieval-corner br text-[var(--color-crimson-400)]/40">❖</span>
+
+        {/* Inner Hairline Border */}
+        <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/15 rounded-xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-[var(--color-crimson-500)]/20">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-amber-400" />
+              <h3 className="text-xl font-bold text-rose-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                Skills &amp; Masteries
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-rose-300/70">
+              Tap dot to toggle &bull; Tap name to roll check
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-[var(--color-arcane-500)]" />
-            <div className="w-2 h-2 rounded-full bg-[var(--color-arcane-500)]" />
-            Expertise
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {character.skills.map((skill) => (
+              <div
+                key={skill.name}
+                className={cn(
+                  'flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs text-left',
+                  skill.expertise
+                    ? 'bg-[rgba(168,85,247,0.15)] border border-[rgba(168,85,247,0.4)] hover:border-[var(--color-arcane-400)] shadow-[0_0_10px_rgba(168,85,247,0.15)]'
+                    : skill.proficient
+                    ? 'bg-[rgba(220,38,38,0.12)] border border-[var(--color-crimson-500)]/40 hover:border-red-400'
+                    : 'bg-black/30 border border-white/5 hover:bg-black/50 hover:border-white/10'
+                )}
+              >
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  {/* Proficiency toggle button */}
+                  <button
+                    onClick={() => toggleSkillProficiency(skill.name)}
+                    className="flex items-center gap-0.5 p-1 rounded hover:bg-white/10 cursor-pointer"
+                    title="Toggle None -> Proficient -> Expertise"
+                  >
+                    <div className={cn(
+                      'w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center text-[8px] font-bold',
+                      skill.expertise
+                        ? 'bg-[var(--color-arcane-500)] border-[var(--color-arcane-400)] text-white shadow-[0_0_8px_#a855f7]'
+                        : skill.proficient
+                        ? 'bg-[var(--color-crimson-500)] border-red-400 text-white shadow-[0_0_8px_#dc2626]'
+                        : 'border-stone-600 bg-transparent'
+                    )}>
+                      {skill.expertise ? '★' : skill.proficient ? '✓' : ''}
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => rollCheck(`${skill.name} Skill Check`, skill.bonus)}
+                    className="flex items-center gap-2 text-left truncate cursor-pointer flex-1 group"
+                  >
+                    <span className={cn(
+                      'truncate font-serif text-xs group-hover:text-amber-200 transition-colors',
+                      skill.expertise
+                        ? 'text-purple-200 font-bold'
+                        : skill.proficient
+                        ? 'text-rose-100 font-bold'
+                        : 'text-[var(--color-parchment-muted)]'
+                    )}>
+                      {skill.name}
+                    </span>
+                    <span className="text-[10px] text-stone-400 font-mono">
+                      ({skill.ability})
+                    </span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => rollCheck(`${skill.name} Skill Check`, skill.bonus)}
+                  className={cn(
+                    'font-mono font-bold text-xs cursor-pointer ml-2 px-2 py-0.5 rounded',
+                    skill.expertise
+                      ? 'text-purple-300 bg-purple-950/60 border border-purple-800'
+                      : skill.proficient
+                      ? 'text-amber-300 bg-red-950/60 border border-red-900'
+                      : 'text-[var(--color-parchment-dim)]'
+                  )}
+                >
+                  {formatModifier(skill.bonus)}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[var(--color-crimson-500)]/20 text-[10px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-crimson-500)]" />
+              Proficient (✓)
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-arcane-500)]" />
+              Expertise (★)
+            </div>
           </div>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Passive Perception */}
       <div className="glass-card p-3 flex items-center justify-between">

@@ -152,207 +152,247 @@ export default function AriaStatBlock({ aria }: AriaStatBlockProps) {
         {/* COLUMN 1: ABILITY SCORES & SAVING THROWS */}
         <div className="space-y-6">
           {/* Ability Scores */}
-          <div className="p-5 rounded-xl border border-[#262b57] bg-gradient-to-b from-[#171b3f] to-[#14183a]">
-            <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold mb-4 flex items-center justify-between pb-2 border-b border-[#262b57]">
-              <span className="flex items-center gap-2"><Sparkles size={14} /> Ability Scores</span>
-              <button
-                onClick={() => setIsEditingScores(!isEditingScores)}
-                className="text-[10px] font-mono text-[#d9b872] hover:text-white flex items-center gap-1 cursor-pointer bg-[#0d1026] px-2 py-0.5 rounded border border-[#343a72]"
-              >
-                {isEditingScores ? <Check size={12} /> : <Edit3 size={12} />}
-                {isEditingScores ? 'Done' : 'Edit Scores'}
-              </button>
-            </div>
+          <div className="p-5 rounded-2xl border border-[#a992e8]/40 bg-gradient-to-b from-[#171b3f] to-[#14183a] relative overflow-hidden shadow-md">
+            <span className="medieval-corner tl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner tr text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner bl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner br text-[#a992e8]/50">❖</span>
+            <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none" />
 
-            <div className="space-y-3">
-              {abilities.map((ab) => {
-                const mod = getModifier(ab.score);
-                const fmtMod = mod >= 0 ? `+${mod}` : `${mod}`;
-                return (
-                  <div
-                    key={ab.name}
-                    className="w-full p-2.5 rounded-lg border border-[#262b57] bg-[#0d1026] hover:border-[#a992e8]/60 transition-all flex items-center justify-between group"
-                  >
-                    <div>
-                      <span className="text-[10px] tracking-wider text-[#9aa1cc] uppercase block font-semibold">
-                        {ab.label}
-                      </span>
-                      {isEditingScores ? (
-                        <input
-                          type="number"
-                          min={1}
-                          max={30}
-                          value={ab.score}
-                          onChange={(e) => updateAbilityBaseScore(ab.name, Number(e.target.value))}
-                          className="w-16 bg-[#14183a] border border-[#a992e8] rounded text-xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff] text-center p-0.5 focus:outline-none"
-                        />
-                      ) : (
-                        <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff]">
-                          {ab.score}
-                        </span>
-                      )}
-                    </div>
+            <div className="relative z-10">
+              <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold mb-4 flex items-center justify-between pb-2 border-b border-[#343a72]">
+                <span className="flex items-center gap-2"><Sparkles size={14} /> Ability Scores</span>
+                <button
+                  onClick={() => setIsEditingScores(!isEditingScores)}
+                  className="text-[10px] font-mono text-[#d9b872] hover:text-white flex items-center gap-1 cursor-pointer bg-[#0d1026] px-2 py-0.5 rounded border border-[#343a72]"
+                >
+                  {isEditingScores ? <Check size={12} /> : <Edit3 size={12} />}
+                  {isEditingScores ? 'Done' : 'Edit Scores'}
+                </button>
+              </div>
 
-                    <button
-                      onClick={() => rollCheck(`${ab.label} (${ab.name})`, mod)}
-                      className="px-3 py-1 rounded bg-[#171b3f] border border-[#343a72] text-lg font-bold font-['Cormorant_Garamond',serif] text-[#d9b872] hover:scale-105 transition-transform cursor-pointer"
-                      title="Click to roll check"
+              <div className="space-y-3">
+                {abilities.map((ab) => {
+                  const mod = getModifier(ab.score);
+                  const fmtMod = mod >= 0 ? `+${mod}` : `${mod}`;
+                  return (
+                    <div
+                      key={ab.name}
+                      className="w-full p-2.5 rounded-lg border border-[#262b57] bg-[#0d1026] hover:border-[#a992e8]/60 transition-all flex items-center justify-between group"
                     >
-                      {fmtMod}
-                    </button>
-                  </div>
-                );
-              })}
+                      <div>
+                        <span className="text-[10px] tracking-wider text-[#9aa1cc] uppercase block font-semibold">
+                          {ab.label}
+                        </span>
+                        {isEditingScores ? (
+                          <input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={ab.score}
+                            onChange={(e) => updateAbilityBaseScore(ab.name, Number(e.target.value))}
+                            className="w-16 bg-[#14183a] border border-[#a992e8] rounded text-xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff] text-center p-0.5 focus:outline-none"
+                          />
+                        ) : (
+                          <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff]">
+                            {ab.score}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => rollCheck(`${ab.label} (${ab.name})`, mod)}
+                        className="px-3 py-1 rounded bg-[#171b3f] border border-[#343a72] text-lg font-bold font-['Cormorant_Garamond',serif] text-[#d9b872] hover:scale-105 transition-transform cursor-pointer"
+                        title="Click to roll check"
+                      >
+                        {fmtMod}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Saving Throws */}
-          <div className="p-5 rounded-xl border border-[#262b57] bg-gradient-to-b from-[#171b3f] to-[#14183a]">
-            <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold mb-4 flex items-center justify-between pb-2 border-b border-[#262b57]">
-              <span className="flex items-center gap-2"><Shield size={14} /> Saving Throws</span>
-              <span className="text-[10px] text-[#9aa1cc] font-mono">Click to roll</span>
-            </div>
+          <div className="p-5 rounded-2xl border border-[#a992e8]/40 bg-gradient-to-b from-[#171b3f] to-[#14183a] relative overflow-hidden shadow-md">
+            <span className="medieval-corner tl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner tr text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner bl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner br text-[#a992e8]/50">❖</span>
+            <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none" />
 
-            <div className="space-y-2">
-              {abilities.map((ab) => {
-                const isProf = aria.savingThrowProficiencies.includes(ab.name);
-                const mod = getModifier(ab.score) + (isProf ? prof : 0);
-                const fmtMod = mod >= 0 ? `+${mod}` : `${mod}`;
+            <div className="relative z-10">
+              <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold mb-4 flex items-center justify-between pb-2 border-b border-[#343a72]">
+                <span className="flex items-center gap-2"><Shield size={14} /> Saving Throws</span>
+                <span className="text-[10px] text-[#9aa1cc] font-mono">Click to roll</span>
+              </div>
 
-                return (
-                  <button
-                    key={ab.name}
-                    onClick={() => rollCheck(`${ab.label} Saving Throw`, mod)}
-                    className="w-full flex items-center justify-between py-1.5 px-2 rounded text-sm border border-transparent hover:border-[#a992e8]/40 hover:bg-[#1d2249]/60 transition-all cursor-pointer text-left active:scale-95"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={isProf ? 'text-[#a992e8]' : 'text-[#262b57]'}>
-                        {isProf ? <CheckSquare size={14} /> : <Square size={14} />}
+              <div className="space-y-2">
+                {abilities.map((ab) => {
+                  const isProf = aria.savingThrowProficiencies.includes(ab.name);
+                  const mod = getModifier(ab.score) + (isProf ? prof : 0);
+                  const fmtMod = mod >= 0 ? `+${mod}` : `${mod}`;
+
+                  return (
+                    <button
+                      key={ab.name}
+                      onClick={() => rollCheck(`${ab.label} Saving Throw`, mod)}
+                      className="w-full flex items-center justify-between py-1.5 px-2 rounded text-sm border border-transparent hover:border-[#a992e8]/40 hover:bg-[#1d2249]/60 transition-all cursor-pointer text-left active:scale-95"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={isProf ? 'text-[#a992e8]' : 'text-[#262b57]'}>
+                          {isProf ? <CheckSquare size={14} /> : <Square size={14} />}
+                        </span>
+                        <span className={isProf ? 'text-[#e8e6ff] font-semibold' : 'text-[#cfd4ee]'}>
+                          {ab.name}
+                        </span>
+                      </div>
+
+                      <span className={`font-['Cormorant_Garamond',serif] font-bold text-base ${isProf ? 'text-[#d9b872]' : 'text-[#9aa1cc]'}`}>
+                        {fmtMod}
                       </span>
-                      <span className={isProf ? 'text-[#e8e6ff] font-semibold' : 'text-[#cfd4ee]'}>
-                        {ab.name}
-                      </span>
-                    </div>
-
-                    <span className={`font-['Cormorant_Garamond',serif] font-bold text-base ${isProf ? 'text-[#d9b872]' : 'text-[#9aa1cc]'}`}>
-                      {fmtMod}
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
 
         {/* COLUMN 2: SKILLS LIST (Interactive Proficiency / Expertise Toggle) */}
-        <div className="p-5 rounded-xl border border-[#262b57] bg-gradient-to-b from-[#171b3f] to-[#14183a] space-y-4">
-          <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold flex items-center justify-between pb-2 border-b border-[#262b57]">
-            <span className="flex items-center gap-2"><Award size={14} /> Proficiencies &amp; Skills</span>
-            <span className="text-[10px] text-[#9aa1cc] font-mono">Click dot to toggle proficiency</span>
-          </div>
+        <div className="p-5 rounded-2xl border border-[#a992e8]/40 bg-gradient-to-b from-[#171b3f] to-[#14183a] relative overflow-hidden shadow-md">
+          <span className="medieval-corner tl text-[#a992e8]/50">❖</span>
+          <span className="medieval-corner tr text-[#a992e8]/50">❖</span>
+          <span className="medieval-corner bl text-[#a992e8]/50">❖</span>
+          <span className="medieval-corner br text-[#a992e8]/50">❖</span>
+          <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none" />
 
-          <div className="space-y-1.5">
-            {currentSkills.map((sk) => {
-              const baseMod = getModifier(aria.abilityScores[sk.ability as keyof typeof aria.abilityScores] || 10);
-              const totalBonus = baseMod + (sk.expertise ? prof * 2 : sk.proficient ? prof : 0);
-              const fmtBonus = totalBonus >= 0 ? `+${totalBonus}` : `${totalBonus}`;
+          <div className="relative z-10 space-y-4">
+            <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold flex items-center justify-between pb-2 border-b border-[#343a72]">
+              <span className="flex items-center gap-2"><Award size={14} /> Proficiencies &amp; Skills</span>
+              <span className="text-[10px] text-[#9aa1cc] font-mono">Click dot to toggle proficiency</span>
+            </div>
 
-              return (
-                <div
-                  key={sk.name}
-                  className={`w-full flex items-center justify-between py-1.5 px-2 rounded transition-all text-xs border ${
-                    sk.proficient ? 'bg-[rgba(169,146,232,0.08)] border-[#a992e8]/20' : 'border-transparent hover:bg-[#1d2249]/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleSkillProficiency(sk.name as import('@/lib/types').SkillName)}
-                      className="text-[#d9b872] hover:scale-125 transition-transform cursor-pointer"
-                      title="Click to cycle: Unproficient -> Proficient -> Expertise"
-                    >
-                      {sk.expertise ? (
-                        <span className="text-xs">⭐</span>
-                      ) : sk.proficient ? (
-                        <CheckSquare size={13} className="text-[#a992e8]" />
-                      ) : (
-                        <Square size={13} className="text-[#262b57]" />
-                      )}
-                    </button>
-                    <span className={sk.proficient ? 'text-[#e8e6ff] font-semibold' : 'text-[#cfd4ee]'}>
-                      {sk.name}
-                    </span>
-                    {sk.expertise && (
-                      <span className="text-[9px] bg-[#d9b872]/20 text-[#d9b872] px-1 rounded font-mono font-bold">
-                        EXP
-                      </span>
-                    )}
-                  </div>
+            <div className="space-y-1.5">
+              {currentSkills.map((sk) => {
+                const baseMod = getModifier(aria.abilityScores[sk.ability as keyof typeof aria.abilityScores] || 10);
+                const totalBonus = baseMod + (sk.expertise ? prof * 2 : sk.proficient ? prof : 0);
+                const fmtBonus = totalBonus >= 0 ? `+${totalBonus}` : `${totalBonus}`;
 
-                  <button
-                    onClick={() => rollCheck(`${sk.name} Skill`, totalBonus)}
-                    className="flex items-center gap-2 cursor-pointer hover:text-white"
+                return (
+                  <div
+                    key={sk.name}
+                    className={`w-full flex items-center justify-between py-1.5 px-2 rounded transition-all text-xs border ${
+                      sk.proficient ? 'bg-[rgba(169,146,232,0.08)] border-[#a992e8]/20' : 'border-transparent hover:bg-[#1d2249]/60'
+                    }`}
                   >
-                    <span className="text-[10px] text-[#9aa1cc] font-mono uppercase">{sk.ability}</span>
-                    <span className={`font-['Cormorant_Garamond',serif] font-bold text-sm ${sk.proficient ? 'text-[#d9b872]' : 'text-[#9aa1cc]'}`}>
-                      {fmtBonus}
-                    </span>
-                  </button>
-                </div>
-              );
-            })}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleSkillProficiency(sk.name as import('@/lib/types').SkillName)}
+                        className="text-[#d9b872] hover:scale-125 transition-transform cursor-pointer"
+                        title="Click to cycle: Unproficient -> Proficient -> Expertise"
+                      >
+                        {sk.expertise ? (
+                          <span className="text-xs">⭐</span>
+                        ) : sk.proficient ? (
+                          <CheckSquare size={13} className="text-[#a992e8]" />
+                        ) : (
+                          <Square size={13} className="text-[#262b57]" />
+                        )}
+                      </button>
+                      <span className={sk.proficient ? 'text-[#e8e6ff] font-semibold' : 'text-[#cfd4ee]'}>
+                        {sk.name}
+                      </span>
+                      {sk.expertise && (
+                        <span className="text-[9px] bg-[#d9b872]/20 text-[#d9b872] px-1 rounded font-mono font-bold">
+                          EXP
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => rollCheck(`${sk.name} Skill`, totalBonus)}
+                      className="flex items-center gap-2 cursor-pointer hover:text-white"
+                    >
+                      <span className="text-[10px] text-[#9aa1cc] font-mono uppercase">{sk.ability}</span>
+                      <span className={`font-['Cormorant_Garamond',serif] font-bold text-sm ${sk.proficient ? 'text-[#d9b872]' : 'text-[#9aa1cc]'}`}>
+                        {fmtBonus}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* COLUMN 3: PASSIVE SENSES & LUNAR FEATURES */}
         <div className="space-y-6">
           {/* Passive Perception */}
-          <div className="p-5 rounded-xl border border-[#262b57] bg-gradient-to-b from-[#171b3f] to-[#14183a] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#0d1026] border border-[#a992e8]/30 flex items-center justify-center text-[#a992e8]">
-                <Eye size={18} />
+          <div className="p-5 rounded-2xl border border-[#a992e8]/40 bg-gradient-to-b from-[#171b3f] to-[#14183a] relative overflow-hidden shadow-md">
+            <span className="medieval-corner tl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner tr text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner bl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner br text-[#a992e8]/50">❖</span>
+            <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none" />
+
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#0d1026] border border-[#a992e8]/30 flex items-center justify-center text-[#a992e8]">
+                  <Eye size={18} />
+                </div>
+                <div>
+                  <span className="text-xs uppercase tracking-wider text-[#9aa1cc] block">Passive Perception</span>
+                  <span className="text-xs text-[#cfd4ee]">WIS (Perception)</span>
+                </div>
               </div>
-              <div>
-                <span className="text-xs uppercase tracking-wider text-[#9aa1cc] block">Passive Perception</span>
-                <span className="text-xs text-[#cfd4ee]">WIS (Perception)</span>
-              </div>
+              <span className="text-2xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff]">
+                {10 + getModifier(aria.abilityScores.WIS)}
+              </span>
             </div>
-            <span className="text-2xl font-bold font-['Cormorant_Garamond',serif] text-[#e8e6ff]">
-              {10 + getModifier(aria.abilityScores.WIS)}
-            </span>
           </div>
 
           {/* Sorcerer Traits Summary */}
-          <div className="p-5 rounded-xl border border-[#262b57] bg-gradient-to-b from-[#171b3f] to-[#14183a] space-y-4">
-            <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold pb-2 border-b border-[#262b57] flex items-center gap-2">
-              <Moon size={14} /> Sorcerer Features
-            </div>
+          <div className="p-5 rounded-2xl border border-[#a992e8]/40 bg-gradient-to-b from-[#171b3f] to-[#14183a] relative overflow-hidden shadow-md">
+            <span className="medieval-corner tl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner tr text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner bl text-[#a992e8]/50">❖</span>
+            <span className="medieval-corner br text-[#a992e8]/50">❖</span>
+            <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none" />
 
-            <div className="space-y-3 text-xs text-[#cfd4ee] leading-relaxed">
-              <div className="p-3 rounded bg-[#0d1026] border border-[#262b57]">
-                <h4 className="font-bold text-[#d9b872] font-['Cormorant_Garamond',serif] text-sm mb-1">
-                  Lunar Embodiment
-                </h4>
-                <p className="text-[11px] text-[#9aa1cc]">
-                  You learn additional spells associated with the Full Moon, New Moon, and Crescent Moon. You can change your active phase after a long rest.
-                </p>
+            <div className="relative z-10 space-y-4">
+              <div className="text-xs uppercase tracking-widest text-[#a992e8] font-semibold pb-2 border-b border-[#343a72] flex items-center gap-2">
+                <Moon size={14} /> Sorcerer Features
               </div>
 
-              <div className="p-3 rounded bg-[#0d1026] border border-[#262b57]">
-                <h4 className="font-bold text-[#a992e8] font-['Cormorant_Garamond',serif] text-sm mb-1">
-                  Innate Sorcery
-                </h4>
-                <p className="text-[11px] text-[#9aa1cc]">
-                  As a bonus action, unleash magic for 1 minute: +1 Spell Save DC (DC 18) &amp; Advantage on Sorcerer spell attack rolls (2 uses/long rest).
-                </p>
-              </div>
+              <div className="space-y-3 text-xs text-[#cfd4ee] leading-relaxed">
+                <div className="p-3 rounded-xl bg-[#0d1026] border border-[#343a72]">
+                  <h4 className="font-bold text-[#d9b872] font-['Cormorant_Garamond',serif] text-sm mb-1">
+                    Lunar Embodiment
+                  </h4>
+                  <p className="text-[11px] text-[#9aa1cc]">
+                    You learn additional spells associated with the Full Moon, New Moon, and Crescent Moon. You can change your active phase after a long rest.
+                  </p>
+                </div>
 
-              <div className="p-3 rounded bg-[#0d1026] border border-[#262b57]">
-                <h4 className="font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif] text-sm mb-1">
-                  Metamagic
-                </h4>
-                <p className="text-[11px] text-[#9aa1cc]">
-                  Modify your spells on the fly using Sorcery Points: Quickened Spell, Twinned Spell, and Subtle Spell.
-                </p>
+                <div className="p-3 rounded-xl bg-[#0d1026] border border-[#343a72]">
+                  <h4 className="font-bold text-[#a992e8] font-['Cormorant_Garamond',serif] text-sm mb-1">
+                    Innate Sorcery
+                  </h4>
+                  <p className="text-[11px] text-[#9aa1cc]">
+                    As a bonus action, unleash magic for 1 minute: +1 Spell Save DC (DC 18) &amp; Advantage on Sorcerer spell attack rolls (2 uses/long rest).
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#0d1026] border border-[#343a72]">
+                  <h4 className="font-bold text-[#e8e6ff] font-['Cormorant_Garamond',serif] text-sm mb-1">
+                    Metamagic
+                  </h4>
+                  <p className="text-[11px] text-[#9aa1cc]">
+                    Modify your spells on the fly using Sorcery Points: Quickened Spell, Twinned Spell, and Subtle Spell.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

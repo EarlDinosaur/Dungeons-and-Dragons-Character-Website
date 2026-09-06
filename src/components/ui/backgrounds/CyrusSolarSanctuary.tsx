@@ -13,26 +13,38 @@ export default function CyrusSolarSanctuary({ radiantActive = false }: CyrusSola
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#0d0a06]">
+      {/* ====================================================================
+         1. HERO SOLAR TEMPLE BACKGROUND IMAGE (Uploaded or Preset)
+         ==================================================================== */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={bgUrl || '/images/cyrus-bg.jpg'}
+          alt="Cyrus Solar Temple Background"
+          className="w-full h-full object-cover object-center scale-105 opacity-70 transition-all duration-1000 filter brightness-95 contrast-110 pointer-events-none"
+        />
+      </div>
+
       {/* Radiant Soul Divine Flare Overlay */}
       {radiantActive && (
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,215,0,0.25)_0%,transparent_70%)] animate-pulse pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,215,0,0.30)_0%,transparent_70%)] animate-pulse pointer-events-none z-10 mix-blend-screen" />
       )}
-      {/* Custom Temple Balcony & Celestial Clouds Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center opacity-35 mix-blend-screen filter contrast-125 saturate-125"
-        style={{ backgroundImage: `url('${bgUrl}')` }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a06] via-[#0d0a06]/40 to-[#0d0a06]/70 pointer-events-none" />
+
+      {/* Bottom Mist Fade for Character Sheet Readability */}
+      <div className="absolute bottom-0 left-0 right-0 h-[40%] pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(13,10,6,0.65)] to-[#0d0a06]" />
+      </div>
+
+      {/* Atmospheric Vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,transparent_35%,rgba(13,10,6,0.70)_100%)] pointer-events-none" />
 
       {/* Base warm golden radiance */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none mix-blend-screen"
         style={{
           background: `
             radial-gradient(circle at 82% 10%, rgba(255,200,60,0.35), rgba(218,165,32,0.20) 22%, transparent 50%),
             radial-gradient(circle at 10% 85%, rgba(184,134,11,0.20), transparent 40%),
-            radial-gradient(circle at 55% 50%, rgba(255,223,120,0.10), transparent 50%),
-            #0d0a06/50
+            radial-gradient(circle at 55% 50%, rgba(255,223,120,0.10), transparent 50%)
           `,
         }}
       />

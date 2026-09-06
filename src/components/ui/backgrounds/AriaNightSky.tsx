@@ -24,67 +24,76 @@ export default function AriaNightSky({ currentPhase = 'full' }: AriaNightSkyProp
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#05040d]">
-      {/* Custom Wallpaper Layer */}
-      {customBg && (
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-screen filter contrast-125 saturate-125"
-          style={{ backgroundImage: `url('${customBg}')` }}
-        />
-      )}
       {/* ====================================================================
-         3 STACKED OPACITY LAYERS FOR 100% BUTTER-SMOOTH COLOR TRANSITIONS
+         1. HERO CELESTIAL BACKGROUND IMAGE (Uploaded or Preset Wallpaper)
+         ==================================================================== */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={customBg || 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80'}
+          alt="Aria Celestial Background"
+          className="w-full h-full object-cover object-center scale-105 opacity-70 transition-all duration-1000 filter brightness-95 contrast-110 pointer-events-none"
+        />
+      </div>
+
+      {/* ====================================================================
+         2. DYNAMIC LUNAR PHASE ATMOSPHERIC TINTS (Seamless Starlight Washes)
          ==================================================================== */}
 
       {/* 1. FULL MOON LAYER (Radiant Silver & Gold Celestial Night) */}
       <div
-        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out pointer-events-none mix-blend-screen ${
           currentPhase === 'full' ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
           background: `
-            radial-gradient(circle at 85% 12%, rgba(255,248,220,0.50), rgba(217,184,114,0.30) 22%, transparent 50%),
-            radial-gradient(circle at 10% 80%, rgba(169,146,232,0.30), transparent 40%),
-            radial-gradient(circle at 75% 90%, rgba(217,184,114,0.25), transparent 40%),
-            #080c28
+            radial-gradient(circle at 85% 12%, rgba(255,248,220,0.55), rgba(217,184,114,0.30) 24%, transparent 55%),
+            radial-gradient(circle at 10% 80%, rgba(169,146,232,0.35), transparent 45%),
+            radial-gradient(circle at 75% 90%, rgba(217,184,114,0.25), transparent 45%)
           `,
         }}
       />
 
       {/* 2. NEW MOON LAYER (Crimson Void & Eclipse Shadow) */}
       <div
-        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out pointer-events-none mix-blend-screen ${
           currentPhase === 'new' ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
           background: `
-            radial-gradient(circle at 85% 12%, rgba(255,42,95,0.45), rgba(126,34,206,0.35) 25%, transparent 55%),
-            radial-gradient(circle at 10% 80%, rgba(88,28,135,0.55), transparent 45%),
-            radial-gradient(circle at 75% 90%, rgba(127,29,29,0.40), transparent 50%),
-            #0a0314
+            radial-gradient(circle at 85% 12%, rgba(255,42,95,0.50), rgba(126,34,206,0.35) 25%, transparent 55%),
+            radial-gradient(circle at 10% 80%, rgba(88,28,135,0.45), transparent 45%),
+            radial-gradient(circle at 75% 90%, rgba(127,29,29,0.35), transparent 50%)
           `,
         }}
       />
 
       {/* 3. CRESCENT MOON LAYER (Ethereal Lavender & Twilight Nebula) */}
       <div
-        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out pointer-events-none mix-blend-screen ${
           currentPhase === 'crescent' ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
           background: `
-            radial-gradient(circle at 85% 12%, rgba(199,194,230,0.50), rgba(169,146,232,0.35) 24%, transparent 50%),
-            radial-gradient(circle at 10% 80%, rgba(143,118,214,0.40), transparent 40%),
-            radial-gradient(circle at 75% 90%, rgba(169,146,232,0.25), transparent 40%),
-            #0e0722
+            radial-gradient(circle at 85% 12%, rgba(199,194,230,0.50), rgba(169,146,232,0.35) 24%, transparent 55%),
+            radial-gradient(circle at 10% 80%, rgba(143,118,214,0.35), transparent 45%),
+            radial-gradient(circle at 75% 90%, rgba(169,146,232,0.25), transparent 45%)
           `,
         }}
       />
 
+      {/* Bottom Fog / Darkness Blend for Content Readability */}
+      <div className="absolute bottom-0 left-0 right-0 h-[40%] pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(5,4,13,0.65)] to-[#05040d]" />
+      </div>
+
+      {/* Atmospheric Vignette (Soft at center, deep at border) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,transparent_35%,rgba(4,3,10,0.65)_100%)] pointer-events-none" />
+
       {/* ====================================================================
-         CELESTIAL STARFIELD & FLOATING CLOUDS
+         3. CELESTIAL STARFIELD & FLOATING CLOUDS
          ==================================================================== */}
       <div
-        className="absolute -inset-[60px] starfield-anim opacity-90"
+        className="absolute -inset-[60px] starfield-anim opacity-85 mix-blend-screen pointer-events-none"
         style={{
           backgroundImage: `
             radial-gradient(2px 2px at 8% 12%,   rgba(255,255,255,0.95), transparent),
@@ -102,13 +111,13 @@ export default function AriaNightSky({ currentPhase = 'full' }: AriaNightSkyProp
         }}
       />
 
-      {/* Floating Nebula Clouds */}
-      <div className="absolute top-[6%] -left-[20%] w-[540px] h-[160px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(207,212,238,0.12),transparent_70%)] cloud-anim-1" />
-      <div className="absolute top-[48%] -left-[25%] w-[620px] h-[190px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(169,146,232,0.15),transparent_70%)] cloud-anim-2" />
-      <div className="absolute top-[28%] -left-[15%] w-[440px] h-[140px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(217,184,114,0.12),transparent_70%)] cloud-anim-3" />
+      {/* Floating Nebula Clouds (mix-blend-screen for seamless harmony with wallpaper) */}
+      <div className="absolute top-[6%] -left-[20%] w-[540px] h-[160px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(207,212,238,0.18),transparent_70%)] cloud-anim-1 mix-blend-screen pointer-events-none" />
+      <div className="absolute top-[48%] -left-[25%] w-[620px] h-[190px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(169,146,232,0.22),transparent_70%)] cloud-anim-2 mix-blend-screen pointer-events-none" />
+      <div className="absolute top-[28%] -left-[15%] w-[440px] h-[140px] rounded-full blur-[26px] bg-[radial-gradient(ellipse_at_center,rgba(217,184,114,0.18),transparent_70%)] cloud-anim-3 mix-blend-screen pointer-events-none" />
 
       {/* ====================================================================
-         HERO MOON & MAGICAL SHOCKWAVE BURST
+         4. HERO MOON & MAGICAL SHOCKWAVE BURST
          ==================================================================== */}
       <div className="fixed top-10 right-6 sm:right-16 md:right-24 z-10 pointer-events-none flex flex-col items-center">
         {/* Shockwave Burst Ring (Fires when phase changes) */}
@@ -118,20 +127,14 @@ export default function AriaNightSky({ currentPhase = 'full' }: AriaNightSkyProp
         />
 
         {/* Hero SVG Moon Graphic */}
-        <div className="moon-anim-float relative rounded-full overflow-visible">
+        <div className="moon-anim-float relative rounded-full overflow-visible drop-shadow-[0_0_35px_rgba(169,146,232,0.5)]">
           <AriaMoonSVG phase={currentPhase} />
         </div>
       </div>
 
       {/* Secondary Orbiting Moons */}
-      <div className="absolute top-[68%] left-[5%] w-[54px] h-[54px] rounded-full bg-[#0d1026] shadow-[inset_16px_-4px_0_0_#c7c2e6,0_0_30px_4px_rgba(169,146,232,0.25)] opacity-80" />
-      <div className="absolute top-[16%] left-[14%] w-[22px] h-[22px] rounded-full bg-[#0d1026] shadow-[inset_7px_-2px_0_0_#9aa1cc,0_0_12px_2px_rgba(207,212,238,0.2)] opacity-70" />
-
-      {/* Dynamic Night Fog */}
-      <div className="absolute -left-[20%] w-[140%] h-[260px] bottom-[-40px] blur-[30px] opacity-70 bg-gradient-to-b from-transparent via-[rgba(20,24,58,0.5)] to-[#04030a]" />
-
-      {/* Vignette Overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,transparent_35%,rgba(4,3,10,0.75)_100%)] pointer-events-none" />
+      <div className="absolute top-[68%] left-[5%] w-[54px] h-[54px] rounded-full bg-[#0d1026]/90 shadow-[inset_16px_-4px_0_0_#c7c2e6,0_0_30px_4px_rgba(169,146,232,0.35)] opacity-85 pointer-events-none" />
+      <div className="absolute top-[16%] left-[14%] w-[22px] h-[22px] rounded-full bg-[#0d1026]/90 shadow-[inset_7px_-2px_0_0_#9aa1cc,0_0_12px_2px_rgba(207,212,238,0.25)] opacity-75 pointer-events-none" />
     </div>
   );
 }

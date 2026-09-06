@@ -1,28 +1,74 @@
 'use client';
 
 import React from 'react';
+import { useCharacter } from '@/app/providers';
 
 interface WynelScarletSigilProps {
   chaosAuraActive?: boolean;
 }
 
 export default function WynelScarletSigil({ chaosAuraActive = false }: WynelScarletSigilProps) {
+  const { getBackgroundUrl } = useCharacter();
+  const customBg = getBackgroundUrl('wynel');
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#0a0507]">
-      {/* Deep Obsidian-to-Crimson Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,#2a080c_0%,#140407_45%,#070204_100%)] opacity-95" />
+      {/* ====================================================================
+         1. HERO FEYWILD / ARCHFEY BACKGROUND IMAGE (Uploaded or Preset)
+         ==================================================================== */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={customBg || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80'}
+          alt="Wyn'el Feywild Chaos Background"
+          className="w-full h-full object-cover object-center scale-105 opacity-70 transition-all duration-1000 filter brightness-95 contrast-115 pointer-events-none"
+        />
+      </div>
+
+      {/* ====================================================================
+         2. SCARLET CHAOS ATMOSPHERE & PULSING AMBIENCE
+         ==================================================================== */}
+      {/* Base warm scarlet/crimson radiance */}
+      <div
+        className="absolute inset-0 pointer-events-none mix-blend-screen"
+        style={{
+          background: `
+            radial-gradient(circle at 50% 30%, rgba(225,29,72,0.30), rgba(159,18,57,0.18) 35%, transparent 65%),
+            radial-gradient(circle at 15% 80%, rgba(136,19,55,0.25), transparent 45%),
+            radial-gradient(circle at 85% 80%, rgba(225,29,72,0.20), transparent 45%)
+          `,
+        }}
+      />
 
       {/* Pulsing Chaos Magic Ambient Glows */}
       <div
-        className={`absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-b from-rose-600/25 via-red-700/15 to-transparent blur-3xl transition-opacity duration-1000 ${
-          chaosAuraActive ? 'opacity-90 scale-110' : 'opacity-60'
+        className={`absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-b from-rose-600/30 via-red-700/20 to-transparent blur-3xl transition-all duration-1000 mix-blend-screen pointer-events-none ${
+          chaosAuraActive ? 'opacity-100 scale-120 animate-pulse' : 'opacity-65'
         }`}
       />
-      <div className="absolute top-1/3 -left-48 w-96 h-96 rounded-full bg-red-600/10 blur-[120px]" />
-      <div className="absolute top-1/2 -right-48 w-96 h-96 rounded-full bg-rose-700/10 blur-[120px]" />
+      <div className="absolute top-1/3 -left-48 w-96 h-96 rounded-full bg-red-600/15 blur-[120px] mix-blend-screen pointer-events-none" />
+      <div className="absolute top-1/2 -right-48 w-96 h-96 rounded-full bg-rose-700/15 blur-[120px] mix-blend-screen pointer-events-none" />
 
-      {/* Central Scarlet Witch Eldritch Chaos Sigil (Rotating Geometric Array) */}
-      <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 w-[620px] h-[620px] sm:w-[820px] sm:h-[820px] opacity-35 select-none pointer-events-none">
+      {/* Bottom Mist Fade for Character Sheet Readability */}
+      <div className="absolute bottom-0 left-0 right-0 h-[40%] pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(10,5,7,0.65)] to-[#0a0507]" />
+      </div>
+
+      {/* Atmospheric Vignette Overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,transparent_35%,rgba(10,5,7,0.70)_100%)] pointer-events-none" />
+
+      {/* ====================================================================
+         3. CREATED SHAPES: SCARLET WITCH ELDRITCH CHAOS SIGIL (Geometric Array)
+         ==================================================================== */}
+      <div
+        className={`absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 w-[620px] h-[620px] sm:w-[820px] sm:h-[820px] select-none pointer-events-none transition-all duration-700 mix-blend-screen ${
+          chaosAuraActive ? 'opacity-95 scale-105' : 'opacity-75 hover:opacity-90'
+        }`}
+        style={{
+          filter: chaosAuraActive
+            ? 'drop-shadow(0 0 18px rgba(239, 68, 68, 0.95)) drop-shadow(0 0 35px rgba(244, 63, 94, 0.6))'
+            : 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.75)) drop-shadow(0 0 20px rgba(220, 38, 38, 0.4))',
+        }}
+      >
         {/* Outer Rune Ring - Slow Clockwise Rotation */}
         <svg
           className="absolute inset-0 w-full h-full animate-[spin_120s_linear_infinite]"

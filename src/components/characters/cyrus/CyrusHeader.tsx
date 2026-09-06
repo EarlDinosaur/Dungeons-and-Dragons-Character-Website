@@ -140,6 +140,12 @@ export default function CyrusHeader({
       {/* Inner decorative border */}
       <div className="absolute inset-[6px] border border-[#daa520]/20 rounded-xl pointer-events-none" />
 
+      {/* Corner Filigree Glyphs */}
+      <div className="absolute top-2 left-2.5 text-[#daa520]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute top-2 right-2.5 text-[#daa520]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute bottom-2 left-2.5 text-[#daa520]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute bottom-2 right-2.5 text-[#daa520]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+
       {/* Top Guildhall Navigation Strip */}
       <div className="relative z-10 flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[#daa520]/30">
         <button

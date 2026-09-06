@@ -132,36 +132,47 @@ export default function CharacterHeader({
   const hitDicePoolText = formatHitDicePool(activeClasses);
 
   return (
-    <div className="glass-card p-6 relative overflow-hidden">
-      {/* Decorative top border gradient */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-gold-bright)] to-transparent opacity-60" />
+    <div className="relative p-6 rounded-2xl border border-[var(--color-crimson-500)]/50 bg-gradient-to-b from-[#1f0e12]/95 via-[#140a0c]/98 to-[#0b0406]/98 shadow-[0_0_50px_rgba(220,38,38,0.28)] font-['Spectral',serif]">
+      {/* Shadow Assassin Crimson & Gold Filigree Top & Bottom */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[var(--color-crimson-500)] to-transparent opacity-85 shadow-[0_0_12px_rgba(220,38,38,0.8)]" />
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--color-crimson-500)]/40 to-transparent" />
+
+      {/* Inner decorative filigree border */}
+      <div className="absolute inset-[6px] border border-[var(--color-crimson-500)]/25 rounded-xl pointer-events-none" />
+
+      {/* Corner Filigree Glyphs */}
+      <div className="absolute top-2 left-2.5 text-[var(--color-crimson-400)]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute top-2 right-2.5 text-[var(--color-crimson-400)]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute bottom-2 left-2.5 text-[var(--color-crimson-400)]/50 pointer-events-none text-xs font-serif select-none">❖</div>
+      <div className="absolute bottom-2 right-2.5 text-[var(--color-crimson-400)]/50 pointer-events-none text-xs font-serif select-none">❖</div>
 
       {/* Top Guildhall Navigation Strip */}
-      <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[rgba(255,215,0,0.12)]">
+      <div className="relative z-10 flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[var(--color-crimson-500)]/30">
         <button
           onClick={navigateToMenu}
-          className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[rgba(255,215,0,0.08)] hover:bg-[rgba(255,215,0,0.18)] border border-[var(--color-gold-500)]/40 hover:border-[var(--color-gold-bright)] text-[var(--color-gold-300)] hover:text-[var(--color-gold-bright)] text-xs font-[family-name:var(--font-heading)] font-semibold uppercase tracking-wider transition-all duration-300 shadow-md hover:-translate-y-0.5"
+          className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[rgba(220,38,38,0.10)] hover:bg-[rgba(220,38,38,0.22)] border border-[var(--color-crimson-500)]/40 hover:border-[var(--color-crimson-400)] text-rose-100 hover:text-white text-xs font-mono font-semibold uppercase tracking-wider transition-all duration-300 shadow-md hover:-translate-y-0.5 cursor-pointer"
           id="earl-header-back-button"
         >
-          <ArrowLeft size={13} className="text-[var(--color-gold-400)] group-hover:-translate-x-0.5 transition-transform" />
-          <Scroll size={13} className="text-[var(--color-gold-400)]" />
+          <ArrowLeft size={13} className="text-[var(--color-crimson-400)] group-hover:-translate-x-0.5 transition-transform" />
+          <Scroll size={13} className="text-[var(--color-crimson-400)]" />
           Return to Guildhall
         </button>
 
-        <div className="text-[11px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)] uppercase tracking-widest hidden sm:block">
-          The Ashen Pact &bull; Earl Dossier
+        <div className="text-[11px] font-mono text-rose-300/80 uppercase tracking-widest hidden sm:block">
+          The Ashen Pact &bull; Shadow Guild &amp; Orphan&apos;s Tithe
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-start gap-6">
-        {/* Avatar Portrait & Identity */}
-        <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0">
+      {/* 12-Column Responsive Layout */}
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        {/* Avatar Portrait & Identity (4 cols) */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 lg:col-span-4">
           <div
             onClick={() => openMediaPicker('portraits')}
             className="relative group shrink-0 mx-auto sm:mx-0 cursor-pointer"
             title="Tap to change portrait or wallpaper"
           >
-            <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden border-2 border-[var(--color-gold-400)] shadow-[0_0_30px_rgba(255,215,0,0.35)] group-hover:border-[var(--color-crimson-500)] group-hover:shadow-[0_0_40px_rgba(220,38,38,0.6)] transition-all duration-500 relative">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)] shadow-[0_0_35px_rgba(220,38,38,0.5)] group-hover:shadow-[0_0_50px_rgba(220,38,38,0.7)] transition-all duration-500 relative">
               <img
                 src={vesperPortrait}
                 alt="Vesper Ashwood"
@@ -171,19 +182,20 @@ export default function CharacterHeader({
                 <span>📷 Change</span>
               </div>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-black/90 rounded-full border-2 border-[var(--color-gold-400)] flex items-center justify-center text-sm shadow-lg">
+            <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-[#14080a] rounded-full border-2 border-[var(--color-crimson-500)] flex items-center justify-center text-xs shadow-lg">
               🗡️
             </div>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-bold text-glow-gold">
-                <TextGenerateEffect text={character.name} />
+          <div className="space-y-1 min-w-0 flex-1 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold font-['Cormorant_Garamond',serif] text-rose-100 tracking-wide drop-shadow-[0_0_12px_rgba(220,38,38,0.5)]">
+                {character.name}
               </h1>
+
               <button
                 onClick={openMulticlassModal}
-                className="text-xs font-[family-name:var(--font-mono)] text-[var(--color-gold-400)] bg-[rgba(255,215,0,0.1)] hover:bg-[rgba(255,215,0,0.2)] border border-[rgba(255,215,0,0.3)] px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                className="text-xs font-mono text-[var(--color-gold-400)] bg-[#1e0a0e] hover:bg-[#2e1016] border border-[var(--color-crimson-500)]/40 px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 title="Manage Level & Multiclassing"
               >
                 <Layers size={13} />
@@ -192,126 +204,114 @@ export default function CharacterHeader({
               </button>
             </div>
 
-            <p className="text-lg text-[var(--color-parchment-muted)] font-[family-name:var(--font-body)] italic mb-2">
+            <p className="text-xs text-[var(--color-gold-400)] font-['Cormorant_Garamond',serif] italic">
               &ldquo;{character.alias}&rdquo;
             </p>
 
-            {/* Multiclass Badges & Class List */}
-            <div className="flex flex-wrap items-center gap-2 text-xs font-[family-name:var(--font-mono)]">
-              <span className="bg-[rgba(220,38,38,0.15)] text-[var(--color-crimson-400)] px-2 py-0.5 rounded-full border border-[rgba(220,38,38,0.2)]">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1 text-xs text-rose-200/80 pt-1">
+              <span className="bg-[#1e0a0e] text-[var(--color-crimson-400)] px-2 py-0.5 rounded border border-[var(--color-crimson-500)]/30 font-semibold text-[10px]">
                 {character.race}
               </span>
               {activeClasses.map((c, i) => (
-                <span
-                  key={`${c.className}-${i}`}
-                  className="bg-[rgba(168,85,247,0.15)] text-[var(--color-arcane-300)] px-2.5 py-0.5 rounded-full border border-[rgba(168,85,247,0.25)] flex items-center gap-1"
-                >
-                  <span className="font-semibold">{c.className} {c.level}</span>
-                  {c.subclass && <span className="opacity-75">({c.subclass})</span>}
+                <span key={i} className="bg-[#1e0a0e] text-rose-200 px-2 py-0.5 rounded border border-[var(--color-crimson-500)]/30 font-semibold text-[10px]">
+                  {c.className} {c.level} {c.subclass && `(${c.subclass})`}
                 </span>
               ))}
-              <span className="text-[var(--color-parchment-dim)]">•</span>
-              <span className="text-[var(--color-parchment-dim)]">{hitDicePoolText} Hit Dice</span>
+              <span className="text-[10px] text-[var(--color-parchment-dim)] font-mono">&bull; {hitDicePoolText}</span>
             </div>
           </div>
         </div>
 
-        {/* Quick Stats — Clickable to edit */}
-        <div className="grid grid-cols-4 gap-3 shrink-0">
-          {/* AC */}
-          <div
-            onClick={openStatsModal}
-            className="flex flex-col items-center glass-card p-3 min-w-[72px] cursor-pointer hover:border-[var(--color-gold-400)] transition-all group"
-            title="Click to edit AC, Initiative, Speed, & Prof Bonus"
-          >
-            <Shield size={16} className="text-[var(--color-gold-400)] mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-2xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)]">
-              {character.ac}
+        {/* Middle: Orphan's Tithe Vestige of Malachi Status Box (4 cols) */}
+        <div className="p-3.5 rounded-xl bg-[#14080a] border border-[var(--color-crimson-500)]/30 lg:col-span-4 space-y-2 shadow-inner">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-[var(--color-crimson-400)] uppercase font-bold flex items-center gap-1">
+              <span className="animate-pulse">🩸</span> Orphan&apos;s Tithe Vestige
             </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
-              AC ✏️
-            </span>
-          </div>
-
-          {/* Initiative */}
-          <div
-            onClick={openStatsModal}
-            className="flex flex-col items-center glass-card p-3 min-w-[72px] cursor-pointer hover:border-[var(--color-gold-400)] transition-all group"
-            title="Click to edit AC, Initiative, Speed, & Prof Bonus"
-          >
-            <Zap size={16} className="text-[var(--color-gold-400)] mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-2xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)]">
-              {formatModifier(character.initiative)}
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
-              Init ✏️
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${
+              character.orphansTithe.vestigeStage === 'exalted'
+                ? 'bg-red-950 text-rose-300 border-red-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]'
+                : character.orphansTithe.vestigeStage === 'awakened'
+                ? 'bg-purple-950 text-purple-300 border-purple-500'
+                : 'bg-zinc-900 text-zinc-400 border-zinc-700'
+            }`}>
+              Stage {character.orphansTithe.vestigeStage === 'exalted' ? 'III (Exalted)' : character.orphansTithe.vestigeStage === 'awakened' ? 'II (Awakened)' : 'I (Dormant)'}
             </span>
           </div>
 
-          {/* Speed */}
-          <div
-            onClick={openStatsModal}
-            className="flex flex-col items-center glass-card p-3 min-w-[72px] cursor-pointer hover:border-[var(--color-gold-400)] transition-all group"
-            title="Click to edit AC, Initiative, Speed, & Prof Bonus"
-          >
-            <Footprints size={16} className="text-[var(--color-gold-400)] mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-2xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)]">
-              {character.speed}
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
-              Speed ✏️
-            </span>
-          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-[rgba(220,38,38,0.08)] border border-[var(--color-crimson-500)]/20 rounded-lg p-2 flex flex-col justify-center">
+              <span className="text-[9px] font-mono text-[var(--color-parchment-dim)] uppercase block">
+                Harvested Souls
+              </span>
+              <span className="text-xs font-mono font-bold text-rose-200 mt-0.5">
+                {character.orphansTithe.currentSouls} / 100 Souls
+              </span>
+            </div>
 
-          {/* Prof Bonus */}
-          <div
-            onClick={openStatsModal}
-            className="flex flex-col items-center glass-card p-3 min-w-[72px] cursor-pointer hover:border-[var(--color-gold-400)] transition-all group"
-            title="Click to edit AC, Initiative, Speed, & Prof Bonus"
-          >
-            <Award size={16} className="text-[var(--color-gold-400)] mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-2xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)]">
-              +{character.proficiencyBonus}
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
-              Prof ✏️
-            </span>
+            <div className="bg-[rgba(220,38,38,0.08)] border border-[var(--color-crimson-500)]/20 rounded-lg p-2 flex flex-col justify-center">
+              <span className="text-[9px] font-mono text-[var(--color-parchment-dim)] uppercase block">
+                Assassin Edge
+              </span>
+              <span className="text-xs font-mono font-bold text-amber-300 mt-0.5 truncate" title="Auto-crit against surprised creatures">
+                💀 Auto-Crit
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Orphan's Tithe Artifact & Assassin Status Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-[rgba(255,215,0,0.1)] text-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-[family-name:var(--font-heading)] uppercase tracking-wider text-[var(--color-gold-400)] flex items-center gap-1.5">
-            <span className="animate-pulse">🩸</span> Orphan&apos;s Tithe Vestige:
-          </span>
-          <span className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider border ${
-            character.orphansTithe.vestigeStage === 'exalted'
-              ? 'bg-[rgba(220,38,38,0.25)] text-[var(--color-crimson-400)] border-[var(--color-crimson-500)] shadow-[0_0_10px_rgba(220,38,38,0.4)]'
-              : character.orphansTithe.vestigeStage === 'awakened'
-              ? 'bg-[rgba(168,85,247,0.25)] text-[var(--color-arcane-300)] border-[var(--color-arcane-500)]'
-              : 'bg-[rgba(255,255,255,0.08)] text-[var(--color-parchment-dim)] border-[rgba(255,255,255,0.15)]'
-          }`}>
-            Stage {character.orphansTithe.vestigeStage === 'exalted' ? 'III (Exalted)' : character.orphansTithe.vestigeStage === 'awakened' ? 'II (Awakened)' : 'I (Dormant)'}
-          </span>
-          <span className="text-[var(--color-parchment-muted)] font-[family-name:var(--font-mono)]">
-            • {character.orphansTithe.currentSouls} / 100 Souls
-          </span>
-        </div>
+        {/* Right: Quick Stats Grid (4 cols, 6 boxes) */}
+        <div className="lg:col-span-4 grid grid-cols-3 gap-2 font-mono text-center">
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#170a0d] border border-[var(--color-crimson-500)]/25 hover:border-[var(--color-crimson-400)] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[var(--color-parchment-dim)] uppercase">AC ✏️</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-rose-100">{character.ac}</span>
+          </div>
 
-        <div className="flex items-center gap-2 font-[family-name:var(--font-mono)] text-[11px]">
-          <span className="bg-[rgba(220,38,38,0.1)] text-[var(--color-crimson-400)] px-2.5 py-0.5 rounded border border-[rgba(220,38,38,0.2)]">
-            🗡️ Sneak Attack: {character.sneakAttackDice}d6
-          </span>
-          <span className="bg-[rgba(255,215,0,0.1)] text-[var(--color-gold-300)] px-2.5 py-0.5 rounded border border-[rgba(255,215,0,0.2)]">
-            💀 Assassinate: Auto-Crit
-          </span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#170a0d] border border-[var(--color-crimson-500)]/25 hover:border-[var(--color-crimson-400)] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[var(--color-parchment-dim)] uppercase">INIT ✏️</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-rose-200">{formatModifier(character.initiative)}</span>
+          </div>
+
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#170a0d] border border-[var(--color-crimson-500)]/25 hover:border-[var(--color-crimson-400)] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[var(--color-parchment-dim)] uppercase">SPEED ✏️</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-rose-200">{character.speed}&apos;</span>
+          </div>
+
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#170a0d] border border-[var(--color-crimson-500)]/25 hover:border-[var(--color-crimson-400)] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[var(--color-parchment-dim)] uppercase">PROF ✏️</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[var(--color-gold-400)]">+{character.proficiencyBonus}</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#200b10] border border-[var(--color-crimson-500)]/40 text-center shadow-md">
+            <span className="block text-[10px] tracking-wider text-[var(--color-crimson-400)] uppercase">SNEAK</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-200">{character.sneakAttackDice}d6</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#200b10] border border-[var(--color-crimson-500)]/40 text-center shadow-md">
+            <span className="block text-[10px] tracking-wider text-[var(--color-crimson-400)] uppercase">PASSIVE</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-200">{character.passivePerception}</span>
+          </div>
         </div>
       </div>
 
       {/* HP Section — UX Friendly Quick Math */}
-      <div className="mt-5">
+      <div className="mt-5 pt-3 border-t border-[var(--color-crimson-500)]/30 relative z-10">
         <HPQuickControl
           currentHP={character.combat.currentHP}
           maxHP={character.combat.maxHP}
