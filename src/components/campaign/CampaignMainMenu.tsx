@@ -48,34 +48,25 @@ export interface CustomMember {
 }
 
 export default function CampaignMainMenu() {
-  const { character, aria, cyrus, navigateToCharacter, setMysteries, showToastNotification, getPortraitUrl, openMediaPicker } = useCharacter();
+  const {
+    character,
+    aria,
+    cyrus,
+    navigateToCharacter,
+    setMysteries,
+    showToastNotification,
+    getPortraitUrl,
+    openMediaPicker,
+    customMembers,
+    setCustomMembers: saveCustomMembers,
+  } = useCharacter();
 
-  // Custom roster state (persisted in localStorage for the 6 core + guest members)
-  const [customMembers, setCustomMembers] = useState<CustomMember[]>([]);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Partial<CustomMember> | null>(null);
 
   // Quest Editing State
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const [editingQuest, setEditingQuest] = useState<Partial<CampaignMystery> | null>(null);
-
-  // Load custom members from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_ROSTER_KEY);
-      if (saved) {
-        setCustomMembers(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Failed to load custom roster', e);
-    }
-  }, []);
-
-  // Save custom members
-  const saveCustomMembers = (members: CustomMember[]) => {
-    setCustomMembers(members);
-    localStorage.setItem(CUSTOM_ROSTER_KEY, JSON.stringify(members));
-  };
 
   // Open modal to add or edit custom member
   const handleOpenMemberModal = (member?: CustomMember, slotIndex?: number) => {

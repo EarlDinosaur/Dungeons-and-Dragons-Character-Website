@@ -188,16 +188,29 @@ function injectSubclassProficiencies(
     profSets.tools.add("One type of artisan's tools");
   }
 
-  // Rogue - Assassin
-  if (key === 'Rogue::Assassin' && classLevel >= 3) {
-    profSets.tools.add('Disguise Kit');
-    profSets.tools.add("Poisoner's Kit");
-  }
-
-  // Rogue - Mastermind
-  if (key === 'Rogue::Mastermind' && classLevel >= 3) {
-    profSets.tools.add('Disguise Kit');
-    profSets.tools.add('Forgery Kit');
+  // Rogue Subclasses (Laserllama & Core)
+  if (className === 'Rogue' && classLevel >= 3) {
+    if (subclass === 'Bloodknife') {
+      profSets.languages.add('Abyssal or Infernal');
+    } else if (subclass === 'Fencer') {
+      profSets.armor.add('Medium Armor');
+    } else if (subclass === 'Gambler') {
+      profSets.weapons.add('Improvised Weapons');
+      profSets.tools.add('Playing Cards');
+      profSets.tools.add('Gaming Set of Choice');
+    } else if (subclass === 'Saboteur') {
+      profSets.tools.add("Alchemist's Supplies");
+    } else if (subclass === 'Skinchanger') {
+      profSets.languages.add('Druidic');
+    } else if (subclass === 'Surgeon') {
+      profSets.tools.add("Healer's Kit");
+    } else if (subclass === 'Alternate Assassin' || subclass === 'Assassin') {
+      profSets.tools.add('Disguise Kit');
+      profSets.tools.add("Poisoner's Kit");
+    } else if (subclass === 'Mastermind') {
+      profSets.tools.add('Disguise Kit');
+      profSets.tools.add('Forgery Kit');
+    }
   }
 
   // Wizard - Bladesinging

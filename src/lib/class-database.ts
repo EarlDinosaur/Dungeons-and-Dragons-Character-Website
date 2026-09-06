@@ -177,8 +177,18 @@ export const DND_CLASSES: Record<string, ClassDefinition> = {
     hitDieValue: 8,
     primaryAbility: ['DEX'],
     savingThrows: ['DEX', 'INT'],
-    spellcastingType: 'none', // Arcane Trickster is third caster
+    spellcastingType: 'none', // Arcane Trickster & Justicar are third casters
     subclasses: [
+      'Bloodknife',
+      'Daredevil',
+      'Fencer',
+      'Gambler',
+      'Justicar',
+      'Ruffian',
+      'Saboteur',
+      'Skinchanger',
+      'Surgeon',
+      'Alternate Assassin',
       'Assassin',
       'Thief',
       'Arcane Trickster',
@@ -188,7 +198,7 @@ export const DND_CLASSES: Record<string, ClassDefinition> = {
       'Phantom',
       'Soulknife',
     ],
-    description: 'A scoundrel who uses stealth and trickery to overcome obstacles and enemies.',
+    description: 'A scoundrel who uses stealth, martial exploits, trickery, or specialized techniques to overcome obstacles and enemies.',
   },
   Sorcerer: {
     name: 'Sorcerer',
@@ -306,10 +316,16 @@ export function calculateMulticlassSpellcasterLevel(
     } else if (def.spellcastingType === 'half') {
       totalCasterLevel += Math.floor(c.level / 2);
     } else if (def.spellcastingType === 'third') {
-      // Only Eldritch Knight or Arcane Trickster
       if (
         c.subclass &&
-        (c.subclass.includes('Eldritch Knight') || c.subclass.includes('Arcane Trickster'))
+        (c.subclass.includes('Eldritch Knight') || c.subclass.includes('Arcane Trickster') || c.subclass.includes('Justicar'))
+      ) {
+        totalCasterLevel += Math.floor(c.level / 3);
+      }
+    } else if (def.spellcastingType === 'none') {
+      if (
+        c.subclass &&
+        (c.subclass.includes('Eldritch Knight') || c.subclass.includes('Arcane Trickster') || c.subclass.includes('Justicar'))
       ) {
         totalCasterLevel += Math.floor(c.level / 3);
       }
@@ -331,7 +347,7 @@ export function hasSpellcastingClass(
     if (def.spellcastingType !== 'none') return true;
     if (
       c.subclass &&
-      (c.subclass.includes('Eldritch Knight') || c.subclass.includes('Arcane Trickster'))
+      (c.subclass.includes('Eldritch Knight') || c.subclass.includes('Arcane Trickster') || c.subclass.includes('Justicar'))
     ) {
       return true;
     }

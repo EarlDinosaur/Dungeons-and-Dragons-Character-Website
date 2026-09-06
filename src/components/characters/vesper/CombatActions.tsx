@@ -4,7 +4,8 @@ import { useState } from 'react';
 import {
   Swords, Crosshair, ShieldAlert, Eye, EyeOff,
   Dices, Skull, AlertTriangle, Lock, Unlock, Plus, Trash2, Edit2, X, Check,
-  Zap, Flame, Shield, Heart, Sparkles, RefreshCw, Target, Activity, Layers, BookOpen, Feather, PackageCheck
+  Zap, Flame, Shield, Heart, Sparkles, RefreshCw, Target, Activity, Layers, BookOpen, Feather, PackageCheck,
+  Bomb, PawPrint, Stethoscope, Wand2, Dice5, Crown, ShieldCheck, Sparkle, Footprints
 } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import { formatModifier, calculateDeathStrikeDC, calculateAC } from '@/lib/character-engine';
@@ -87,9 +88,41 @@ export default function CombatActions({ character }: CombatActionsProps) {
 
   // Class Level Breakdown from Multiclass Engine
   const classes = character.classes || [{ className: 'Rogue', subclass: 'Assassin', level: character.level }];
-  
+
   const rogueClass = classes.find((c) => c.className === 'Rogue');
   const rogueLevel = rogueClass?.level || 0;
+  const rogueSubclass = rogueClass?.subclass || character.subclass || '';
+
+  // Rogue Subclass Personalized State Trackers
+  const [dreadStrikeActive, setDreadStrikeActive] = useState(false);
+  const [hellishCurse, setHellishCurse] = useState<'none' | 'blinded' | 'deafened' | 'muted'>('none');
+
+  const maxExploitDice = rogueLevel >= 17 ? 5 : rogueLevel >= 9 ? 4 : 3;
+  const exploitDieSize = rogueLevel >= 17 ? 'd10' : rogueLevel >= 9 ? 'd8' : 'd6';
+  const [exploitDiceLeft, setExploitDiceLeft] = useState<number | null>(null);
+
+  const [drawnCard, setDrawnCard] = useState<{ suit: string; name: string; effect: string; color: string; diceVal: number } | null>(null);
+
+  const [shroudOfFaithActive, setShroudOfFaithActive] = useState(false);
+  const [shroudUsesLeft, setShroudUsesLeft] = useState<number | null>(null);
+  const [divineJudgmentMarked, setDivineJudgmentMarked] = useState(false);
+
+  const [imposingGlanceUsesLeft, setImposingGlanceUsesLeft] = useState<number | null>(null);
+  const [imposingGlanceActive, setImposingGlanceActive] = useState(false);
+
+  const maxBlackPowderCharges = Math.max(1, character.proficiencyBonus + character.abilityScores.INT.modifier);
+  const [blackPowderLeft, setBlackPowderLeft] = useState<number | null>(null);
+  const [explosiveDamageType, setExplosiveDamageType] = useState('Fire');
+
+  const maxWildShapes = rogueLevel >= 9 ? 2 : 1;
+  const [wildShapesLeft, setWildShapesLeft] = useState<number | null>(null);
+  const [activeWildShape, setActiveWildShape] = useState<string | null>(null);
+
+  const [surgicalCondition, setSurgicalCondition] = useState<'none' | 'cripple' | 'daze' | 'infect' | 'maim'>('none');
+  const [expertSurgeonUsed, setExpertSurgeonUsed] = useState(false);
+
+  const [poisonedBladeActive, setPoisonedBladeActive] = useState(false);
+  const [deathStrikeUsed, setDeathStrikeUsed] = useState(false);
 
   const fighterClass = classes.find((c) => c.className === 'Fighter');
   const fighterLevel = fighterClass?.level || 0;
@@ -140,9 +173,9 @@ export default function CombatActions({ character }: CombatActionsProps) {
 
     const abilityMod =
       found.ability === 'DEX' ? dexMod :
-      found.ability === 'STR' ? strMod :
-      found.ability === 'CHA' ? chaMod :
-      found.ability === 'INT' ? intMod : wisMod;
+        found.ability === 'STR' ? strMod :
+          found.ability === 'CHA' ? chaMod :
+            found.ability === 'INT' ? intMod : wisMod;
 
     // Check weapon proficiency
     const isProficient = (character.proficiencies?.weapons || []).some(
@@ -317,8 +350,8 @@ export default function CombatActions({ character }: CombatActionsProps) {
                   <span className={cn(
                     'text-4xl font-extrabold font-[family-name:var(--font-mono)] px-4 py-1 rounded-xl',
                     rollResultModal.isNat20 ? 'bg-amber-500/20 text-amber-300 border border-amber-400 text-glow-gold' :
-                    rollResultModal.isNat1 ? 'bg-red-500/20 text-red-400 border border-red-500' :
-                    'bg-white/5 text-[var(--color-gold-300)]'
+                      rollResultModal.isNat1 ? 'bg-red-500/20 text-red-400 border border-red-500' :
+                        'bg-white/5 text-[var(--color-gold-300)]'
                   )}>
                     {rollResultModal.totalToHit}
                   </span>
@@ -854,6 +887,579 @@ export default function CombatActions({ character }: CombatActionsProps) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ROGUISH SUBCLASS PERSONALIZED COMBAT SUITE */}
+      {rogueLevel >= 3 && rogueSubclass && (
+        <div className="glass-card p-5 rounded-2xl border-2 border-[var(--color-gold-500)]/40 bg-gradient-to-b from-[rgba(20,20,30,0.9)] via-[rgba(30,20,40,0.85)] to-[rgba(15,15,25,0.9)] shadow-2xl relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-gold-400)] to-transparent opacity-80" />
+
+          <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <Crown size={20} className="text-[var(--color-gold-400)] animate-pulse" />
+              <h2 className="text-xl font-extrabold font-[family-name:var(--font-heading)] text-[var(--color-gold-300)] text-glow-gold">
+                {rogueSubclass} Combat Suite
+              </h2>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[rgba(255,215,0,0.15)] text-[var(--color-gold-400)] border border-[rgba(255,215,0,0.3)]">
+                Rogue Subclass (Lv {rogueLevel})
+              </span>
+            </div>
+          </div>
+
+          {/* 1. BLOODKNIFE */}
+          {(rogueSubclass === 'Bloodknife') && (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(220, 38, 38, 0.12)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-red-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      🩸 Dread Strike
+                    </span>
+                    <button
+                      onClick={() => setDreadStrikeActive(!dreadStrikeActive)}
+                      className={cn(
+                        'px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all cursor-pointer',
+                        dreadStrikeActive
+                          ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.6)]'
+                          : 'bg-white/5 text-white/70 hover:bg-white/10'
+                      )}
+                    >
+                      {dreadStrikeActive ? 'ACTIVE (Necrotic)' : 'INACTIVE'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)] mb-2">
+                    Expend 1 Hit Die on hit: Sneak Attack requires no advantage &amp; deals <strong className="text-red-400">Necrotic damage</strong>.
+                  </p>
+                  <button
+                    onClick={() => {
+                      alert(`Dread Strike executed! Sneak Attack converts to ${sneakAttackDice}d6 Necrotic damage. If target drops to 0 HP, you regain 1 Hit Die & gain ${rogueLevel} Temp HP!`);
+                    }}
+                    className="btn btn-crimson btn-sm text-[10px] font-bold uppercase w-full flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Skull size={12} /> Execute Dread Strike
+                  </button>
+                </SpotlightCard>
+
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(168, 85, 247, 0.1)">
+                  <span className="font-bold text-purple-300 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm mb-2">
+                    🗣️ Forked Tongue &amp; Sinister Vitality
+                  </span>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)] mb-2">
+                    Abyssal (Intimidation) / Infernal (Persuasion): Treat d20 rolls &le; 7 as <strong>8</strong>.
+                  </p>
+                  {rogueLevel >= 9 && (
+                    <div className="p-2 rounded bg-purple-950/40 border border-purple-800/30 text-[10px] text-purple-300">
+                      ⚡ <strong>Sinister Vitality (Lv 9):</strong> Reaction on critical hit to regain 1 expended Hit Die ({Math.max(1, chaMod)}/long rest).
+                    </div>
+                  )}
+                  {rogueLevel >= 13 && (
+                    <div className="mt-2">
+                      <label className="block text-[10px] uppercase text-purple-400 font-bold mb-1">
+                        Hellish Curse (on Dread Strike hit):
+                      </label>
+                      <select
+                        value={hellishCurse}
+                        onChange={(e) => setHellishCurse(e.target.value as any)}
+                        className="w-full bg-black/60 border border-purple-500/40 rounded p-1 text-[11px] text-white font-semibold"
+                      >
+                        <option value="none">-- Select Curse Effect --</option>
+                        <option value="blinded">Blinded (Target cannot see)</option>
+                        <option value="deafened">Deafened (Target cannot hear)</option>
+                        <option value="muted">Unable to Speak (No verbal spells)</option>
+                      </select>
+                    </div>
+                  )}
+                </SpotlightCard>
+              </div>
+            </div>
+          )}
+
+          {/* 2. DAREDEVIL */}
+          {(rogueSubclass === 'Daredevil') && (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(245, 158, 11, 0.12)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      🤸 Death from Above
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-300 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded">
+                      STR Save DC {8 + profBonus + dexMod}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)] mb-2">
+                    Leap 10+ ft through air &amp; land within 5 ft: target makes Strength save or falls prone &amp; takes <strong>2d6 bludgeoning + Sneak Attack ({sneakAttackDice}d6)</strong>.
+                  </p>
+                  <button
+                    onClick={() => {
+                      const d20 = Math.floor(Math.random() * 20) + 1;
+                      const atkToHit = d20 + dexMod + profBonus;
+                      alert(`Death from Above! Attack roll: ${atkToHit} (d20: ${d20}). Target must succeed on STR Save DC ${8 + profBonus + dexMod} or suffer Prone + 2d6 bludgeoning + ${sneakAttackDice}d6 Sneak Attack damage!`);
+                    }}
+                    className="btn btn-gold btn-sm text-[10px] font-bold uppercase w-full flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Footprints size={12} /> Execute Death from Above
+                  </button>
+                </SpotlightCard>
+
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(59, 130, 246, 0.1)">
+                  <span className="font-bold text-cyan-300 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm mb-2">
+                    🦘 Aerialist Jump &amp; Mobility Specs
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-cyan-200">
+                    <div className="bg-black/40 p-2 rounded border border-cyan-800/30">
+                      <strong>Long Jump:</strong> {character.abilityScores.DEX.total} ft (Running) / {Math.floor(character.abilityScores.DEX.total / 2)} ft (Standing)
+                    </div>
+                    <div className="bg-black/40 p-2 rounded border border-cyan-800/30">
+                      <strong>High Jump:</strong> {3 + dexMod} ft (Running) / {Math.floor((3 + dexMod) / 2)} ft (Standing)
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[var(--color-parchment-dim)] mt-2">
+                    Climbing Speed: <strong>{character.speed} ft</strong> (equal to movement).
+                  </p>
+                  {rogueLevel >= 9 && (
+                    <p className="text-[10px] text-cyan-400 mt-1">
+                      🛡️ <strong>Slow Fall:</strong> Reduce fall damage by <strong>{rogueLevel * 5} HP</strong>. Soft landing = 0 damage.
+                    </p>
+                  )}
+                </SpotlightCard>
+              </div>
+            </div>
+          )}
+
+          {/* 3. FENCER */}
+          {(rogueSubclass === 'Fencer') && (
+            <div className="space-y-4 text-xs">
+              <SpotlightCard className="p-4" spotlightColor="rgba(255, 215, 0, 0.1)">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Swords size={18} className="text-[var(--color-gold-400)]" />
+                    <h3 className="font-bold text-sm font-[family-name:var(--font-heading)] text-[var(--color-gold-300)]">
+                      Exploit Dice Pool ({exploitDiceLeft ?? maxExploitDice} / {maxExploitDice} {exploitDieSize})
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-[var(--color-gold-400)] bg-[rgba(255,215,0,0.1)] px-2 py-0.5 rounded border border-[rgba(255,215,0,0.2)]">
+                      Exploit DC: {8 + profBonus + Math.max(strMod, dexMod)}
+                    </span>
+                    <button
+                      onClick={() => setExploitDiceLeft(Math.max(0, (exploitDiceLeft ?? maxExploitDice) - 1))}
+                      className="px-2 py-1 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 hover:bg-amber-900 border border-amber-800/40 cursor-pointer"
+                    >
+                      Use 1 Die
+                    </button>
+                    <button
+                      onClick={() => setExploitDiceLeft(maxExploitDice)}
+                      className="p-1 rounded text-[10px] bg-white/5 text-white/70 hover:bg-white/10 cursor-pointer"
+                      title="Reset Exploit Dice"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                  {[
+                    { name: 'Crippling Strike', desc: 'Target DEX save or speed = 0 + Exploit die extra damage.' },
+                    { name: 'Disarm', desc: 'Target STR save or drop item + Exploit die extra damage.' },
+                    { name: 'Feint', desc: 'Bonus action WIS save vs target: add Exploit die to attack & damage.' },
+                    { name: 'Fluid Grace', desc: 'Add Exploit die to Acrobatics or Performance check.' },
+                    { name: 'Martial Focus', desc: 'Add Exploit die to attack roll for advantage.' },
+                    { name: 'Riposte', desc: 'Reaction on melee target: add Exploit die to AC. If miss, strike back.' },
+                  ].map((ex) => (
+                    <div key={ex.name} className="bg-black/40 p-2.5 rounded-lg border border-amber-500/20 hover:border-amber-400 transition-colors">
+                      <strong className="text-amber-300 block mb-0.5">{ex.name}</strong>
+                      <p className="text-[10px] text-[var(--color-parchment-dim)]">{ex.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </SpotlightCard>
+            </div>
+          )}
+
+          {/* 4. GAMBLER */}
+          {(rogueSubclass === 'Gambler') && (
+            <div className="space-y-4 text-xs">
+              <SpotlightCard className="p-4" spotlightColor="rgba(168, 85, 247, 0.12)">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Dice5 size={18} className="text-purple-400" />
+                    <h3 className="font-bold text-sm font-[family-name:var(--font-heading)] text-purple-300">
+                      Pick a Card — Weaponized Deck (30/60 ft, 1d4 + DEX Slashing)
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const diceVal = Math.floor(Math.random() * 4) + 1;
+                      const isJoker = Math.random() < 0.05;
+                      if (isJoker) {
+                        setDrawnCard({ suit: '🃏 Joker', name: 'WILD CARD!', effect: 'Wild Choice! Pick any bonus effect.', color: 'text-amber-300', diceVal: 0 });
+                      } else if (diceVal === 1) {
+                        setDrawnCard({ suit: '♣️ Clubs', name: 'Speed Trap', effect: `Target speed reduced by ${5 * profBonus} ft.`, color: 'text-cyan-300', diceVal: 1 });
+                      } else if (diceVal === 2) {
+                        setDrawnCard({ suit: '♦️ Diamonds', name: 'Sure Strike', effect: `Apply Sneak Attack (${sneakAttackDice}d6) automatically!`, color: 'text-red-400', diceVal: 2 });
+                      } else if (diceVal === 3) {
+                        setDrawnCard({ suit: '♥️ Hearts', name: 'Vitality Drain', effect: 'Gain Temp HP equal to damage dealt.', color: 'text-pink-400', diceVal: 3 });
+                      } else {
+                        setDrawnCard({ suit: '♠️ Spades', name: 'Initiative Swap', effect: 'Swap places in initiative order at top of next round.', color: 'text-purple-300', diceVal: 4 });
+                      }
+                    }}
+                    className="btn btn-gold btn-sm text-xs flex items-center gap-1 font-bold cursor-pointer"
+                  >
+                    🃏 Draw Playing Card
+                  </button>
+                </div>
+
+                {drawnCard && (
+                  <div className="p-3 rounded-xl bg-purple-950/50 border border-purple-500/40 animate-fade-in flex items-center justify-between">
+                    <div>
+                      <span className={cn('text-lg font-bold font-mono', drawnCard.color)}>
+                        {drawnCard.suit} &bull; {drawnCard.name}
+                      </span>
+                      <p className="text-xs text-[var(--color-parchment)] mt-0.5">
+                        {drawnCard.effect}
+                      </p>
+                    </div>
+                    <span className="text-2xl font-bold font-mono text-purple-300">
+                      {drawnCard.diceVal > 0 ? `[d4: ${drawnCard.diceVal}]` : '🃏'}
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-[var(--color-parchment-dim)] mt-3">
+                  <div className="bg-black/30 p-2 rounded border border-white/5">
+                    🍀 <strong>Lucky Streak (Lv 9):</strong> Crit on d20 <strong>7 or 20</strong>! Crit fail on <strong>13 or 1</strong>.
+                  </div>
+                  {rogueLevel >= 17 && (
+                    <div className="bg-black/30 p-2 rounded border border-white/5 text-amber-300">
+                      🎰 <strong>Jackpot (Lv 17):</strong> Rolling 6 on a Sneak Attack d6 adds an extra d6!
+                    </div>
+                  )}
+                </div>
+              </SpotlightCard>
+            </div>
+          )}
+
+          {/* 5. JUSTICAR */}
+          {(rogueSubclass === 'Justicar') && (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(255, 215, 0, 0.12)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-amber-300 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      ✨ Shroud of Faith (Channel Divinity)
+                    </span>
+                    <button
+                      onClick={() => setShroudOfFaithActive(!shroudOfFaithActive)}
+                      className={cn(
+                        'px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all cursor-pointer',
+                        shroudOfFaithActive
+                          ? 'bg-amber-500 text-black font-extrabold shadow-[0_0_10px_rgba(255,215,0,0.6)]'
+                          : 'bg-white/5 text-white/70 hover:bg-white/10'
+                      )}
+                    >
+                      {shroudOfFaithActive ? 'INVISIBLE' : 'READY'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)] mb-2">
+                    Action to turn invisible (with equipment) up to 1 minute or until attacking/casting spell.
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-amber-400 font-mono">
+                    <span>Divine Sense: Scan celestials/fiends/undead (60 ft)</span>
+                  </div>
+                </SpotlightCard>
+
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(239, 68, 68, 0.1)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-red-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      ⚔️ Consecrated Strikes &amp; Judgment
+                    </span>
+                    {rogueLevel >= 13 && (
+                      <button
+                        onClick={() => setDivineJudgmentMarked(!divineJudgmentMarked)}
+                        className={cn(
+                          'px-2 py-0.5 rounded text-[10px] font-bold uppercase cursor-pointer',
+                          divineJudgmentMarked ? 'bg-red-600 text-white' : 'bg-white/5 text-white/70'
+                        )}
+                      >
+                        {divineJudgmentMarked ? 'TARGET MARKED (19-20 Crit)' : 'MARK FOE'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)]">
+                    Expending spell slot on Sneak Attack converts damage to <strong className="text-amber-300">Radiant</strong> &amp; rerolls 1s &amp; 2s!
+                  </p>
+                  {rogueLevel >= 17 && (
+                    <p className="text-[10px] text-amber-300 mt-2 font-mono">
+                      🛡️ <strong>Anointed Inquisitor (Lv 17):</strong> +{Math.max(1, chaMod)} bonus to all saving throws.
+                    </p>
+                  )}
+                </SpotlightCard>
+              </div>
+            </div>
+          )}
+
+          {/* 6. RUFFIAN */}
+          {(rogueSubclass === 'Ruffian') && (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(220, 38, 38, 0.12)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-red-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      🥊 Enforcer &amp; Unarmed Sneak
+                    </span>
+                    <span className="text-[10px] font-mono text-red-300 bg-red-950/60 px-2 py-0.5 rounded">
+                      Unarmed: 1d4 + {strMod} Bludgeoning
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)] mb-2">
+                    Sneak Attack works with <strong>any weapon</strong> non-heavy/non-2H (including unarmed strikes). AC can use Constitution: <strong>{10 + dexMod + character.abilityScores.CON.modifier} AC</strong>.
+                  </p>
+                  <p className="text-[10px] text-amber-300 font-mono">
+                    💪 <strong>Shake Down:</strong> STR Athletics &amp; Intimidation rolls &le; 7 count as <strong>8</strong>.
+                  </p>
+                </SpotlightCard>
+
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(245, 158, 11, 0.1)">
+                  <span className="font-bold text-amber-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm mb-2">
+                    ⚡ Imposing Glance &amp; Counter
+                  </span>
+                  {rogueLevel >= 9 && (
+                    <button
+                      onClick={() => {
+                        const d20 = Math.floor(Math.random() * 20) + 1;
+                        alert(`Imposing Glance! STR (Intimidation) check: ${d20 + strMod + profBonus} (d20: ${d20}). Target makes WIS (Insight) check. If you win, target is Frightened until next turn & you gain Advantage!`);
+                      }}
+                      className="btn btn-crimson btn-sm text-[10px] font-bold uppercase w-full mb-2 flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Eye size={12} /> Imposing Glance (Bonus Action)
+                    </button>
+                  )}
+                  {rogueLevel >= 13 && (
+                    <p className="text-[10px] text-red-300 font-mono">
+                      🛡️ <strong>Dodge &amp; Counter:</strong> Reaction when missed &rarr; target DEX save DC {8 + profBonus + strMod} or prone/grappled.
+                    </p>
+                  )}
+                  {rogueLevel >= 17 && (
+                    <p className="text-[10px] text-amber-300 mt-1 font-mono font-bold">
+                      💀 <strong>Ruthless Strike (Lv 17):</strong> Auto-crit when hitting frightened target! ({Math.max(1, strMod)}/rest).
+                    </p>
+                  )}
+                </SpotlightCard>
+              </div>
+            </div>
+          )}
+
+          {/* 7. SABOTEUR */}
+          {(rogueSubclass === 'Saboteur') && (
+            <div className="space-y-4 text-xs">
+              <SpotlightCard className="p-4" spotlightColor="rgba(249, 115, 22, 0.12)">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Bomb size={18} className="text-orange-400" />
+                    <h3 className="font-bold text-sm font-[family-name:var(--font-heading)] text-orange-300">
+                      Black Powder Explosives ({blackPowderLeft ?? maxBlackPowderCharges} / {maxBlackPowderCharges} Charges)
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-orange-300 bg-orange-950/60 px-2 py-0.5 rounded border border-orange-800/40">
+                      Explosive DC: {8 + profBonus + intMod}
+                    </span>
+                    <button
+                      onClick={() => setBlackPowderLeft(maxBlackPowderCharges)}
+                      className="p-1 rounded text-[10px] bg-white/5 text-white/70 hover:bg-white/10 cursor-pointer"
+                      title="Rest (Reset Charges)"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                  <div className="p-2.5 rounded bg-black/40 border border-orange-500/30">
+                    <strong className="text-orange-300 block">Hand Bomb (1 Charge)</strong>
+                    <p className="text-[10px] text-[var(--color-parchment-dim)]">
+                      Throw 60 ft, 2d6 Fire + Sneak Attack ({sneakAttackDice}d6). DEX save for half.
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded bg-black/40 border border-orange-500/30">
+                    <strong className="text-orange-300 block">Arcane Explosives</strong>
+                    <p className="text-[10px] text-[var(--color-parchment-dim)]">
+                      Replicate spell effects (Earth Tremor, Fog Cloud, Grease, Fireball, Web, Synaptic Static).
+                    </p>
+                  </div>
+                </div>
+
+                {rogueLevel >= 9 && (
+                  <div className="flex items-center gap-2 text-[10px] font-mono flex-wrap">
+                    <span className="text-orange-400 font-bold">Advanced Alchemy Damage Type:</span>
+                    {['Bludgeoning', 'Piercing', 'Fire', 'Thunder', 'Lightning'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setExplosiveDamageType(type)}
+                        className={cn(
+                          'px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all cursor-pointer',
+                          explosiveDamageType === type
+                            ? 'bg-orange-500 text-black font-extrabold'
+                            : 'bg-white/5 text-white/60 hover:text-white'
+                        )}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </SpotlightCard>
+            </div>
+          )}
+
+          {/* 8. SKINCHANGER */}
+          {(rogueSubclass === 'Skinchanger') && (
+            <div className="space-y-4 text-xs">
+              <SpotlightCard className="p-4" spotlightColor="rgba(34, 197, 94, 0.12)">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <PawPrint size={18} className="text-emerald-400" />
+                    <h3 className="font-bold text-sm font-[family-name:var(--font-heading)] text-emerald-300">
+                      Limited Wild Shape ({wildShapesLeft ?? maxWildShapes} / {maxWildShapes} Uses)
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setWildShapesLeft(maxWildShapes)}
+                    className="p-1 rounded text-[10px] bg-white/5 text-white/70 hover:bg-white/10 cursor-pointer"
+                    title="Rest (Reset Wild Shape)"
+                  >
+                    <RefreshCw size={12} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] mb-3">
+                  {[
+                    { name: 'Panther', cr: 'CR 1/4 (Lv3+)', hp: '13 HP', speed: '40 ft', desc: 'Bite (1d6+2) / Claw (1d4+2)' },
+                    { name: 'Reef Shark', cr: 'CR 1/2 (Lv9+)', hp: '22 HP', speed: 'Swim 40 ft', desc: 'Bite (2d4+2)' },
+                    { name: 'Giant Eagle', cr: 'CR 1 (Lv13+)', hp: '26 HP', speed: 'Fly 60 ft', desc: 'Beak (1d6+3) / Talons (2d6+3)' },
+                    { name: 'Cave Bear', cr: 'CR 2 (Lv17+)', hp: '42 HP', speed: '40 ft', desc: 'Bite (1d8+5) / Claw (2d6+5)' },
+                  ].map((beast) => (
+                    <button
+                      key={beast.name}
+                      onClick={() => setActiveWildShape(activeWildShape === beast.name ? null : beast.name)}
+                      className={cn(
+                        'p-2 rounded-lg text-left border transition-all cursor-pointer',
+                        activeWildShape === beast.name
+                          ? 'bg-emerald-950/80 text-emerald-200 border-emerald-400 shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+                          : 'bg-black/40 text-[var(--color-parchment-dim)] border-white/5 hover:border-emerald-500/40'
+                      )}
+                    >
+                      <strong className="text-emerald-300 block text-xs">{beast.name}</strong>
+                      <span className="text-[9px] font-mono text-emerald-500">{beast.cr}</span>
+                      <p className="text-[9px] mt-1 opacity-80">{beast.desc}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {activeWildShape && (
+                  <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-between">
+                    <span className="text-emerald-300 font-bold font-mono">
+                      🐾 Active Form: {activeWildShape} (Wild Shaped)
+                    </span>
+                    <span className="text-xs text-emerald-400 font-mono">
+                      Natural weapons apply Sneak Attack ({sneakAttackDice}d6)!
+                    </span>
+                  </div>
+                )}
+              </SpotlightCard>
+            </div>
+          )}
+
+          {/* 9. SURGEON */}
+          {(rogueSubclass === 'Surgeon') && (
+            <div className="space-y-4 text-xs">
+              <SpotlightCard className="p-4" spotlightColor="rgba(59, 130, 246, 0.12)">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope size={18} className="text-blue-400" />
+                    <h3 className="font-bold text-sm font-[family-name:var(--font-heading)] text-blue-300">
+                      Surgical Strike Conditions (DC {8 + profBonus + Math.max(1, wisMod)})
+                    </h3>
+                  </div>
+                  {rogueLevel >= 13 && (
+                    <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                      Improved: Deals Sneak Attack + Condition!
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] mb-3">
+                  {[
+                    { key: 'cripple', name: 'Cripple', desc: `Speed -${5 * Math.max(1, wisMod)} ft` },
+                    { key: 'daze', name: 'Daze', desc: `No reactions & -${Math.max(1, wisMod)} to next save` },
+                    { key: 'infect', name: 'Infect', desc: 'CON save or Poisoned' },
+                    { key: 'maim', name: 'Maim', desc: 'DEX save or Blind/Deaf/Mute' },
+                  ].map((cond) => (
+                    <button
+                      key={cond.key}
+                      onClick={() => setSurgicalCondition(surgicalCondition === cond.key ? 'none' : cond.key as any)}
+                      className={cn(
+                        'p-2 rounded-lg text-left border transition-all cursor-pointer',
+                        surgicalCondition === cond.key
+                          ? 'bg-blue-950/80 text-blue-200 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.4)]'
+                          : 'bg-black/40 text-[var(--color-parchment-dim)] border-white/5 hover:border-blue-500/40'
+                      )}
+                    >
+                      <strong className="text-blue-300 block text-xs">{cond.name}</strong>
+                      <p className="text-[9px] mt-0.5">{cond.desc}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-2.5 rounded bg-black/40 border border-blue-500/20 text-[10px] text-[var(--color-parchment-dim)]">
+                  🧬 <strong>Cultivated Immunity (Lv 9):</strong> Reduce Acid, Necrotic, or Poison damage taken by <strong>{profBonus + Math.max(1, wisMod)} HP</strong>.
+                </div>
+              </SpotlightCard>
+            </div>
+          )}
+
+          {/* 10. ALTERNATE ASSASSIN */}
+          {(rogueSubclass === 'Alternate Assassin' || rogueSubclass === 'Assassin') && (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(220, 38, 38, 0.12)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-red-400 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      🗡️ Assassin&apos;s Strike
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded">
+                      Advantage vs Unacted Enemies
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)]">
+                    Automatic Critical Hit against surprised targets. Reroll 1s on critical hit damage dice.
+                  </p>
+                </SpotlightCard>
+
+                <SpotlightCard className="p-3.5" spotlightColor="rgba(168, 85, 247, 0.1)">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-purple-300 flex items-center gap-1.5 font-[family-name:var(--font-heading)] text-sm">
+                      🧪 Poisoned Blade (Bonus Action)
+                    </span>
+                    <button
+                      onClick={() => setPoisonedBladeActive(!poisonedBladeActive)}
+                      className={cn(
+                        'px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all cursor-pointer',
+                        poisonedBladeActive ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'
+                      )}
+                    >
+                      {poisonedBladeActive ? 'SOAKED (Necrotic)' : 'READY'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-parchment-dim)]">
+                    Soak blade with poison: next hit applies Sneak Attack ({sneakAttackDice}d6) as <strong className="text-purple-400">Necrotic damage</strong> even without advantage/allies.
+                  </p>
+                </SpotlightCard>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
