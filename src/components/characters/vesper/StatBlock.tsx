@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
-import { Dices, RotateCcw } from 'lucide-react';
+import { Dices, RotateCcw, Edit2, Check, X, Shield, Sparkles } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import { formatModifier } from '@/lib/character-engine';
-import type { CharacterState } from '@/lib/types';
+import type { CharacterState, AbilityName, SkillName } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useCharacter } from '@/app/providers';
 
 interface StatBlockProps {
   character: CharacterState;
@@ -31,7 +32,19 @@ const ABILITY_BORDER_COLORS: Record<string, string> = {
 };
 
 export default function StatBlock({ character }: StatBlockProps) {
+  const { updateAbilityBaseScore, toggleSkillProficiency } = useCharacter();
   const statsRef = useRef<HTMLDivElement>(null);
+
+  // Edit Mode for Base Ability Scores
+  const [isEditingScores, setIsEditingScores] = useState(false);
+  const [draftScores, setDraftScores] = useState<Record<AbilityName, number>>({
+    STR: character.abilityScores.STR.base,
+    DEX: character.abilityScores.DEX.base,
+    CON: character.abilityScores.CON.base,
+    INT: character.abilityScores.INT.base,
+    WIS: character.abilityScores.WIS.base,
+    CHA: character.abilityScores.CHA.base,
+  });
 
   // Active D20 Roller State
   const [activeCheckRoll, setActiveCheckRoll] = useState<{
@@ -72,6 +85,27 @@ export default function StatBlock({ character }: StatBlockProps) {
     }
   }, [character.level]);
 
+  const handleStartEditScores = () => {
+    setDraftScores({
+      STR: character.abilityScores.STR.base,
+      DEX: character.abilityScores.DEX.base,
+      CON: character.abilityScores.CON.base,
+      INT: character.abilityScores.INT.base,
+      WIS: character.abilityScores.WIS.base,
+      CHA: character.abilityScores.CHA.base,
+    });
+    setIsEditingScores(true);
+  };
+
+  const handleSaveScores = () => {
+    for (const name of Object.keys(draftScores) as AbilityName[]) {
+      if (draftScores[name] !== character.abilityScores[name].base) {
+        updateAbilityBaseScore(name, draftScores[name]);
+      }
+    }
+    setIsEditingScores(false);
+  };
+
   const abilities = Object.values(character.abilityScores);
 
   return (
@@ -83,7 +117,7 @@ export default function StatBlock({ character }: StatBlockProps) {
             <div className="py-4 flex items-center justify-center gap-3">
               <Dices size={30} className="text-[var(--color-crimson-400)] animate-spin" />
               <span className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)] uppercase tracking-wider">
-                Rolling d20 check for Vesper Ashwood...
+                Rolling d20 check for {character.name}...
               </span>
             </div>
           ) : activeCheckRoll ? (
@@ -127,27 +161,49 @@ export default function StatBlock({ character }: StatBlockProps) {
 
       {/* Ability Scores */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1 min-w-[200px]">
             <span className="w-8 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
             Ability Scores
             <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
           </h2>
-          <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)]">
-            Click card to roll d20 Check
-          </span>
+
+          <div className="flex items-center gap-2">
+            {!isEditingScores ? (
+              <button
+                onClick={handleStartEditScores}
+                className="text-xs font-[family-name:var(--font-mono)] text-[var(--color-gold-400)] bg-[rgba(255,215,0,0.08)] hover:bg-[rgba(255,215,0,0.18)] border border-[rgba(255,215,0,0.25)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Edit2 size={12} /> Edit Scores
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleSaveScores}
+                  className="btn btn-gold btn-sm text-xs flex items-center gap-1"
+                >
+                  <Check size={12} /> Save
+                </button>
+                <button
+                  onClick={() => setIsEditingScores(false)}
+                  className="p-1 text-[var(--color-parchment-dim)] hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div ref={statsRef} className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {abilities.map((ability) => (
             <SpotlightCard
               key={ability.name}
-              className="stat-card !p-0 cursor-pointer group transition-transform hover:scale-[1.03] active:scale-95"
+              className="stat-card !p-0 group transition-transform hover:scale-[1.03]"
               spotlightColor={ABILITY_COLORS[ability.name]}
             >
-              <button
-                onClick={() => rollCheck(`${ability.label} (${ability.name})`, ability.modifier)}
-                className="w-full flex flex-col items-center p-4 rounded-xl text-center focus:outline-none cursor-pointer"
+              <div
+                className="w-full flex flex-col items-center p-4 rounded-xl text-center relative"
                 style={{
                   background: ABILITY_COLORS[ability.name],
                   borderColor: ABILITY_BORDER_COLORS[ability.name],
@@ -156,16 +212,39 @@ export default function StatBlock({ character }: StatBlockProps) {
                 <span className="text-[10px] uppercase tracking-[0.15em] font-[family-name:var(--font-heading)] text-[var(--color-parchment-dim)] mb-1 group-hover:text-[var(--color-gold-400)] transition-colors">
                   {ability.name}
                 </span>
-                <span className="text-3xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)] group-hover:scale-110 transition-transform">
-                  {formatModifier(ability.modifier)}
-                </span>
-                <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center mt-2 group-hover:border-[var(--color-gold-400)] transition-colors"
-                     style={{ borderColor: ABILITY_BORDER_COLORS[ability.name] }}>
-                  <span className="text-sm font-[family-name:var(--font-mono)] text-[var(--color-parchment-muted)]">
-                    {ability.total}
+
+                <button
+                  onClick={() => !isEditingScores && rollCheck(`${ability.label} (${ability.name})`, ability.modifier)}
+                  className={cn("focus:outline-none", !isEditingScores && "cursor-pointer")}
+                >
+                  <span className="text-3xl font-bold font-[family-name:var(--font-mono)] text-[var(--color-parchment)] group-hover:scale-110 transition-transform">
+                    {formatModifier(ability.modifier)}
                   </span>
+                </button>
+
+                {/* Score Circle / Edit Input */}
+                <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center mt-2 border-[rgba(255,215,0,0.3)] bg-black/40">
+                  {isEditingScores ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={draftScores[ability.name]}
+                      onChange={(e) =>
+                        setDraftScores({
+                          ...draftScores,
+                          [ability.name]: Math.max(1, Math.min(30, Number(e.target.value))),
+                        })
+                      }
+                      className="w-8 text-center text-sm font-[family-name:var(--font-mono)] font-bold text-[var(--color-gold-bright)] bg-transparent border-none focus:outline-none"
+                    />
+                  ) : (
+                    <span className="text-sm font-[family-name:var(--font-mono)] text-[var(--color-parchment-muted)] font-bold">
+                      {ability.total}
+                    </span>
+                  )}
                 </div>
-              </button>
+              </div>
             </SpotlightCard>
           ))}
         </div>
@@ -223,17 +302,16 @@ export default function StatBlock({ character }: StatBlockProps) {
             <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
           </h2>
           <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)]">
-            Click to roll Skill Check
+            Tap dot to toggle proficiency &bull; Tap title to roll
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
           {character.skills.map((skill) => (
-            <button
+            <div
               key={skill.name}
-              onClick={() => rollCheck(`${skill.name} Skill`, skill.bonus)}
               className={cn(
-                'flex items-center justify-between px-3 py-1.5 rounded-lg transition-all text-sm text-left cursor-pointer hover:-translate-y-0.5 active:scale-95',
+                'flex items-center justify-between px-3 py-1.5 rounded-lg transition-all text-sm text-left',
                 skill.expertise
                   ? 'bg-[rgba(168,85,247,0.12)] border border-[rgba(168,85,247,0.3)] hover:border-[var(--color-arcane-400)]'
                   : skill.proficient
@@ -241,41 +319,56 @@ export default function StatBlock({ character }: StatBlockProps) {
                   : 'border border-transparent hover:bg-[rgba(255,255,255,0.05)] hover:border-white/10'
               )}
             >
-              <div className="flex items-center gap-2">
-                {/* Proficiency indicator */}
-                <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Proficiency toggle button */}
+                <button
+                  onClick={() => toggleSkillProficiency(skill.name)}
+                  className="flex items-center gap-0.5 p-1 rounded hover:bg-white/10 cursor-pointer"
+                  title="Toggle None -> Proficient -> Expertise"
+                >
                   <div className={cn(
-                    'w-2 h-2 rounded-full',
+                    'w-3 h-3 rounded-full border transition-colors',
                     skill.expertise
-                      ? 'bg-[var(--color-arcane-500)]'
+                      ? 'bg-[var(--color-arcane-500)] border-[var(--color-arcane-400)] shadow-[0_0_8px_#a855f7]'
                       : skill.proficient
-                      ? 'bg-[var(--color-gold-500)]'
-                      : 'bg-[rgba(255,255,255,0.08)]'
+                      ? 'bg-[var(--color-gold-500)] border-[var(--color-gold-400)] shadow-[0_0_8px_#ffd700]'
+                      : 'border-[rgba(255,255,255,0.2)] bg-transparent'
                   )} />
                   {skill.expertise && (
-                    <div className="w-2 h-2 rounded-full bg-[var(--color-arcane-500)]" />
+                    <div className="w-3 h-3 rounded-full bg-[var(--color-arcane-500)] border border-[var(--color-arcane-400)]" />
                   )}
-                </div>
-                <span className={cn(
-                  skill.proficient ? 'text-[var(--color-parchment)]' : 'text-[var(--color-parchment-dim)]'
-                )}>
-                  {skill.name}
-                </span>
-                <span className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
-                  ({skill.ability})
-                </span>
+                </button>
+
+                <button
+                  onClick={() => rollCheck(`${skill.name} Skill`, skill.bonus)}
+                  className="flex items-center gap-2 text-left truncate cursor-pointer flex-1"
+                >
+                  <span className={cn(
+                    'truncate',
+                    skill.proficient ? 'text-[var(--color-parchment)] font-semibold' : 'text-[var(--color-parchment-dim)]'
+                  )}>
+                    {skill.name}
+                  </span>
+                  <span className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
+                    ({skill.ability})
+                  </span>
+                </button>
               </div>
-              <span className={cn(
-                'font-[family-name:var(--font-mono)] font-semibold',
-                skill.expertise
-                  ? 'text-[var(--color-arcane-400)]'
-                  : skill.proficient
-                  ? 'text-[var(--color-gold-400)]'
-                  : 'text-[var(--color-parchment-dim)]'
-              )}>
+
+              <button
+                onClick={() => rollCheck(`${skill.name} Skill`, skill.bonus)}
+                className={cn(
+                  'font-[family-name:var(--font-mono)] font-semibold text-sm cursor-pointer ml-2',
+                  skill.expertise
+                    ? 'text-[var(--color-arcane-400)]'
+                    : skill.proficient
+                    ? 'text-[var(--color-gold-400)]'
+                    : 'text-[var(--color-parchment-dim)]'
+                )}
+              >
                 {formatModifier(skill.bonus)}
-              </span>
-            </button>
+              </button>
+            </div>
           ))}
         </div>
 
@@ -302,3 +395,4 @@ export default function StatBlock({ character }: StatBlockProps) {
     </div>
   );
 }
+

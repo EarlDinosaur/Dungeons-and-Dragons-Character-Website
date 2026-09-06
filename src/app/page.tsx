@@ -17,8 +17,11 @@ import InventoryManager from '@/components/shared/InventoryManager';
 import CharacterHeader from '@/components/characters/vesper/CharacterHeader';
 import StatBlock from '@/components/characters/vesper/StatBlock';
 import CombatActions from '@/components/characters/vesper/CombatActions';
+import SpellbookPanelVesper from '@/components/characters/vesper/SpellbookPanelVesper';
+import ProgressionPanel from '@/components/characters/vesper/ProgressionPanel';
 import SoulHarvester from '@/components/characters/vesper/SoulHarvester';
 import Dossier from '@/components/characters/vesper/Dossier';
+
 
 // Aria Sil'aveth components
 import AriaHeader from '@/components/characters/aria/AriaHeader';
@@ -148,6 +151,16 @@ export default function Home() {
         { name: 'Persuasion', ability: 'CHA', proficient: true, expertise: false, bonus: getModifier(ariaState.abilityScores.CHA) + prof },
         { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: getModifier(ariaState.abilityScores.WIS) },
       ],
+      classes: [{ className: ariaState.characterClass, subclass: ariaState.subclass, level: ariaState.level, hitDice: 'd6' }],
+      attacks: [],
+      spellcasting: {
+        spellSaveDC: ariaState.spellcasting.spellSaveDC,
+        spellAttackBonus: ariaState.spellcasting.spellAttackBonus,
+        slots: ariaState.spellcasting.slots,
+        spells: ariaState.spellcasting.spells.map(s => ({ ...s, prepared: true })),
+      },
+      feats: [],
+      proficiencies: { armor: ['Robes'], weapons: ['Daggers', 'Staves'], tools: ['Celestial Weaving Tools'], languages: ['Common', 'Elvish', 'Celestial'] },
       ac: ariaState.combat.ac,
       initiative: ariaState.combat.initiative,
       speed: ariaState.combat.speed,
@@ -214,6 +227,16 @@ export default function Home() {
       background: cyrusState.background,
       alignment: cyrusState.alignment,
       experience: 6500,
+      classes: [{ className: cyrusState.characterClass, subclass: cyrusState.subclass, level: cyrusState.level, hitDice: 'd8' }],
+      attacks: [],
+      spellcasting: {
+        spellSaveDC: cyrusState.spellcasting.spellSaveDC,
+        spellAttackBonus: cyrusState.spellcasting.spellAttackBonus,
+        slots: cyrusState.spellcasting.slots,
+        spells: cyrusState.spellcasting.spells.map(s => ({ ...s, prepared: true })),
+      },
+      feats: [],
+      proficiencies: { armor: ['Light', 'Medium', 'Heavy', 'Shields'], weapons: ['Simple', 'Martial'], tools: ['Herbalism Kit'], languages: ['Common', 'Celestial', 'Greek'] },
       proficiencyBonus: prof,
       abilityScores: {
         STR: makeScore('STR', cyrusState.abilityScores.STR),
@@ -319,6 +342,14 @@ export default function Home() {
                     <CombatActions character={character} />
                   )}
 
+                  {activeTab === 'spells' && (
+                    <SpellbookPanelVesper character={character} />
+                  )}
+
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={character} />
+                  )}
+
                   {activeTab === 'inventory' && (
                     <InventoryManager
                       character={character}
@@ -402,6 +433,11 @@ export default function Home() {
                       onNotesChange={setCyrusNotes}
                     />
                   )}
+
+                  {/* TAB 6: FEATS & PROGRESSION */}
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={cyrusCharState} />
+                  )}
                 </div>
               </>
             ) : (
@@ -458,6 +494,11 @@ export default function Home() {
                       aria={aria}
                       onNotesChange={setAriaNotes}
                     />
+                  )}
+
+                  {/* TAB 6: FEATS & PROGRESSION */}
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={ariaCharState} />
                   )}
                 </div>
               </>

@@ -1,11 +1,13 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { ArrowLeft, Scroll, Eye, Sun, Sparkles } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Scroll, Eye, Sun, Sparkles, Layers, Edit3, Plus, Trash2, X, Check } from 'lucide-react';
 import gsap from 'gsap';
 import HPQuickControl from '../../ui/HPQuickControl';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { getProficiencyBonus } from '@/lib/cyrus-engine';
+import { DND_CLASSES, getClassDefinition, formatHitDicePool } from '@/lib/class-database';
+import type { ClassLevel } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 
 interface CyrusHeaderProps {
@@ -21,10 +23,22 @@ export default function CyrusHeader({
   onHPChange,
   onTempHPChange,
 }: CyrusHeaderProps) {
-  const { navigateToMenu, getPortraitUrl, openMediaPicker } = useCharacter();
+  const { navigateToMenu, getPortraitUrl, openMediaPicker, setClasses, setCombatOverrides } = useCharacter();
   const hpBarRef = useRef<HTMLDivElement>(null);
-  const levelRef = useRef<HTMLSelectElement>(null);
   const cyrusPortrait = getPortraitUrl('cyrus');
+
+  // Modals State
+  const [isMulticlassModalOpen, setIsMulticlassModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+
+  // Draft classes state for Multiclass modal
+  const [draftClasses, setDraftClasses] = useState<ClassLevel[]>([]);
+
+  // Draft combat overrides state
+  const [draftAC, setDraftAC] = useState<number>(cyrus.combat.ac);
+  const [draftInit, setDraftInit] = useState<number>(cyrus.combat.initiative);
+  const [draftSpeed, setDraftSpeed] = useState<number>(cyrus.combat.speed);
+  const [draftProf, setDraftProf] = useState<number>(getProficiencyBonus(cyrus.level));
 
   const hpPercent = cyrus.combat.maxHP > 0
     ? (cyrus.combat.currentHP / cyrus.combat.maxHP) * 100
@@ -46,14 +60,76 @@ export default function CyrusHeader({
     }
   }, [hpPercent, hpColor]);
 
-  const handleLevelChange = (newLevel: number) => {
-    if (levelRef.current) {
-      gsap.fromTo(levelRef.current, { scale: 1.3 }, { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+  const openMulticlassModal = () => {
+    const initial = cyrus.classes && cyrus.classes.length > 0
+      ? cyrus.classes
+      : [{ className: cyrus.characterClass || 'Cleric', subclass: cyrus.subclass || 'Solar Mystery', level: cyrus.level || 3, hitDice: 'd8' }];
+    setDraftClasses([...initial]);
+    setIsMulticlassModalOpen(true);
+  };
+
+  const handleSaveMulticlass = () => {
+    if (draftClasses.length === 0) return;
+    setClasses(draftClasses);
+    setIsMulticlassModalOpen(false);
+  };
+
+  const handleAddClass = () => {
+    setDraftClasses([
+      ...draftClasses,
+      { className: 'Paladin', subclass: 'Oath of Devotion', level: 1, hitDice: 'd10' },
+    ]);
+  };
+
+  const handleUpdateClass = (index: number, field: keyof ClassLevel, value: string | number) => {
+    const updated = [...draftClasses];
+    const target = { ...updated[index] };
+
+    if (field === 'className') {
+      const def = getClassDefinition(value as string);
+      target.className = def.name;
+      target.hitDice = def.hitDie;
+      target.subclass = def.subclasses[0] || 'Custom Subclass';
+    } else if (field === 'level') {
+      target.level = Math.max(1, Number(value));
+    } else if (field === 'subclass') {
+      target.subclass = value as string;
     }
-    onLevelChange(newLevel);
+
+    updated[index] = target;
+    setDraftClasses(updated);
+  };
+
+  const handleRemoveClass = (index: number) => {
+    if (draftClasses.length <= 1) return;
+    setDraftClasses(draftClasses.filter((_, i) => i !== index));
+  };
+
+  const openStatsModal = () => {
+    setDraftAC(cyrus.combat.ac);
+    setDraftInit(cyrus.combat.initiative);
+    setDraftSpeed(cyrus.combat.speed);
+    setDraftProf(getProficiencyBonus(cyrus.level));
+    setIsStatsModalOpen(true);
+  };
+
+  const handleSaveStats = () => {
+    setCombatOverrides({
+      ac: draftAC,
+      initiative: draftInit,
+      speed: draftSpeed,
+      proficiencyBonus: draftProf,
+    });
+    setIsStatsModalOpen(false);
   };
 
   const profBonus = getProficiencyBonus(cyrus.level);
+
+  const activeClasses = cyrus.classes && cyrus.classes.length > 0
+    ? cyrus.classes
+    : [{ className: cyrus.characterClass, subclass: cyrus.subclass, level: cyrus.level, hitDice: 'd8' }];
+
+  const hitDicePoolText = formatHitDicePool(activeClasses);
 
   return (
     <div className="relative p-6 rounded-2xl border border-[#daa520]/50 bg-gradient-to-b from-[#1a1608]/90 via-[#141008]/95 to-[#0d0a06]/95 shadow-[0_0_50px_rgba(218,165,32,0.25)] font-['Spectral',serif]">
@@ -110,23 +186,15 @@ export default function CyrusHeader({
                 {cyrus.name}
               </h1>
 
-              <span className="text-xs font-mono text-[#b89d5e] bg-[#141008] px-2 py-0.5 rounded border border-[#daa520]/30 shrink-0">
-                LV
-                <select
-                  ref={levelRef}
-                  value={cyrus.level}
-                  onChange={(e) => handleLevelChange(Number(e.target.value))}
-                  className="!bg-transparent !border-none !p-0 !pl-1 !w-auto !text-[#daa520] font-bold appearance-none cursor-pointer focus:outline-none inline"
-                  id="cyrus-level-selector"
-                  style={{ width: '30px' }}
-                >
-                  {Array.from({ length: 20 }, (_, i) => i + 1).map((lv) => (
-                    <option key={lv} value={lv} className="bg-[#141008] text-white">
-                      {lv}
-                    </option>
-                  ))}
-                </select>
-              </span>
+              <button
+                onClick={openMulticlassModal}
+                className="text-xs font-mono text-[#daa520] bg-[#1a1608] hover:bg-[#251e0b] border border-[#daa520]/40 px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                title="Manage Level & Multiclassing"
+              >
+                <Layers size={13} />
+                <span className="font-bold">Total Level {cyrus.level}</span>
+                <Edit3 size={11} className="opacity-70" />
+              </button>
             </div>
 
             <p className="text-xs text-[#daa520] font-['Cormorant_Garamond',serif] italic">
@@ -137,12 +205,12 @@ export default function CyrusHeader({
               <span className="bg-[#1a1608] text-[#daa520] px-2 py-0.5 rounded border border-[#daa520]/30 font-semibold text-[10px]">
                 {cyrus.race}
               </span>
-              <span className="bg-[#1a1608] text-amber-200 px-2 py-0.5 rounded border border-[#daa520]/30 font-semibold text-[10px]">
-                {cyrus.characterClass}
-              </span>
-              <span className="bg-[#1a1608] text-amber-100 px-2 py-0.5 rounded border border-[#daa520]/30 font-semibold text-[10px]">
-                {cyrus.subclass}
-              </span>
+              {activeClasses.map((c, i) => (
+                <span key={i} className="bg-[#1a1608] text-amber-200 px-2 py-0.5 rounded border border-[#daa520]/30 font-semibold text-[10px]">
+                  {c.className} {c.level} {c.subclass && `(${c.subclass})`}
+                </span>
+              ))}
+              <span className="text-[10px] text-[#b89d5e] font-mono">&bull; {hitDicePoolText}</span>
             </div>
           </div>
         </div>
@@ -180,34 +248,50 @@ export default function CyrusHeader({
         </div>
 
         {/* Right: Quick Stats Grid (4 cols) */}
-        <div className="lg:col-span-4 grid grid-cols-3 gap-2">
-          <div className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#b89d5e] font-mono uppercase">AC</span>
+        <div className="lg:col-span-4 grid grid-cols-3 gap-2 font-mono text-center">
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 hover:border-[#daa520] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#b89d5e] uppercase">AC ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-100">{cyrus.combat.ac}</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#b89d5e] font-mono uppercase">INIT</span>
-            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-200">{cyrus.combat.initiative}</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 hover:border-[#daa520] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#b89d5e] uppercase">INIT ✏️</span>
+            <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-200">+{cyrus.combat.initiative}</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#b89d5e] font-mono uppercase">SPEED</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 hover:border-[#daa520] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#b89d5e] uppercase">SPEED ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-amber-200">{cyrus.combat.speed}&apos;</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#b89d5e] font-mono uppercase">PROF</span>
+          <div
+            onClick={openStatsModal}
+            className="p-2.5 rounded-xl bg-[#141008] border border-[#daa520]/25 hover:border-[#daa520] transition-all cursor-pointer group shadow-md"
+            title="Click to edit AC, Initiative, Speed & Prof"
+          >
+            <span className="block text-[10px] tracking-wider text-[#b89d5e] uppercase">PROF ✏️</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#daa520]">+{profBonus}</span>
           </div>
 
           <div className="p-2.5 rounded-xl bg-[#1a1608] border border-[#daa520]/40 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#daa520] font-mono uppercase">SPELL DC</span>
+            <span className="block text-[10px] tracking-wider text-[#daa520] uppercase">SPELL DC</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#daa520]">{cyrus.spellcasting.spellSaveDC}</span>
           </div>
 
           <div className="p-2.5 rounded-xl bg-[#1a1608] border border-[#daa520]/40 text-center shadow-md">
-            <span className="block text-[10px] tracking-wider text-[#daa520] font-mono uppercase">ATTACK</span>
+            <span className="block text-[10px] tracking-wider text-[#daa520] uppercase">ATTACK</span>
             <span className="text-xl font-bold font-['Cormorant_Garamond',serif] text-[#daa520]">+{cyrus.spellcasting.spellAttackBonus}</span>
           </div>
         </div>
@@ -225,6 +309,214 @@ export default function CyrusHeader({
           characterName={cyrus.name}
         />
       </div>
+
+      {/* MULTICLASS MANAGER MODAL */}
+      {isMulticlassModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#141008] border-2 border-[#daa520] rounded-2xl p-6 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto font-['Spectral',serif]">
+            <button
+              onClick={() => setIsMulticlassModalOpen(false)}
+              className="absolute top-4 right-4 text-[#b89d5e] hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#daa520]/30">
+              <Layers className="text-[#daa520]" size={20} />
+              <h2 className="text-xl font-bold text-amber-100 font-['Cormorant_Garamond',serif]">
+                Cyrus Multiclassing &amp; Level Manager
+              </h2>
+            </div>
+
+            <p className="text-xs text-[#b89d5e] mb-4 font-mono">
+              Configure Cyrus&apos;s classes from the 5e Class Catalog. Spells, slots, and stats adjust automatically.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              {draftClasses.map((c, idx) => {
+                const classDef = getClassDefinition(c.className);
+                return (
+                  <div key={idx} className="bg-[#0d0a06] border border-[#daa520]/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold text-[#daa520] uppercase tracking-wider font-mono">
+                        Class #{idx + 1}
+                      </span>
+                      {draftClasses.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveClass(idx)}
+                          className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 cursor-pointer font-mono"
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                          Class Name
+                        </label>
+                        <select
+                          value={c.className}
+                          onChange={(e) => handleUpdateClass(idx, 'className', e.target.value)}
+                          className="w-full bg-[#141008] border border-[#daa520]/30 rounded-lg p-2 text-white font-semibold focus:border-[#daa520]"
+                        >
+                          {Object.keys(DND_CLASSES).map((cls) => (
+                            <option key={cls} value={cls}>
+                              {cls} ({DND_CLASSES[cls].hitDie})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                          Subclass / Archetype
+                        </label>
+                        <select
+                          value={c.subclass || ''}
+                          onChange={(e) => handleUpdateClass(idx, 'subclass', e.target.value)}
+                          className="w-full bg-[#141008] border border-[#daa520]/30 rounded-lg p-2 text-white focus:border-[#daa520]"
+                        >
+                          {classDef.subclasses.map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                          Level
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={c.level}
+                          onChange={(e) => handleUpdateClass(idx, 'level', e.target.value)}
+                          className="w-full bg-[#141008] border border-[#daa520]/30 rounded-lg p-2 text-white font-bold text-center focus:border-[#daa520]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#daa520]/30">
+              <button
+                onClick={handleAddClass}
+                className="px-3 py-1.5 bg-[#0d0a06] hover:bg-[#1f1a0b] text-[#daa520] border border-[#daa520]/40 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5"
+              >
+                <Plus size={14} /> Add Multiclass
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsMulticlassModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-[#b89d5e] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveMulticlass}
+                  className="px-4 py-2 bg-[#daa520] hover:bg-amber-400 text-black rounded-xl text-xs font-bold font-mono flex items-center gap-1.5"
+                >
+                  <Check size={14} /> Apply Multiclassing
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COMBAT STATS OVERRIDE MODAL */}
+      {isStatsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#141008] border-2 border-[#daa520] rounded-2xl p-6 max-w-md w-full shadow-2xl relative font-['Spectral',serif]">
+            <button
+              onClick={() => setIsStatsModalOpen(false)}
+              className="absolute top-4 right-4 text-[#b89d5e] hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#daa520]/30">
+              <Edit3 className="text-[#daa520]" size={20} />
+              <h2 className="text-xl font-bold text-amber-100 font-['Cormorant_Garamond',serif]">
+                Cyrus Combat Stats Overrides
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs font-mono mb-6">
+              <div>
+                <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                  Armor Class (AC)
+                </label>
+                <input
+                  type="number"
+                  value={draftAC}
+                  onChange={(e) => setDraftAC(Number(e.target.value))}
+                  className="w-full bg-[#0d0a06] border border-[#daa520]/30 rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                  Initiative Bonus
+                </label>
+                <input
+                  type="number"
+                  value={draftInit}
+                  onChange={(e) => setDraftInit(Number(e.target.value))}
+                  className="w-full bg-[#0d0a06] border border-[#daa520]/30 rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                  Speed (ft)
+                </label>
+                <input
+                  type="number"
+                  value={draftSpeed}
+                  onChange={(e) => setDraftSpeed(Number(e.target.value))}
+                  className="w-full bg-[#0d0a06] border border-[#daa520]/30 rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[#b89d5e] mb-1">
+                  Proficiency Bonus
+                </label>
+                <input
+                  type="number"
+                  value={draftProf}
+                  onChange={(e) => setDraftProf(Number(e.target.value))}
+                  className="w-full bg-[#0d0a06] border border-[#daa520]/30 rounded-lg p-2.5 text-white font-bold text-lg text-center"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#daa520]/30">
+              <button
+                onClick={() => setIsStatsModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs text-[#b89d5e] hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveStats}
+                className="px-4 py-2 bg-[#daa520] hover:bg-amber-400 text-black rounded-xl text-xs font-bold font-mono flex items-center gap-1.5"
+              >
+                <Check size={14} /> Save Overrides
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

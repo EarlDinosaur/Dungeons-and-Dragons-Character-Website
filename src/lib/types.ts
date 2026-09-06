@@ -122,11 +122,65 @@ export interface DossierData {
   playerNotes: string;
 }
 
+export interface ClassLevel {
+  className: string;
+  subclass?: string;
+  level: number;
+  hitDice: string; // e.g. "d8", "d10"
+}
+
+export interface AttackOption {
+  id: string;
+  name: string;
+  attackBonus: number;
+  damage: string; // e.g. "1d6 + 3"
+  damageType: string; // e.g. "Piercing"
+  range: string; // e.g. "Melee (5 ft)" or "20/60 ft"
+  notes: string;
+  equipped?: boolean;
+}
+
+export interface CharacterSpellItem {
+  id: string;
+  name: string;
+  level: number; // 0 for Cantrip, 1-9
+  school: string;
+  castingTime: string;
+  range: string;
+  components: string;
+  duration: string;
+  description: string;
+  damageDice?: string;
+  prepared?: boolean;
+}
+
+export interface CustomFeat {
+  id: string;
+  title: string;
+  description: string;
+  source: string; // e.g. "Racial", "Feat (Level 4)", "Class Trait"
+  level: number;
+}
+
+export interface NonStatProficiencies {
+  armor: string[];
+  weapons: string[];
+  tools: string[];
+  languages: string[];
+}
+
+export interface CombatOverrides {
+  ac?: number;
+  initiative?: number;
+  speed?: number;
+  proficiencyBonus?: number;
+}
+
 export interface CombatState {
   currentHP: number;
   maxHP: number;
   tempHP: number;
-  hitDice: { total: number; used: number };
+  hitDice: { total: number; used: number; diceType?: string };
   deathSaves: { successes: number; failures: number };
   conditions: string[];
 }
@@ -143,7 +197,10 @@ export interface CharacterState {
   alignment: string;
   experience: number;
 
-  // Derived stats (calculated from level)
+  // Multiclassing Support
+  classes: ClassLevel[];
+
+  // Derived & Overrides
   proficiencyBonus: number;
   abilityScores: AbilityScores;
   skills: Skill[];
@@ -151,10 +208,22 @@ export interface CharacterState {
   initiative: number;
   speed: number;
   passivePerception: number;
+  overrides?: CombatOverrides;
 
-  // Combat
+  // Combat & Actions
   combat: CombatState;
   sneakAttackDice: number;
+  attacks: AttackOption[];
+
+  // Progression (Spells, Feats, Proficiencies)
+  spellcasting: {
+    spellSaveDC: number;
+    spellAttackBonus: number;
+    slots: Record<number, { max: number; used: number }>;
+    spells: CharacterSpellItem[];
+  };
+  feats: CustomFeat[];
+  proficiencies: NonStatProficiencies;
 
   // Inventory
   inventory: InventoryItem[];
@@ -171,4 +240,5 @@ export interface CharacterState {
   lastSaved: string;
 }
 
-export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier';
+export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier' | 'spells' | 'progression';
+

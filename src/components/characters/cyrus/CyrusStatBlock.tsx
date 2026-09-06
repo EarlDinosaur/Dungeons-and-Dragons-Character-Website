@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Eye, Flame, Sparkles, Heart, Star, Swords, Dices, RotateCcw } from 'lucide-react';
+import { Shield, Eye, Flame, Sparkles, Star, Swords, Dices, RotateCcw, Edit3, Check, CheckSquare, Square } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { getProficiencyBonus } from '@/lib/cyrus-engine';
 import { getModifier } from '@/lib/character-engine';
+import { useCharacter } from '@/app/providers';
 
 interface CyrusStatBlockProps {
   cyrus: CyrusState;
 }
 
-const SKILL_LIST: { name: string; ability: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' }[] = [
+const SKILL_LIST: { name: import('@/lib/types').SkillName; ability: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' }[] = [
   { name: 'Acrobatics', ability: 'DEX' },
   { name: 'Animal Handling', ability: 'WIS' },
   { name: 'Arcana', ability: 'INT' },
@@ -42,7 +43,10 @@ const ABILITY_LABELS: Record<string, string> = {
 };
 
 export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
+  const { updateAbilityBaseScore, toggleSkillProficiency } = useCharacter();
   const prof = getProficiencyBonus(cyrus.level);
+
+  const [isEditingScores, setIsEditingScores] = useState(false);
 
   // Active D20 Roller State
   const [activeCheckRoll, setActiveCheckRoll] = useState<{
@@ -80,6 +84,15 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
     mod: getModifier(cyrus.abilityScores[ab]),
     isSaveProf: cyrus.savingThrowProficiencies.includes(ab),
   }));
+
+  const currentSkills = cyrus.skills && cyrus.skills.length > 0
+    ? cyrus.skills
+    : SKILL_LIST.map((s) => ({
+        name: s.name,
+        ability: s.ability,
+        proficient: cyrus.skillProficiencies.includes(s.name),
+        expertise: false,
+      }));
 
   return (
     <div className="space-y-6 font-['Spectral',serif]">
@@ -141,35 +154,58 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
               Ability Scores &amp; Checks
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-[#b89d5e]">Click card to roll d20 Ability Check</span>
+          <button
+            onClick={() => setIsEditingScores(!isEditingScores)}
+            className="text-[10px] font-mono text-[#daa520] hover:text-white flex items-center gap-1 cursor-pointer bg-black/60 px-2 py-0.5 rounded border border-[#daa520]/30"
+          >
+            {isEditingScores ? <Check size={12} /> : <Edit3 size={12} />}
+            {isEditingScores ? 'Done' : 'Edit Scores'}
+          </button>
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {abilities.map((ab) => (
-            <button
+            <div
               key={ab.abbr}
-              onClick={() => rollCheck(`${ab.label} (${ab.abbr})`, ab.mod)}
-              className={`relative p-3 rounded-xl text-center border transition-all cursor-pointer group ${
+              className={`relative p-3 rounded-xl text-center border transition-all ${
                 ab.abbr === 'CHA' || ab.abbr === 'WIS'
-                  ? 'bg-[rgba(218,165,32,0.12)] border-[#daa520]/40 shadow-[0_0_15px_rgba(218,165,32,0.15)] hover:border-[#daa520]'
-                  : 'bg-black/50 border-white/10 hover:border-[#daa520]/50'
+                  ? 'bg-[rgba(218,165,32,0.12)] border-[#daa520]/40 shadow-[0_0_15px_rgba(218,165,32,0.15)]'
+                  : 'bg-black/50 border-white/10'
               }`}
             >
-              <span className="block text-[10px] font-mono uppercase tracking-widest text-[#b89d5e] mb-1 group-hover:text-amber-300">
+              <span className="block text-[10px] font-mono uppercase tracking-widest text-[#b89d5e] mb-1">
                 {ab.abbr}
               </span>
-              <span className="text-3xl font-bold font-['Cormorant_Garamond',serif] text-amber-100 block leading-none group-hover:scale-110 transition-transform">
+
+              <button
+                onClick={() => rollCheck(`${ab.label} (${ab.abbr})`, ab.mod)}
+                className="text-3xl font-bold font-['Cormorant_Garamond',serif] text-amber-100 block leading-none hover:scale-110 transition-transform cursor-pointer w-full"
+                title="Click to roll ability check"
+              >
                 {ab.mod >= 0 ? `+${ab.mod}` : ab.mod}
-              </span>
-              <span className="text-[11px] font-mono text-amber-200/60 mt-1 block">
-                {ab.score}
-              </span>
+              </button>
+
+              {isEditingScores ? (
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={ab.score}
+                  onChange={(e) => updateAbilityBaseScore(ab.abbr, Number(e.target.value))}
+                  className="w-12 bg-black/80 border border-[#daa520] rounded text-xs font-mono text-amber-200 text-center mt-1 focus:outline-none"
+                />
+              ) : (
+                <span className="text-[11px] font-mono text-amber-200/60 mt-1 block">
+                  {ab.score}
+                </span>
+              )}
+
               {ab.isSaveProf && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#daa520] rounded-full flex items-center justify-center shadow-md" title="Save Proficiency">
                   <Shield size={9} className="text-black" />
                 </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
       </SpotlightCard>
@@ -212,7 +248,7 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
         </div>
       </SpotlightCard>
 
-      {/* ============== SKILLS ============== */}
+      {/* ============== SKILLS (Interactive Proficiency / Expertise Toggle) ============== */}
       <SpotlightCard className="p-5 glass-card border border-[#daa520]/40 bg-[linear-gradient(135deg,rgba(26,22,8,0.95)_0%,rgba(13,10,6,0.98)_100%)]">
         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#daa520]/25">
           <Eye size={18} className="text-[#daa520]" />
@@ -220,34 +256,58 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
             Skills
           </h3>
           <span className="text-[10px] font-mono text-[#b89d5e] ml-auto">
-            Passive Perception: <strong className="text-amber-200">15</strong>
+            Click dot to toggle proficiency
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs font-mono">
-          {SKILL_LIST.map((skill) => {
-            const isProf = cyrus.skillProficiencies.includes(skill.name);
-            const mod = getModifier(cyrus.abilityScores[skill.ability]);
-            const bonus = mod + (isProf ? prof : 0);
+          {currentSkills.map((sk) => {
+            const isProf = sk.proficient;
+            const isExp = sk.expertise;
+            const mod = getModifier(cyrus.abilityScores[sk.ability as keyof typeof cyrus.abilityScores] || 10);
+            const bonus = mod + (isExp ? prof * 2 : isProf ? prof : 0);
+
             return (
-              <button
-                key={skill.name}
-                onClick={() => rollCheck(`${skill.name} Skill`, bonus)}
-                className={`flex items-center justify-between px-3 py-1.5 rounded-lg border text-left transition-all hover:bg-[rgba(218,165,32,0.12)] ${
+              <div
+                key={sk.name}
+                className={`flex items-center justify-between px-3 py-1.5 rounded-lg border transition-all ${
                   isProf
                     ? 'bg-[rgba(218,165,32,0.08)] border-[#daa520]/20 text-amber-200 hover:border-[#daa520]'
                     : 'bg-transparent border-transparent text-amber-200/40 hover:border-white/10'
                 }`}
               >
-                <span className="flex items-center gap-1.5">
-                  {isProf && <span className="w-1.5 h-1.5 bg-[#daa520] rounded-full" />}
-                  {skill.name}
-                  <span className="text-[9px] text-amber-200/30">({skill.ability})</span>
-                </span>
-                <span className={`font-bold ${isProf ? 'text-[#daa520]' : 'text-amber-200/40'}`}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleSkillProficiency(sk.name)}
+                    className="text-[#daa520] hover:scale-125 transition-transform cursor-pointer"
+                    title="Click to cycle: Unproficient -> Proficient -> Expertise"
+                  >
+                    {isExp ? (
+                      <span className="text-xs">⭐</span>
+                    ) : isProf ? (
+                      <CheckSquare size={13} className="text-[#daa520]" />
+                    ) : (
+                      <Square size={13} className="text-amber-200/30" />
+                    )}
+                  </button>
+                  <span className={isProf ? 'text-amber-100 font-semibold' : 'text-amber-200/40'}>
+                    {sk.name}
+                    <span className="text-[9px] text-amber-200/30 ml-1">({sk.ability})</span>
+                  </span>
+                  {isExp && (
+                    <span className="text-[9px] bg-[#daa520]/20 text-[#daa520] px-1 rounded font-mono font-bold">
+                      EXP
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => rollCheck(`${sk.name} Skill`, bonus)}
+                  className={`font-bold hover:text-white cursor-pointer ${isProf ? 'text-[#daa520]' : 'text-amber-200/40'}`}
+                >
                   {bonus >= 0 ? `+${bonus}` : bonus}
-                </span>
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>

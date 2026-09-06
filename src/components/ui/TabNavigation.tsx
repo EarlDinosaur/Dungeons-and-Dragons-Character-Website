@@ -4,19 +4,30 @@ import { Shield, Swords, Package, Gem, BookOpen, Moon, Wand2, Sparkles, Scroll, 
 import type { TabId } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 
+import { hasSpellcastingClass } from '@/lib/class-database';
+
 interface TabNavigationProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
 }
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
-  const { activeCharacterId } = useCharacter();
+  const { character, activeCharacterId } = useCharacter();
   const isVesper = activeCharacterId === 'vesper';
+  const isCyrus = activeCharacterId === 'cyrus';
+
+  const characterClasses = character?.classes && character.classes.length > 0
+    ? character.classes
+    : [{ className: character?.class || 'Rogue', subclass: character?.subclass || 'Assassin' }];
+
+  const canCastSpells = hasSpellcastingClass(characterClasses);
 
   // Character-specific tab definitions
   const vesperTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
+    ...(canCastSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'artifact', label: 'Soul Harvester', icon: Gem },
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
@@ -25,6 +36,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
   const ariaTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Overview', icon: Moon },
     { id: 'combat', label: 'Spellbook', icon: Wand2 },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'artifact', label: 'Lunar Tides', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'dossier', label: 'Grimoire', icon: Scroll },
@@ -33,13 +45,14 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
   const cyrusTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Oracle Sheet', icon: Sparkles },
     { id: 'combat', label: 'Domain Spells', icon: Wand2 },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'artifact', label: 'Solar Engine', icon: Flame },
     { id: 'inventory', label: 'Equipment', icon: Package },
     { id: 'dossier', label: 'Prophecies', icon: Scroll },
   ];
 
-  const isCyrus = activeCharacterId === 'cyrus';
   const tabs = isVesper ? vesperTabs : isCyrus ? cyrusTabs : ariaTabs;
+
 
   return (
     <nav className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2">
@@ -70,11 +83,10 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider font-bold transition-all duration-300 relative ${
-                isActive
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider font-bold transition-all duration-300 relative ${isActive
                   ? getActiveStyle()
                   : 'text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] hover:bg-white/5'
-              }`}
+                }`}
             >
               <Icon size={16} className={isActive ? getIconStyle() : 'text-[var(--color-parchment-dim)]'} />
               <span className="hidden sm:inline">{tab.label}</span>

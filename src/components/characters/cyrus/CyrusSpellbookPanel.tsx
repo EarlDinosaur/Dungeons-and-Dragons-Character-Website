@@ -19,7 +19,7 @@ export default function CyrusSpellbookPanel({
   onRestoreSlot,
   onLongRest,
 }: CyrusSpellbookPanelProps) {
-  const { showToastNotification } = useCharacter();
+  const { showToastNotification, setCyrusSpellSlotMax } = useCharacter();
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<number | 'all' | 'solar'>('all');
   const [activeRoll, setActiveRoll] = useState<{
     spellName: string;
@@ -144,9 +144,25 @@ export default function CyrusSpellbookPanel({
                 className="p-4 rounded-xl bg-black/60 border border-[#daa520]/30 flex items-center justify-between shadow-inner"
               >
                 <div>
-                  <span className="text-xs font-mono uppercase tracking-widest text-[#b89d5e] block">
-                    Level {lvl} Spell Slots
-                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono uppercase tracking-widest text-[#b89d5e]">
+                      Level {lvl} Spell Slots
+                    </span>
+                    <div className="flex items-center gap-1" title="Edit Max Slots">
+                      <span className="text-[9px] text-amber-200/60 font-mono">Max:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={max}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setCyrusSpellSlotMax(lvl, isNaN(val) ? 0 : val);
+                        }}
+                        className="w-8 bg-black/80 border border-[#daa520]/40 rounded px-1 text-center text-xs font-bold text-[#daa520] focus:outline-none focus:border-amber-300 font-mono"
+                      />
+                    </div>
+                  </div>
                   <span className="text-2xl font-bold font-['Cormorant_Garamond',serif] text-amber-100">
                     {available} / {max} <span className="text-xs text-amber-200/60 font-mono font-normal">Available</span>
                   </span>

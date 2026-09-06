@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import {
   Swords, Crosshair, ShieldAlert, Eye, EyeOff,
-  Dices, Skull, AlertTriangle, Lock, Unlock
+  Dices, Skull, AlertTriangle, Lock, Unlock, Plus, Trash2, Edit2, X, Check
 } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import { formatModifier, getAssassinFeatures, calculateDeathStrikeDC, getRogueFeatures } from '@/lib/character-engine';
 import { getVestigeData } from '@/lib/orphans-tithe';
-import type { CharacterState } from '@/lib/types';
+import type { CharacterState, AttackOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useCharacter } from '@/app/providers';
 
@@ -17,8 +17,53 @@ interface CombatActionsProps {
 }
 
 export default function CombatActions({ character }: CombatActionsProps) {
-  const { showToastNotification } = useCharacter();
+  const { addAttack, editAttack, deleteAttack } = useCharacter();
   const [showRollResult, setShowRollResult] = useState<{ value: number; type: string } | null>(null);
+
+  // Attack Modal State
+  const [isAttackModalOpen, setIsAttackModalOpen] = useState(false);
+  const [editingAttackId, setEditingAttackId] = useState<string | null>(null);
+  const [attackForm, setAttackForm] = useState<{
+    name: string;
+    attackBonus: number;
+    damage: string;
+    damageType: string;
+    range: string;
+    notes: string;
+  }>({
+    name: '',
+    attackBonus: 0,
+    damage: '1d6 + 3',
+    damageType: 'Piercing',
+    range: 'Melee (5 ft)',
+    notes: '',
+  });
+
+  const handleSaveAttack = () => {
+    if (!attackForm.name.trim()) return;
+    if (editingAttackId) {
+      editAttack({
+        id: editingAttackId,
+        name: attackForm.name,
+        attackBonus: Number(attackForm.attackBonus),
+        damage: attackForm.damage,
+        damageType: attackForm.damageType,
+        range: attackForm.range,
+        notes: attackForm.notes,
+      });
+    } else {
+      addAttack({
+        name: attackForm.name,
+        attackBonus: Number(attackForm.attackBonus),
+        damage: attackForm.damage,
+        damageType: attackForm.damageType,
+        range: attackForm.range,
+        notes: attackForm.notes,
+      });
+    }
+    setIsAttackModalOpen(false);
+  };
+
 
   const dexMod = character.abilityScores.DEX.modifier;
   const profBonus = character.proficiencyBonus;
@@ -64,83 +109,104 @@ export default function CombatActions({ character }: CombatActionsProps) {
 
       {/* Attack Actions */}
       <div>
-        <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] mb-3 flex items-center gap-2">
-          <Swords size={18} />
-          Attack Actions
-          <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
-        </h2>
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1">
+            <Swords size={18} />
+            Attack &amp; Weapon Actions
+            <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
+          </h2>
+
+          <button
+            onClick={() => {
+              setEditingAttackId(null);
+              setAttackForm({
+                name: '',
+                attackBonus: dexMod + profBonus,
+                damage: '1d6 + 3',
+                damageType: 'Slashing',
+                range: 'Melee (5 ft)',
+                notes: '',
+              });
+              setIsAttackModalOpen(true);
+            }}
+            className="btn btn-gold btn-sm text-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus size={13} /> Add Weapon / Attack
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* The Orphan's Tithe */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(220, 38, 38, 0.08)">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="font-[family-name:var(--font-heading)] text-[var(--color-crimson-400)] font-semibold text-sm">
-                  The Orphan&apos;s Tithe
-                </h3>
-                <p className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
-                  Vestige Dagger • Finesse • Light
-                </p>
-              </div>
-              <button
-                onClick={() => rollD20('Attack Roll')}
-                className="btn btn-crimson btn-sm"
-                id="roll-attack"
-              >
-                <Dices size={12} />
-                Roll
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
-                <span className="text-[var(--color-parchment-dim)]">To Hit</span>
-                <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-crimson-400)]">
-                  {formatModifier(attackBonus)}
-                </span>
-              </div>
-              <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
-                <span className="text-[var(--color-parchment-dim)]">Damage</span>
-                <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-parchment)]">
-                  1d4{formatModifier(dexMod + vestige.hitDmgBonus)}
-                </span>
-              </div>
-            </div>
-          </SpotlightCard>
+          {(character.attacks || []).map((atk) => (
+            <SpotlightCard key={atk.id} className="p-4 relative group" spotlightColor="rgba(220, 38, 38, 0.08)">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="font-[family-name:var(--font-heading)] text-[var(--color-crimson-400)] font-semibold text-sm flex items-center gap-2">
+                    {atk.name}
+                  </h3>
+                  <p className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
+                    {atk.range || 'Melee'} &bull; {atk.damageType || 'Physical'}
+                  </p>
+                </div>
 
-          {/* Shortsword */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(255, 255, 255, 0.04)">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="font-[family-name:var(--font-heading)] text-[var(--color-parchment)] font-semibold text-sm">
-                  Shortsword
-                </h3>
-                <p className="text-[10px] text-[var(--color-parchment-dim)] font-[family-name:var(--font-mono)]">
-                  Martial • Finesse • Light
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => rollD20(`${atk.name} Attack`)}
+                    className="btn btn-crimson btn-sm text-xs flex items-center gap-1"
+                  >
+                    <Dices size={12} /> Roll
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingAttackId(atk.id);
+                      setAttackForm({
+                        name: atk.name,
+                        attackBonus: atk.attackBonus,
+                        damage: atk.damage,
+                        damageType: atk.damageType,
+                        range: atk.range,
+                        notes: atk.notes,
+                      });
+                      setIsAttackModalOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg text-[var(--color-parchment-dim)] hover:text-white hover:bg-white/10"
+                    title="Edit Attack"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+
+                  <button
+                    onClick={() => deleteAttack(atk.id)}
+                    className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                    title="Delete Attack"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
+                  <span className="text-[var(--color-parchment-dim)]">To Hit</span>
+                  <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-crimson-400)]">
+                    {formatModifier(atk.attackBonus)}
+                  </span>
+                </div>
+                <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
+                  <span className="text-[var(--color-parchment-dim)]">Damage</span>
+                  <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-parchment)]">
+                    {atk.damage}
+                  </span>
+                </div>
+              </div>
+
+              {atk.notes && (
+                <p className="text-[10px] text-[var(--color-parchment-dim)] italic mt-2">
+                  {atk.notes}
                 </p>
-              </div>
-              <button
-                onClick={() => rollD20('Attack Roll')}
-                className="btn btn-ghost btn-sm"
-              >
-                <Dices size={12} />
-                Roll
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
-                <span className="text-[var(--color-parchment-dim)]">To Hit</span>
-                <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-parchment)]">
-                  {formatModifier(dexMod + profBonus)}
-                </span>
-              </div>
-              <div className="bg-[rgba(255,255,255,0.03)] rounded-lg p-2">
-                <span className="text-[var(--color-parchment-dim)]">Damage</span>
-                <span className="block font-[family-name:var(--font-mono)] text-lg font-bold text-[var(--color-parchment)]">
-                  1d6{formatModifier(dexMod)}
-                </span>
-              </div>
-            </div>
-          </SpotlightCard>
+              )}
+            </SpotlightCard>
+          ))}
         </div>
       </div>
 
@@ -284,6 +350,126 @@ export default function CombatActions({ character }: CombatActionsProps) {
           </ul>
         </div>
       )}
+
+      {/* ATTACK FORM MODAL */}
+      {isAttackModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[var(--color-surface)] border-2 border-[var(--color-gold-500)] rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setIsAttackModalOpen(false)}
+              className="absolute top-4 right-4 text-[var(--color-parchment-dim)] hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[rgba(255,215,0,0.2)]">
+              <Swords className="text-[var(--color-gold-400)]" size={20} />
+              <h2 className="text-xl font-bold text-[var(--color-gold-400)] font-[family-name:var(--font-heading)]">
+                {editingAttackId ? 'Edit Attack' : 'Add New Attack / Weapon'}
+              </h2>
+            </div>
+
+            <div className="space-y-3 text-xs mb-6">
+              <div>
+                <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                  Weapon / Attack Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Hand Crossbow, Eldritch Blast"
+                  value={attackForm.name}
+                  onChange={(e) => setAttackForm({ ...attackForm, name: e.target.value })}
+                  className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                    To Hit Bonus
+                  </label>
+                  <input
+                    type="number"
+                    value={attackForm.attackBonus}
+                    onChange={(e) => setAttackForm({ ...attackForm, attackBonus: Number(e.target.value) })}
+                    className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white font-bold text-center"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                    Damage (Dice + Mod)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1d6 + 4"
+                    value={attackForm.damage}
+                    onChange={(e) => setAttackForm({ ...attackForm, damage: e.target.value })}
+                    className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                    Damage Type
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Piercing, Radiant"
+                    value={attackForm.damageType}
+                    onChange={(e) => setAttackForm({ ...attackForm, damageType: e.target.value })}
+                    className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                    Range
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Melee (5 ft), 30/120 ft"
+                    value={attackForm.range}
+                    onChange={(e) => setAttackForm({ ...attackForm, range: e.target.value })}
+                    className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-[var(--color-parchment-dim)] mb-1">
+                  Properties / Special Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Finesse, Light, Advantage vs surprised targets"
+                  value={attackForm.notes}
+                  onChange={(e) => setAttackForm({ ...attackForm, notes: e.target.value })}
+                  className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border)] rounded-lg p-2.5 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[rgba(255,215,0,0.15)]">
+              <button
+                onClick={() => setIsAttackModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs text-[var(--color-parchment-dim)] hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAttack}
+                className="btn btn-gold btn-sm text-xs flex items-center gap-1.5"
+              >
+                <Check size={14} /> Save Attack
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

@@ -87,6 +87,12 @@ export interface CyrusState {
   notes: string;
   journal: JournalEntry[];
   mysteries: CampaignMystery[];
+  classes?: import('./types').ClassLevel[];
+  overrides?: import('./types').CombatOverrides;
+  skills?: import('./types').Skill[];
+  attacks?: import('./types').AttackOption[];
+  feats?: import('./types').CustomFeat[];
+  proficiencies?: import('./types').NonStatProficiencies;
 }
 
 export function getProficiencyBonus(level: number): number {

@@ -17,7 +17,7 @@ export default function SpellbookPanel({
   onUseSlot,
   onRestoreSlot,
 }: SpellbookPanelProps) {
-  const { showToastNotification } = useCharacter();
+  const { showToastNotification, setAriaSpellSlotMax } = useCharacter();
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<number | 'all'>('all');
   const [activeRoll, setActiveRoll] = useState<{
     spellName: string;
@@ -109,8 +109,22 @@ export default function SpellbookPanel({
 
             return (
               <div key={lvl} className="p-3 rounded-lg bg-[#0d1026] border border-[#262b57] text-center">
-                <div className="text-xs font-bold text-[#cfd4ee] font-[family-name:var(--font-heading)] mb-1">
-                  Level {lvl}
+                <div className="flex items-center justify-between text-xs font-bold text-[#cfd4ee] font-[family-name:var(--font-heading)] mb-1">
+                  <span>Level {lvl}</span>
+                  <div className="flex items-center gap-1" title="Edit Max Slots">
+                    <span className="text-[9px] text-[#9aa1cc]">Max:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={max}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setAriaSpellSlotMax(lvl, isNaN(val) ? 0 : val);
+                      }}
+                      className="w-8 bg-black/60 border border-[#343a72] rounded px-1 text-center text-xs font-bold text-[#a992e8] focus:outline-none focus:border-[#a992e8]"
+                    />
+                  </div>
                 </div>
                 <div className="text-lg font-bold text-[#a992e8] font-[family-name:var(--font-mono)] mb-2">
                   {available} / {max}
