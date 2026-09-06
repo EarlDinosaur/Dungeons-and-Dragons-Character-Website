@@ -7,6 +7,7 @@ import TavernBackground from '@/components/ui/backgrounds/TavernBackground';
 import VesperShadowRealm from '@/components/ui/backgrounds/VesperShadowRealm';
 import AriaNightSky from '@/components/ui/backgrounds/AriaNightSky';
 import CyrusSolarSanctuary from '@/components/ui/backgrounds/CyrusSolarSanctuary';
+import WynelScarletSigil from '@/components/ui/backgrounds/WynelScarletSigil';
 
 // Shared UI & Campaign components
 import TabNavigation from '@/components/ui/TabNavigation';
@@ -23,7 +24,6 @@ import ProgressionPanel from '@/components/characters/vesper/ProgressionPanel';
 import SoulHarvester from '@/components/characters/vesper/SoulHarvester';
 import Dossier from '@/components/characters/vesper/Dossier';
 
-
 // Aria Sil'aveth components
 import AriaHeader from '@/components/characters/aria/AriaHeader';
 import AriaStatBlock from '@/components/characters/aria/AriaStatBlock';
@@ -38,8 +38,16 @@ import CyrusOracleEngine from '@/components/characters/cyrus/CyrusOracleEngine';
 import CyrusGrimoire from '@/components/characters/cyrus/CyrusGrimoire';
 import CyrusSpellbookPanel from '@/components/characters/cyrus/CyrusSpellbookPanel';
 
+// Wyn'el Aeluin components
+import WynelHeader from '@/components/characters/wynel/WynelHeader';
+import WynelStatBlock from '@/components/characters/wynel/WynelStatBlock';
+import CrimsonTattooEngine from '@/components/characters/wynel/CrimsonTattooEngine';
+import WynelSpellbookPanel from '@/components/characters/wynel/WynelSpellbookPanel';
+import WynelGrimoire from '@/components/characters/wynel/WynelGrimoire';
+
 import type { AriaState } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
+import type { WynelState } from '@/lib/wynel-engine';
 import type { CharacterState, AbilityName } from '@/lib/types';
 import { getModifier } from '@/lib/character-engine';
 
@@ -110,6 +118,23 @@ export default function Home() {
     setCyrusInventory,
     setCyrusCurrency,
     setCyrusNotes,
+    // Wyn'el state
+    wynel,
+    setWynelLevel,
+    setWynelHP,
+    setWynelTempHP,
+    useWynelPactSlot,
+    restoreWynelPactSlot,
+    wynelShortRest,
+    wynelLongRest,
+    toggleWynelFeyPresence,
+    toggleWynelCrimsonPulse,
+    toggleWynelChaosAura,
+    setWynelInventory,
+    setWynelCurrency,
+    setWynelNotes,
+    setWynelJournal,
+    setWynelMysteries,
     isLoaded,
   } = useCharacter();
 
@@ -129,6 +154,7 @@ export default function Home() {
 
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
+  const isWynel = activeCharacterId === 'wynel';
 
   // Helper to map AriaState into a CharacterState interface for shared components like InventoryManager
   const mapAriaToCharacterState = (ariaState: AriaState): CharacterState => {
@@ -326,8 +352,168 @@ export default function Home() {
     };
   };
 
+  const mapWynelToCharacterState = (wynelState: WynelState): CharacterState => {
+    const prof = Math.floor((wynelState.level - 1) / 4) + 2;
+
+    const makeScore = (name: AbilityName, base: number) => {
+      const mod = getModifier(base);
+      const isProf = wynelState.savingThrowProficiencies.includes(name);
+      return {
+        name,
+        label: name,
+        base,
+        modifier: mod,
+        total: base,
+        saveProficient: isProf,
+        saveBonus: mod + (isProf ? prof : 0),
+      };
+    };
+
+    return {
+      name: wynelState.name,
+      alias: wynelState.title,
+      race: wynelState.race,
+      class: wynelState.characterClass,
+      subclass: wynelState.subclass,
+      level: wynelState.level,
+      background: wynelState.background,
+      alignment: wynelState.alignment,
+      experience: 900,
+      classes: wynelState.classes && wynelState.classes.length > 0
+        ? wynelState.classes
+        : [{ className: wynelState.characterClass, subclass: wynelState.subclass, level: wynelState.level, hitDice: 'd8' }],
+      attacks: (wynelState.attacks && wynelState.attacks.length > 0)
+        ? wynelState.attacks
+        : [
+            {
+              id: 'atk-rapier',
+              name: 'Aeluin Ceremonial Rapier',
+              attackBonus: 4,
+              damage: '1d8 + 2',
+              damageType: 'Piercing',
+              range: 'Melee (5 ft)',
+              notes: 'Finesse. Royal heirloom of House Aeluin.',
+              equipped: true,
+            },
+            {
+              id: 'atk-eldritch-blast',
+              name: 'Eldritch Blast (Chaos Bolt)',
+              attackBonus: 5,
+              damage: '1d10 + 3',
+              damageType: 'Force',
+              range: '120 ft',
+              notes: 'Agonizing Blast (+3 CHA). Reality-warping scarlet chaos beam.',
+              equipped: true,
+            },
+            {
+              id: 'atk-dagger',
+              name: 'Concealed Dagger',
+              attackBonus: 4,
+              damage: '1d4 + 2',
+              damageType: 'Piercing',
+              range: '20/60 ft',
+              notes: 'Finesse, Light, Thrown.',
+              equipped: true,
+            },
+          ],
+      spellcasting: {
+        spellSaveDC: wynelState.spellcasting.spellSaveDC,
+        spellAttackBonus: wynelState.spellcasting.spellAttackBonus,
+        slots: { [wynelState.pactEngine.slotLevel]: { max: wynelState.pactEngine.slotsMax, used: wynelState.pactEngine.slotsUsed } },
+        spells: wynelState.spellcasting.spells.map((s) => ({
+          id: s.id,
+          name: s.name,
+          level: s.level,
+          school: s.school,
+          castingTime: s.castingTime,
+          range: s.range,
+          components: s.components,
+          duration: s.duration,
+          description: s.description,
+          damageDice: s.damageDice,
+          prepared: true,
+        })),
+      },
+      feats: [
+        ...wynelState.features.map(f => ({
+          id: `feat-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+          title: f.name,
+          source: f.source,
+          description: f.description,
+          level: 1,
+        })),
+        ...wynelState.invocations.map(inv => ({
+          id: `inv-${inv.id}`,
+          title: `Invocation: ${inv.name}`,
+          source: 'Warlock Invocation',
+          description: inv.description,
+          level: 2,
+        })),
+        ...(wynelState.feats || []),
+      ],
+      proficiencies: wynelState.proficiencies || {
+        armor: ['Light Armor'],
+        weapons: ['Simple Weapons'],
+        tools: ['Dice Set', 'Disguise Kit'],
+        languages: ['Common', 'Elvish', 'Sylvan'],
+      },
+      overrides: wynelState.overrides,
+      proficiencyBonus: prof,
+      abilityScores: {
+        STR: makeScore('STR', wynelState.abilityScores.STR),
+        DEX: makeScore('DEX', wynelState.abilityScores.DEX),
+        CON: makeScore('CON', wynelState.abilityScores.CON),
+        INT: makeScore('INT', wynelState.abilityScores.INT),
+        WIS: makeScore('WIS', wynelState.abilityScores.WIS),
+        CHA: makeScore('CHA', wynelState.abilityScores.CHA),
+      },
+      skills: ALL_SKILLS_LIST.map((def) => {
+        const proficient = wynelState.skillProficiencies.includes(def.name);
+        const abilityMod = getModifier(wynelState.abilityScores[def.ability]);
+        let bonus = abilityMod + (proficient ? prof : 0);
+        return { name: def.name, ability: def.ability, proficient, expertise: false, bonus };
+      }),
+      ac: wynelState.overrides?.ac ?? wynelState.combat.ac,
+      initiative: wynelState.overrides?.initiative ?? wynelState.combat.initiative,
+      speed: wynelState.overrides?.speed ?? wynelState.combat.speed,
+      passivePerception: 10 + getModifier(wynelState.abilityScores.WIS) + (wynelState.skillProficiencies.includes('Perception') ? prof : 0),
+      combat: {
+        currentHP: wynelState.combat.currentHP,
+        maxHP: wynelState.combat.maxHP,
+        tempHP: wynelState.combat.tempHP,
+        hitDice: { total: wynelState.level, used: wynelState.combat.hitDice.used },
+        deathSaves: wynelState.combat.deathSaves,
+        conditions: [],
+      },
+      sneakAttackDice: 0,
+      inventory: wynelState.inventory,
+      currency: wynelState.currency,
+      orphansTithe: {
+        currentSouls: 0,
+        vestigeStage: 'dormant',
+        phantomMurmursActive: false,
+        altarTraumaActive: false,
+      },
+      dossier: {
+        backstory: {
+          orphanageMassacre: wynelState.notes,
+          fatherMalachi: 'House Aeluin Noble Archives',
+          apprenticeApothecary: "Mother's fused grimoire",
+          guildScoutVincent: 'Allied party member',
+          bossDexter: 'Neutral',
+        },
+        mysteries: wynelState.mysteries,
+        journal: wynelState.journal,
+        playerNotes: wynelState.notes,
+      },
+      version: 1,
+      lastSaved: new Date().toISOString(),
+    };
+  };
+
   const ariaCharState = mapAriaToCharacterState(aria);
   const cyrusCharState = mapCyrusToCharacterState(cyrus);
+  const wynelCharState = mapWynelToCharacterState(wynel);
 
   return (
     <>
@@ -341,6 +527,8 @@ export default function Home() {
         />
       ) : isCyrus ? (
         <CyrusSolarSanctuary radiantActive={cyrus.oracleEngine.radiantSoulActive} />
+      ) : isWynel ? (
+        <WynelScarletSigil chaosAuraActive={wynel.pactEngine.chaosAuraActive} />
       ) : (
         <AriaNightSky currentPhase={aria.lunarEngine.currentPhase} />
       )}
@@ -371,6 +559,8 @@ export default function Home() {
                 ? 'Vesper Ashwood'
                 : isCyrus
                 ? 'Cyrus Hyacinthus'
+                : isWynel
+                ? "Wyn'el Aeluin"
                 : "Aria Sil'aveth"}
             </span>
           </div>
@@ -511,6 +701,77 @@ export default function Home() {
                   {/* TAB 6: FEATS & PROGRESSION */}
                   {activeTab === 'progression' && (
                     <ProgressionPanel character={cyrusCharState} />
+                  )}
+                </div>
+              </>
+            ) : isWynel ? (
+              /* Wyn'el Aeluin Dashboard (Prince of House Aeluin & Scarlet Chaos Warlock) */
+              <>
+                <div className="mb-6">
+                  <WynelHeader
+                    wynel={wynel}
+                    onLevelChange={setWynelLevel}
+                    onHPChange={setWynelHP}
+                    onTempHPChange={setWynelTempHP}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up" key={`wynel-${activeTab}`}>
+                  {/* TAB 1: STATS & HERITAGE */}
+                  {activeTab === 'character' && (
+                    <WynelStatBlock wynel={wynel} />
+                  )}
+
+                  {/* TAB 2: COMBAT & SPELLS */}
+                  {activeTab === 'combat' && (
+                    <div className="space-y-6">
+                      <CombatActions character={wynelCharState} />
+                      <WynelSpellbookPanel
+                        wynel={wynel}
+                        onUsePactSlot={useWynelPactSlot}
+                        onRestorePactSlot={restoreWynelPactSlot}
+                        onShortRest={wynelShortRest}
+                        onLongRest={wynelLongRest}
+                      />
+                    </div>
+                  )}
+
+                  {/* TAB 3: CRIMSON TATTOO (Pact Magic & Chaos Aura) */}
+                  {activeTab === 'artifact' && (
+                    <CrimsonTattooEngine
+                      wynel={wynel}
+                      onUsePactSlot={useWynelPactSlot}
+                      onRestorePactSlot={restoreWynelPactSlot}
+                      onShortRest={wynelShortRest}
+                      onLongRest={wynelLongRest}
+                      onToggleFeyPresence={toggleWynelFeyPresence}
+                      onToggleCrimsonPulse={toggleWynelCrimsonPulse}
+                      onToggleChaosAura={toggleWynelChaosAura}
+                    />
+                  )}
+
+                  {/* TAB 4: TREASURY & INVENTORY */}
+                  {activeTab === 'inventory' && (
+                    <InventoryManager
+                      character={wynelCharState}
+                      onInventoryChange={setWynelInventory}
+                      onCurrencyChange={setWynelCurrency}
+                    />
+                  )}
+
+                  {/* TAB 5: GRIMOIRE & LORE */}
+                  {activeTab === 'dossier' && (
+                    <WynelGrimoire
+                      wynel={wynel}
+                      onNotesChange={setWynelNotes}
+                      onJournalChange={setWynelJournal}
+                      onMysteriesChange={setWynelMysteries}
+                    />
+                  )}
+
+                  {/* TAB 6: FEATS (Fallback) */}
+                  {activeTab === 'progression' && (
+                    <ProgressionPanel character={wynelCharState} />
                   )}
                 </div>
               </>

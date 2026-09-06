@@ -8,6 +8,8 @@ import type { AriaState, LunarPhase } from '@/lib/aria-engine';
 import { createDefaultAriaState, calculateAriaStats } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { createDefaultCyrusState, calculateCyrusStats } from '@/lib/cyrus-engine';
+import type { WynelState } from '@/lib/wynel-engine';
+import { createDefaultWynelState, calculateWynelStats } from '@/lib/wynel-engine';
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
 import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
@@ -17,6 +19,7 @@ import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
+const WYNEL_STORAGE_KEY = 'dnd_char_wynel';
 const ACTIVE_CHAR_KEY = 'dnd_active_character_id';
 const ACTIVE_VIEW_KEY = 'dnd_active_view';
 const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
@@ -29,11 +32,13 @@ export interface CustomMedia {
     vesper?: string;
     aria?: string;
     cyrus?: string;
+    wynel?: string;
   };
   backgrounds: {
     vesper?: string;
     aria?: string;
     cyrus?: string;
+    wynel?: string;
     menu?: string;
   };
 }
@@ -42,12 +47,14 @@ const DEFAULT_PORTRAITS: Record<string, string> = {
   vesper: '/vesper-portrait.png',
   aria: '/aria-portrait.png',
   cyrus: '/cyrus-portrait.png',
+  wynel: '/wynel-portrait.png',
 };
 
 const DEFAULT_BACKGROUNDS: Record<string, string> = {
   vesper: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
   aria: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80',
   cyrus: '/images/cyrus-bg.jpg',
+  wynel: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
   menu: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1200&q=80',
 };
 
@@ -138,6 +145,25 @@ interface CharacterContextType {
   setCyrusCurrency: (currency: Currency) => void;
   setCyrusNotes: (notes: string) => void;
 
+  // Wyn'el's state & actions
+  wynel: WynelState;
+  setWynelLevel: (level: number) => void;
+  setWynelHP: (hp: number) => void;
+  setWynelTempHP: (hp: number) => void;
+  useWynelPactSlot: () => void;
+  restoreWynelPactSlot: () => void;
+  setWynelPactSlotMax: (max: number) => void;
+  wynelShortRest: () => void;
+  wynelLongRest: () => void;
+  toggleWynelFeyPresence: () => void;
+  toggleWynelCrimsonPulse: () => void;
+  toggleWynelChaosAura: () => void;
+  setWynelInventory: (items: InventoryItem[]) => void;
+  setWynelCurrency: (currency: Currency) => void;
+  setWynelNotes: (notes: string) => void;
+  setWynelJournal: (entries: JournalEntry[]) => void;
+  setWynelMysteries: (mysteries: CampaignMystery[]) => void;
+
   // Custom Party Roster
   customMembers: CustomMember[];
   setCustomMembers: (members: CustomMember[]) => void;
@@ -167,6 +193,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [character, setCharacter] = useState<CharacterState>(createDefaultCharacterState);
   const [aria, setAria] = useState<AriaState>(createDefaultAriaState);
   const [cyrus, setCyrus] = useState<CyrusState>(createDefaultCyrusState);
+  const [wynel, setWynel] = useState<WynelState>(createDefaultWynelState);
   const [activeTab, setActiveTab] = useState<TabId>('character');
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -179,6 +206,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const vesperModifiedRef = useRef<number>(0);
   const ariaModifiedRef = useRef<number>(0);
   const cyrusModifiedRef = useRef<number>(0);
+  const wynelModifiedRef = useRef<number>(0);
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
   const isPollingRef = useRef<boolean>(false);
@@ -186,6 +214,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ariaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cyrusSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wynelSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rosterSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -238,6 +267,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           setCyrus(cyrusRemote.data);
           try {
             localStorage.setItem(CYRUS_STORAGE_KEY, JSON.stringify(cyrusRemote.data));
+          } catch {}
+        }
+
+        // Wyn'el
+        const wynelRemote = res.characters.wynel;
+        if (wynelRemote && wynelRemote.updatedAt > wynelModifiedRef.current) {
+          setWynel(wynelRemote.data);
+          try {
+            localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(wynelRemote.data));
           } catch {}
         }
       }
@@ -296,6 +334,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       const savedCyrusRaw = localStorage.getItem(CYRUS_STORAGE_KEY);
       if (savedCyrusRaw) {
         setCyrus(JSON.parse(savedCyrusRaw));
+      }
+
+      const savedWynelRaw = localStorage.getItem(WYNEL_STORAGE_KEY);
+      if (savedWynelRaw) {
+        setWynel(JSON.parse(savedWynelRaw));
       }
 
       const savedMediaRaw = localStorage.getItem(CUSTOM_MEDIA_STORAGE_KEY);
@@ -549,6 +592,36 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     });
   }, [scheduleCyrusSave]);
 
+  // Wyn'el's Auto-save with debounce & SQLite push
+  const scheduleWynelSave = useCallback((state: WynelState) => {
+    wynelModifiedRef.current = Date.now();
+    setSyncStatus('syncing');
+    if (wynelSaveTimerRef.current) clearTimeout(wynelSaveTimerRef.current);
+    wynelSaveTimerRef.current = setTimeout(async () => {
+      try {
+        localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(state));
+      } catch {}
+      try {
+        const res = await pushCharacterSync('wynel', state, wynelModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
+  }, []);
+
+  const updateWynel = useCallback((updater: (prev: WynelState) => WynelState) => {
+    setWynel((prev) => {
+      const next = updater(prev);
+      scheduleWynelSave(next);
+      return next;
+    });
+  }, [scheduleWynelSave]);
+
   // Earl Actions
   const setLevel = useCallback((level: number) => {
     updateCharacter((prev) => recalculateForLevel(prev, level));
@@ -639,6 +712,12 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return calculateCyrusStats({ ...prev, abilityScores: nextScores });
       });
       showToast('Ability Score Updated', `Cyrus's ${ability} set to ${newBase}`, 'level');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => {
+        const nextScores = { ...prev.abilityScores, [ability]: newBase };
+        return calculateWynelStats({ ...prev, abilityScores: nextScores });
+      });
+      showToast('Ability Score Updated', `Wyn'el's ${ability} set to ${newBase}`, 'level');
     } else {
       updateCharacter((prev) => {
         const updatedScores = { ...prev.abilityScores };
@@ -753,6 +832,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         });
         return { ...prev, skills: updatedSkills };
       });
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => {
+        const has = prev.skillProficiencies.includes(skillName);
+        const nextSkills = has
+          ? prev.skillProficiencies.filter((s) => s !== skillName)
+          : [...prev.skillProficiencies, skillName];
+        return { ...prev, skillProficiencies: nextSkills };
+      });
     } else {
       updateCharacter((prev) => {
         const updatedSkills = prev.skills.map((s) => {
@@ -781,7 +868,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return { ...prev, skills: updatedSkills };
       });
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel]);
 
   const setCombatOverrides = useCallback((overrides: Partial<import('@/lib/types').CombatOverrides>) => {
     if (activeCharacterId === 'aria') {
@@ -808,6 +895,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Stats Updated', "Cyrus's combat stats updated", 'info');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        overrides: { ...(prev.overrides || {}), ...overrides },
+        combat: {
+          ...prev.combat,
+          ac: overrides.ac ?? prev.combat.ac,
+          initiative: overrides.initiative ?? prev.combat.initiative,
+          speed: overrides.speed ?? prev.combat.speed,
+        },
+      }));
+      showToast('Stats Updated', "Wyn'el's combat stats updated", 'info');
     } else {
       updateCharacter((prev) => {
         const nextOverrides = { ...(prev.overrides || {}), ...overrides };
@@ -827,7 +926,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Stats Updated', 'Combat stats updated', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const setClasses = useCallback((classes: import('@/lib/types').ClassLevel[]) => {
     const totalLevel = classes.reduce((sum, c) => sum + c.level, 0);
@@ -870,6 +969,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return { ...base, feats: merged.feats, proficiencies: merged.proficiencies };
       });
       showToast('Classes Updated', `Cyrus's Multiclass saved (Total Lv ${totalLevel}). Features auto-injected!`, 'level');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => {
+        const base = calculateWynelStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        return base;
+      });
+      showToast('Classes Updated', `Wyn'el's Multiclass saved (Total Lv ${totalLevel}).`, 'level');
     } else {
       updateCharacter((prev) => {
         const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
@@ -908,17 +1019,21 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateAria((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else {
       updateCharacter((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     }
     showToast('Attack Added', `${attack.name} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const editAttack = useCallback((attack: import('@/lib/types').AttackOption) => {
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -926,13 +1041,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Updated', `${attack.name} updated`, 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const deleteAttack = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -940,7 +1057,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Removed', 'Attack option deleted', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
     const newSpell = { ...spell, id: (spell as any).id || `spell-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -962,6 +1079,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Added', `${spell.name} added to Cyrus's spellbook`, 'power');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to Wyn'el's grimoire`, 'power');
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -972,7 +1098,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const deleteSpell = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -993,6 +1119,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1003,7 +1138,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const useVesperSpellSlot = useCallback((level: number) => {
     updateCharacter((prev) => {
@@ -1067,17 +1202,21 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateAria((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else {
       updateCharacter((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     }
     showToast('Feat/Trait Added', `${feat.title} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const deleteFeat = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1085,7 +1224,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Feat Removed', 'Feat/trait removed', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
 
   const updateProficiencies = useCallback((category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => {
     if (activeCharacterId === 'aria') {
@@ -1104,6 +1243,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           [category]: tags,
         },
       }));
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1113,7 +1260,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel]);
 
 
   // Aria Actions
@@ -1411,6 +1558,138 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     updateCyrus((prev) => ({ ...prev, notes }));
   }, [updateCyrus]);
 
+  // Wyn'el Actions
+  const setWynelLevel = useCallback((level: number) => {
+    updateWynel((prev) => calculateWynelStats({ ...prev, level }));
+    showToast('Level Updated', `Wyn'el Aeluin is now Level ${level}! Stats & Pact magic updated.`, 'level');
+  }, [updateWynel, showToast]);
+
+  const setWynelHP = useCallback((hp: number) => {
+    updateWynel((prev) => ({ ...prev, combat: { ...prev.combat, currentHP: hp } }));
+  }, [updateWynel]);
+
+  const setWynelTempHP = useCallback((hp: number) => {
+    updateWynel((prev) => ({ ...prev, combat: { ...prev.combat, tempHP: hp } }));
+  }, [updateWynel]);
+
+  const useWynelPactSlot = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        slotsUsed: Math.min(prev.pactEngine.slotsMax, prev.pactEngine.slotsUsed + 1),
+      },
+    }));
+  }, [updateWynel]);
+
+  const restoreWynelPactSlot = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        slotsUsed: Math.max(0, prev.pactEngine.slotsUsed - 1),
+      },
+    }));
+  }, [updateWynel]);
+
+  const setWynelPactSlotMax = useCallback((max: number) => {
+    updateWynel((prev) => {
+      const newMax = Math.max(0, Math.floor(max));
+      return {
+        ...prev,
+        pactEngine: {
+          ...prev.pactEngine,
+          slotsMax: newMax,
+          slotsUsed: Math.min(prev.pactEngine.slotsUsed, newMax),
+        },
+      };
+    });
+    showToastNotification('Pact Slots Updated', `Pact slot max set to ${max}`, 'info');
+  }, [updateWynel, showToastNotification]);
+
+  const wynelShortRest = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        slotsUsed: 0,
+        feyPresenceUsed: false,
+        crimsonPulseUsed: false,
+      },
+    }));
+    showToast('Short Rest Finished', "Wyn'el recovered all Pact Magic slots (2nd Level) and Fey Presence!", 'rest');
+  }, [updateWynel, showToast]);
+
+  const wynelLongRest = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      combat: {
+        ...prev.combat,
+        currentHP: prev.combat.maxHP,
+        tempHP: 0,
+        deathSaves: { successes: 0, failures: 0 },
+      },
+      pactEngine: {
+        ...prev.pactEngine,
+        slotsUsed: 0,
+        feyPresenceUsed: false,
+        crimsonPulseUsed: false,
+        chaosAuraActive: false,
+      },
+    }));
+    showToast('Long Rest Completed', "Wyn'el restored HP to max. All Pact Magic and chaos abilities refreshed.", 'rest');
+  }, [updateWynel, showToast]);
+
+  const toggleWynelFeyPresence = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        feyPresenceUsed: !prev.pactEngine.feyPresenceUsed,
+      },
+    }));
+  }, [updateWynel]);
+
+  const toggleWynelCrimsonPulse = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        crimsonPulseUsed: !prev.pactEngine.crimsonPulseUsed,
+      },
+    }));
+  }, [updateWynel]);
+
+  const toggleWynelChaosAura = useCallback(() => {
+    updateWynel((prev) => ({
+      ...prev,
+      pactEngine: {
+        ...prev.pactEngine,
+        chaosAuraActive: !prev.pactEngine.chaosAuraActive,
+      },
+    }));
+  }, [updateWynel]);
+
+  const setWynelInventory = useCallback((items: InventoryItem[]) => {
+    updateWynel((prev) => ({ ...prev, inventory: items }));
+  }, [updateWynel]);
+
+  const setWynelCurrency = useCallback((currency: Currency) => {
+    updateWynel((prev) => ({ ...prev, currency }));
+  }, [updateWynel]);
+
+  const setWynelNotes = useCallback((notes: string) => {
+    updateWynel((prev) => ({ ...prev, notes }));
+  }, [updateWynel]);
+
+  const setWynelJournal = useCallback((journal: JournalEntry[]) => {
+    updateWynel((prev) => ({ ...prev, journal }));
+  }, [updateWynel]);
+
+  const setWynelMysteries = useCallback((mysteries: CampaignMystery[]) => {
+    updateWynel((prev) => ({ ...prev, mysteries }));
+  }, [updateWynel]);
+
   return (
     <CharacterContext.Provider
       value={{
@@ -1486,6 +1765,23 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setCyrusInventory,
         setCyrusCurrency,
         setCyrusNotes,
+        wynel,
+        setWynelLevel,
+        setWynelHP,
+        setWynelTempHP,
+        useWynelPactSlot,
+        restoreWynelPactSlot,
+        setWynelPactSlotMax,
+        wynelShortRest,
+        wynelLongRest,
+        toggleWynelFeyPresence,
+        toggleWynelCrimsonPulse,
+        toggleWynelChaosAura,
+        setWynelInventory,
+        setWynelCurrency,
+        setWynelNotes,
+        setWynelJournal,
+        setWynelMysteries,
         customMembers,
         setCustomMembers,
         syncStatus,

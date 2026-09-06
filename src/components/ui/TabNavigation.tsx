@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Swords, Package, Gem, BookOpen, Moon, Wand2, Sparkles, Scroll, Flame } from 'lucide-react';
+import { Shield, Swords, Package, Gem, BookOpen, Moon, Wand2, Sparkles, Scroll, Flame, Heart } from 'lucide-react';
 import type { TabId } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 
@@ -12,14 +12,17 @@ interface TabNavigationProps {
 }
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
-  const { character, aria, cyrus, activeCharacterId } = useCharacter();
+  const { character, aria, cyrus, wynel, activeCharacterId } = useCharacter();
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
+  const isWynel = activeCharacterId === 'wynel';
 
   const activeClasses = isVesper
     ? (character?.classes && character.classes.length > 0 ? character.classes : [{ className: character?.class || 'Rogue', subclass: character?.subclass || 'Assassin' }])
     : isCyrus
     ? (cyrus?.classes && cyrus.classes.length > 0 ? cyrus.classes : [{ className: cyrus?.characterClass || 'Cleric', subclass: cyrus?.subclass || 'Solar Mystery' }])
+    : isWynel
+    ? (wynel?.classes && wynel.classes.length > 0 ? wynel.classes : [{ className: wynel?.characterClass || 'Warlock', subclass: wynel?.subclass || 'The Archfey' }])
     : (aria?.classes && aria.classes.length > 0 ? aria.classes : [{ className: aria?.characterClass || 'Sorcerer', subclass: aria?.subclass || 'Lunar Sorcery' }]);
 
   const canCastSpells = hasSpellcastingClass(activeClasses);
@@ -53,7 +56,16 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     { id: 'dossier', label: 'Prophecies', icon: Scroll },
   ];
 
-  const tabs = isVesper ? vesperTabs : isCyrus ? cyrusTabs : ariaTabs;
+  const wynelTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+    { id: 'character', label: 'Stats & Heritage', icon: Shield },
+    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
+    { id: 'artifact', label: 'Crimson Tattoo', icon: Heart },
+    { id: 'inventory', label: 'Treasury', icon: Package },
+    { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
+  ];
+
+  const tabs = isVesper ? vesperTabs : isCyrus ? cyrusTabs : isWynel ? wynelTabs : ariaTabs;
 
 
   return (
@@ -66,18 +78,21 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
           const getActiveStyle = () => {
             if (isVesper) return 'text-[var(--color-gold-400)] bg-[var(--color-surface-raised)] border border-[rgba(255,215,0,0.2)] shadow-[0_0_15px_rgba(255,215,0,0.15)]';
             if (isCyrus) return 'text-amber-300 bg-[#261d10] border border-[#f59e0b]/40 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
+            if (isWynel) return 'text-rose-200 bg-[#2b080f] border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.35)]';
             return 'text-[#a992e8] bg-[#1d2249] border border-[#a992e8]/40 shadow-[0_0_15px_rgba(169,146,232,0.25)]';
           };
 
           const getIconStyle = () => {
             if (isVesper) return 'text-[var(--color-gold-400)]';
             if (isCyrus) return 'text-amber-400';
+            if (isWynel) return 'text-red-400';
             return 'text-[#a992e8]';
           };
 
           const getLineStyle = () => {
             if (isVesper) return 'bg-[var(--color-gold-bright)]';
             if (isCyrus) return 'bg-amber-400';
+            if (isWynel) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
             return 'bg-[#a992e8]';
           };
 

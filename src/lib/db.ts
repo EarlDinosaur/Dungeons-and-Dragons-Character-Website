@@ -2,6 +2,7 @@ import { createClient, type Client } from '@libsql/client';
 import { createDefaultCharacterState } from './persistence';
 import { createDefaultAriaState } from './aria-engine';
 import { createDefaultCyrusState } from './cyrus-engine';
+import { createDefaultWynelState } from './wynel-engine';
 
 const isVercel = process.env.VERCEL === '1';
 const defaultFile = isVercel ? 'file:/tmp/dnd.db' : 'file:dnd.db';
@@ -74,6 +75,23 @@ export async function initDb(): Promise<void> {
         sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
         args: ['cyrus', JSON.stringify(defaultCyrus), now],
       });
+
+      // Seed Wyn'el
+      const defaultWynel = createDefaultWynelState();
+      await db.execute({
+        sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
+        args: ['wynel', JSON.stringify(defaultWynel), now],
+      });
+    } else {
+      // Ensure Wyn'el exists even if database was initialized before Wyn'el was added
+      const wynelRow = await db.execute("SELECT id FROM characters WHERE id = 'wynel'");
+      if (wynelRow.rows.length === 0) {
+        const defaultWynel = createDefaultWynelState();
+        await db.execute({
+          sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
+          args: ['wynel', JSON.stringify(defaultWynel), Date.now()],
+        });
+      }
     }
 
     // Check campaign_state defaults

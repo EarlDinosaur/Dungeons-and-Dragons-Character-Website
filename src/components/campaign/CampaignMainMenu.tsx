@@ -52,6 +52,7 @@ export default function CampaignMainMenu() {
     character,
     aria,
     cyrus,
+    wynel,
     navigateToCharacter,
     setMysteries,
     showToastNotification,
@@ -187,15 +188,15 @@ export default function CampaignMainMenu() {
   };
 
   // Total party size calculation
-  const totalMembersCount = 3 + customMembers.length; // Earl + Aria + Cyrus + Custom
+  const totalMembersCount = 4 + customMembers.length; // Earl + Aria + Cyrus + Wyn'el + Custom
 
   // Total treasury
-  const partyGold = character.currency.gp + aria.currency.gp + (cyrus?.currency?.gp || 0);
-  const partyPlatinum = character.currency.pp + aria.currency.pp + (cyrus?.currency?.pp || 0);
+  const partyGold = character.currency.gp + aria.currency.gp + (cyrus?.currency?.gp || 0) + (wynel?.currency?.gp || 0);
+  const partyPlatinum = character.currency.pp + aria.currency.pp + (cyrus?.currency?.pp || 0) + (wynel?.currency?.pp || 0);
 
   // We want to render 6 core slots + 1 guest slot = total 7 slots on the tavern board
-  // Slots 0, 1, 2 are Earl, Aria & Cyrus. Slots 3..6 are custom or unassigned wooden pegs.
-  const emptySlotsCount = Math.max(0, 4 - customMembers.length); // 4 available slots to reach 7 total party members
+  // Slots 0, 1, 2, 3 are Earl, Aria, Cyrus & Wyn'el. Slots 4..6 are custom or unassigned wooden pegs.
+  const emptySlotsCount = Math.max(0, 3 - customMembers.length); // 3 available slots to reach 7 total party members
 
   return (
     <div className="space-y-10 animate-fade-in-up py-2 max-w-6xl mx-auto font-['Spectral',serif]">
@@ -480,6 +481,75 @@ export default function CampaignMainMenu() {
               className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
             >
               OPEN CYRUS&apos; SHEET <ArrowRight size={14} />
+            </GlowButton>
+          </SpotlightCard>
+
+          {/* ================================================================
+             ROSTER CARD 4: WYN'EL AELUIN
+             ================================================================ */}
+          <SpotlightCard className="p-6 border border-red-500/40 bg-[linear-gradient(135deg,rgba(38,10,18,0.95)_0%,rgba(18,4,8,0.98)_100%)] relative group hover:border-red-400 shadow-[0_12px_35px_rgba(239,68,68,0.25)] transition-all duration-300 rounded-2xl flex flex-col justify-between">
+            <div className="space-y-4">
+              {/* Header & Portrait Block */}
+              <div className="flex items-start gap-4">
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-red-500/60 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300">
+                    <img
+                      src={getPortraitUrl('wynel')}
+                      alt="Wyn'el Aeluin"
+                      className="w-full h-full object-cover object-[center_20%]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-2xl font-bold text-rose-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                      Wyn’el Aeluin
+                    </h3>
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-black/60 border border-red-500/40 text-rose-300 uppercase tracking-wider shrink-0">
+                      Lv {wynel.level}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-mono text-red-300 font-semibold flex items-center gap-1">
+                    <Flame size={12} className="text-red-400" /> Half-Elf &bull; Archfey Warlock
+                  </p>
+
+                  <p className="text-xs text-rose-300/80 italic">
+                    &ldquo;Prince of House Aeluin&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              {/* Lore introduction */}
+              <p className="text-xs text-rose-100/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
+                Exiled noble prince bound to the Crimson Heart-Tattoo, wielding scarlet chaos magic and eldritch secrets.
+              </p>
+
+              {/* Clean 3-Col Quick Stats */}
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/60 border border-white/10 text-center font-mono text-xs">
+                <div>
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">HP</span>
+                  <span className="font-bold text-red-400">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">AC</span>
+                  <span className="font-bold text-[var(--color-gold-400)]">{wynel.combat.ac}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider">SPELL DC</span>
+                  <span className="font-bold text-rose-300">{wynel.spellcasting.spellSaveDC}</span>
+                </div>
+              </div>
+            </div>
+
+            <GlowButton
+              onClick={() => navigateToCharacter('wynel')}
+              variant="gold"
+              fullWidth
+              className="mt-4 text-xs shadow-lg group-hover:scale-[1.02] transition-transform"
+            >
+              OPEN WYN&apos;EL&apos;S SHEET <ArrowRight size={14} />
             </GlowButton>
           </SpotlightCard>
 
