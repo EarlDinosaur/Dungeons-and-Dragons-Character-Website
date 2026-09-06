@@ -77,7 +77,10 @@ export default function AriaStatBlock({ aria }: AriaStatBlockProps) {
     { name: 'Survival', ability: 'WIS', proficient: false, expertise: false },
   ];
 
-  const currentSkills = aria.skills && aria.skills.length > 0 ? aria.skills : defaultSkills;
+  const currentSkills = defaultSkills.map((def) => {
+    const found = aria.skills?.find((s) => s.name === def.name);
+    return found ? { ...def, proficient: found.proficient, expertise: found.expertise } : def;
+  });
 
   return (
     <div className="space-y-6 font-['Spectral',serif]">

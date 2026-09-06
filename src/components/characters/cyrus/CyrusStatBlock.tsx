@@ -85,14 +85,17 @@ export default function CyrusStatBlock({ cyrus }: CyrusStatBlockProps) {
     isSaveProf: cyrus.savingThrowProficiencies.includes(ab),
   }));
 
-  const currentSkills = cyrus.skills && cyrus.skills.length > 0
-    ? cyrus.skills
-    : SKILL_LIST.map((s) => ({
-        name: s.name,
-        ability: s.ability,
-        proficient: cyrus.skillProficiencies.includes(s.name),
-        expertise: false,
-      }));
+  const defaultSkills = SKILL_LIST.map((s) => ({
+    name: s.name,
+    ability: s.ability,
+    proficient: cyrus.skillProficiencies ? cyrus.skillProficiencies.includes(s.name) : ['Religion', 'Insight', 'Medicine', 'History'].includes(s.name),
+    expertise: false,
+  }));
+
+  const currentSkills = defaultSkills.map((def) => {
+    const found = cyrus.skills?.find((s) => s.name === def.name);
+    return found ? { ...def, proficient: found.proficient, expertise: found.expertise } : def;
+  });
 
   return (
     <div className="space-y-6 font-['Spectral',serif]">

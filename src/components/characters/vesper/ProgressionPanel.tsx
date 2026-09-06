@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Award, ShieldCheck, Wrench, Languages, Plus, Trash2, X, Check, BookMarked, Sparkles } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Award, ShieldCheck, Wrench, Languages, Plus, Trash2, X, Check, BookMarked, Sparkles, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import type { CharacterState, CustomFeat, NonStatProficiencies } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
+import { isAutoInjectedFeat } from '@/lib/feature-injection';
 
 interface ProgressionPanelProps {
   character: CharacterState;
@@ -21,6 +22,9 @@ export default function ProgressionPanel({ character }: ProgressionPanelProps) {
     source: 'Racial / Class Trait',
     level: character.level,
   });
+
+  // Collapsed groups for auto-injected features
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   // Tag Input State for Proficiencies
   const [tagInputs, setTagInputs] = useState<Record<keyof NonStatProficiencies, string>>({
@@ -57,6 +61,10 @@ export default function ProgressionPanel({ character }: ProgressionPanelProps) {
     updateProficiencies(category, currentTags.filter((t) => t !== tagToRemove));
   };
 
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  };
+
   const feats = character.feats || [];
   const proficiencies = character.proficiencies || {
     armor: ['Light Armor'],
@@ -65,14 +73,115 @@ export default function ProgressionPanel({ character }: ProgressionPanelProps) {
     languages: ['Common', 'Elvish', 'Thieves\' Cant'],
   };
 
+  // Separate auto-injected vs manual feats
+  const { autoFeats, manualFeats, autoFeatGroups } = useMemo(() => {
+    const auto: CustomFeat[] = [];
+    const manual: CustomFeat[] = [];
+
+    for (const feat of feats) {
+      if (isAutoInjectedFeat(feat)) {
+        auto.push(feat);
+      } else {
+        manual.push(feat);
+      }
+    }
+
+    // Group auto feats by source class
+    const groups: Record<string, CustomFeat[]> = {};
+    for (const feat of auto) {
+      const groupKey = feat.source;
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(feat);
+    }
+
+    // Sort features within each group by level
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => a.level - b.level);
+    }
+
+    return { autoFeats: auto, manualFeats: manual, autoFeatGroups: groups };
+  }, [feats]);
+
+  const hasAutoFeats = autoFeats.length > 0;
+
   return (
     <div className="space-y-6 animate-fade-in-up">
-      {/* FEATS & CUSTOM TRAITS SECTION */}
+      {/* AUTO-INJECTED CLASS FEATURES */}
+      {hasAutoFeats && (
+        <div>
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <h2 className="text-lg font-[family-name:var(--font-heading)] text-emerald-400 flex items-center gap-2 flex-1">
+              <ShieldCheck size={18} />
+              Class Features ({autoFeats.length})
+              <span className="ml-1 text-[10px] font-mono text-emerald-600 bg-emerald-950/40 border border-emerald-800/30 px-2 py-0.5 rounded-full">AUTO</span>
+              <span className="flex-1 h-[1px] bg-gradient-to-r from-emerald-800 to-transparent" />
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {Object.entries(autoFeatGroups).map(([groupKey, groupFeats]) => {
+              const isCollapsed = collapsedGroups[groupKey];
+              // Strip "Auto: " prefix for display
+              const displayLabel = groupKey.replace(/^Auto:\s*/, '');
+
+              return (
+                <div key={groupKey} className="border border-emerald-900/40 rounded-xl overflow-hidden bg-emerald-950/10">
+                  {/* Group Header */}
+                  <button
+                    onClick={() => toggleGroup(groupKey)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-emerald-950/20 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lock size={12} className="text-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-300 font-[family-name:var(--font-heading)] uppercase tracking-wider">
+                        {displayLabel}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-mono">
+                        ({groupFeats.length} features)
+                      </span>
+                    </div>
+                    {isCollapsed ? <ChevronDown size={14} className="text-emerald-500" /> : <ChevronUp size={14} className="text-emerald-500" />}
+                  </button>
+
+                  {/* Group Body */}
+                  {!isCollapsed && (
+                    <div className="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {groupFeats.map((feat) => (
+                        <div
+                          key={feat.id}
+                          className="p-3 rounded-lg bg-[var(--color-surface-dark)]/50 border border-emerald-900/20 relative"
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-[family-name:var(--font-heading)] text-emerald-300 font-semibold text-xs leading-tight">
+                                {feat.title}
+                              </h3>
+                              <p className="text-[9px] text-emerald-600 font-[family-name:var(--font-mono)] mt-0.5">
+                                Lv {feat.level}
+                              </p>
+                            </div>
+                            <Lock size={10} className="text-emerald-700 mt-0.5 flex-shrink-0 ml-2" />
+                          </div>
+                          <p className="text-[10px] text-[var(--color-parchment-muted)] leading-relaxed line-clamp-3">
+                            {feat.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MANUAL FEATS & CUSTOM TRAITS SECTION */}
       <div>
         <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h2 className="text-lg font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2 flex-1">
             <Award size={18} />
-            Feats &amp; Special Traits ({feats.length})
+            Custom Feats &amp; Traits ({manualFeats.length})
             <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-gold-700)] to-transparent" />
           </h2>
 
@@ -84,13 +193,13 @@ export default function ProgressionPanel({ character }: ProgressionPanelProps) {
           </button>
         </div>
 
-        {feats.length === 0 ? (
+        {manualFeats.length === 0 ? (
           <div className="glass-card p-6 text-center text-xs text-[var(--color-parchment-dim)]">
-            No feats recorded yet. Click &ldquo;Add Feat / Feature&rdquo; to add custom capabilities.
+            No custom feats yet. Click &ldquo;Add Feat / Feature&rdquo; to add racial traits, custom feats, or homebrew abilities.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {feats.map((feat) => (
+            {manualFeats.map((feat) => (
               <SpotlightCard key={feat.id} className="p-4 relative group" spotlightColor="rgba(255, 215, 0, 0.08)">
                 <div className="flex items-start justify-between mb-2">
                   <div>

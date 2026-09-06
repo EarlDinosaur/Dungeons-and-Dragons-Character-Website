@@ -12,15 +12,17 @@ interface TabNavigationProps {
 }
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
-  const { character, activeCharacterId } = useCharacter();
+  const { character, aria, cyrus, activeCharacterId } = useCharacter();
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
 
-  const characterClasses = character?.classes && character.classes.length > 0
-    ? character.classes
-    : [{ className: character?.class || 'Rogue', subclass: character?.subclass || 'Assassin' }];
+  const activeClasses = isVesper
+    ? (character?.classes && character.classes.length > 0 ? character.classes : [{ className: character?.class || 'Rogue', subclass: character?.subclass || 'Assassin' }])
+    : isCyrus
+    ? (cyrus?.classes && cyrus.classes.length > 0 ? cyrus.classes : [{ className: cyrus?.characterClass || 'Cleric', subclass: cyrus?.subclass || 'Solar Mystery' }])
+    : (aria?.classes && aria.classes.length > 0 ? aria.classes : [{ className: aria?.characterClass || 'Sorcerer', subclass: aria?.subclass || 'Lunar Sorcery' }]);
 
-  const canCastSpells = hasSpellcastingClass(characterClasses);
+  const canCastSpells = hasSpellcastingClass(activeClasses);
 
   // Character-specific tab definitions
   const vesperTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
@@ -35,7 +37,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
 
   const ariaTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Overview', icon: Moon },
-    { id: 'combat', label: 'Spellbook', icon: Wand2 },
+    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'artifact', label: 'Lunar Tides', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
@@ -44,7 +46,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
 
   const cyrusTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Oracle Sheet', icon: Sparkles },
-    { id: 'combat', label: 'Domain Spells', icon: Wand2 },
+    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'artifact', label: 'Solar Engine', icon: Flame },
     { id: 'inventory', label: 'Equipment', icon: Package },

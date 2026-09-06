@@ -9,6 +9,7 @@ import { createDefaultAriaState, calculateAriaStats } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import { createDefaultCyrusState, calculateCyrusStats } from '@/lib/cyrus-engine';
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
+import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
@@ -450,16 +451,42 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const toggleSkillProficiency = useCallback((skillName: import('@/lib/types').SkillName) => {
+    const all18Skills: Array<{ name: import('@/lib/types').SkillName; ability: import('@/lib/types').AbilityName }> = [
+      { name: 'Acrobatics', ability: 'DEX' },
+      { name: 'Animal Handling', ability: 'WIS' },
+      { name: 'Arcana', ability: 'INT' },
+      { name: 'Athletics', ability: 'STR' },
+      { name: 'Deception', ability: 'CHA' },
+      { name: 'History', ability: 'INT' },
+      { name: 'Insight', ability: 'WIS' },
+      { name: 'Intimidation', ability: 'CHA' },
+      { name: 'Investigation', ability: 'INT' },
+      { name: 'Medicine', ability: 'WIS' },
+      { name: 'Nature', ability: 'INT' },
+      { name: 'Perception', ability: 'WIS' },
+      { name: 'Performance', ability: 'CHA' },
+      { name: 'Persuasion', ability: 'CHA' },
+      { name: 'Religion', ability: 'INT' },
+      { name: 'Sleight of Hand', ability: 'DEX' },
+      { name: 'Stealth', ability: 'DEX' },
+      { name: 'Survival', ability: 'WIS' },
+    ];
+
     if (activeCharacterId === 'aria') {
       updateAria((prev) => {
-        const currentSkills = prev.skills || [
-          { name: 'Arcana', ability: 'INT', proficient: true, expertise: true, bonus: 13 },
-          { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: 5 },
-          { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: 5 },
-          { name: 'Persuasion', ability: 'CHA', proficient: true, expertise: false, bonus: 9 },
-          { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: 1 },
-        ];
-        const updatedSkills = currentSkills.map((s) => {
+        const existingMap = new Map((prev.skills || []).map((s) => [s.name, s]));
+        const fullSkills = all18Skills.map((def) => {
+          const existing = existingMap.get(def.name);
+          if (existing) return existing;
+          return {
+            name: def.name,
+            ability: def.ability,
+            proficient: ['Arcana', 'History', 'Insight', 'Persuasion'].includes(def.name),
+            expertise: def.name === 'Arcana',
+            bonus: 0,
+          };
+        });
+        const updatedSkills = fullSkills.map((s) => {
           if (s.name === skillName) {
             let proficient = s.proficient;
             let expertise = s.expertise;
@@ -474,14 +501,19 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
     } else if (activeCharacterId === 'cyrus') {
       updateCyrus((prev) => {
-        const currentSkills = prev.skills || [
-          { name: 'Religion', ability: 'INT', proficient: true, expertise: false, bonus: 3 },
-          { name: 'Insight', ability: 'WIS', proficient: true, expertise: false, bonus: 5 },
-          { name: 'Medicine', ability: 'WIS', proficient: true, expertise: false, bonus: 5 },
-          { name: 'History', ability: 'INT', proficient: true, expertise: false, bonus: 3 },
-          { name: 'Perception', ability: 'WIS', proficient: false, expertise: false, bonus: 3 },
-        ];
-        const updatedSkills = currentSkills.map((s) => {
+        const existingMap = new Map((prev.skills || []).map((s) => [s.name, s]));
+        const fullSkills = all18Skills.map((def) => {
+          const existing = existingMap.get(def.name);
+          if (existing) return existing;
+          return {
+            name: def.name,
+            ability: def.ability,
+            proficient: prev.skillProficiencies ? prev.skillProficiencies.includes(def.name) : ['Religion', 'Insight', 'Medicine', 'History'].includes(def.name),
+            expertise: false,
+            bonus: 0,
+          };
+        });
+        const updatedSkills = fullSkills.map((s) => {
           if (s.name === skillName) {
             let proficient = s.proficient;
             let expertise = s.expertise;
@@ -574,24 +606,43 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     const totalLevel = classes.reduce((sum, c) => sum + c.level, 0);
     const primary = classes[0];
 
+    // Compute auto-injected features & proficiencies from the class config
+    const injected = computeInjectedFeatures(classes);
+
     if (activeCharacterId === 'aria') {
-      updateAria((prev) => calculateAriaStats({
-        ...prev,
-        level: totalLevel,
-        characterClass: primary?.className || prev.characterClass,
-        subclass: primary?.subclass || prev.subclass,
-        classes,
-      }));
-      showToast('Classes Updated', `Aria's Multiclass saved (Total Lv ${totalLevel})`, 'level');
+      updateAria((prev) => {
+        const base = calculateAriaStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        const merged = mergeInjectedWithManual(
+          base.feats || [],
+          base.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+        return { ...base, feats: merged.feats, proficiencies: merged.proficiencies };
+      });
+      showToast('Classes Updated', `Aria's Multiclass saved (Total Lv ${totalLevel}). Features auto-injected!`, 'level');
     } else if (activeCharacterId === 'cyrus') {
-      updateCyrus((prev) => calculateCyrusStats({
-        ...prev,
-        level: totalLevel,
-        characterClass: primary?.className || prev.characterClass,
-        subclass: primary?.subclass || prev.subclass,
-        classes,
-      }));
-      showToast('Classes Updated', `Cyrus's Multiclass saved (Total Lv ${totalLevel})`, 'level');
+      updateCyrus((prev) => {
+        const base = calculateCyrusStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        const merged = mergeInjectedWithManual(
+          base.feats || [],
+          base.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+        return { ...base, feats: merged.feats, proficiencies: merged.proficiencies };
+      });
+      showToast('Classes Updated', `Cyrus's Multiclass saved (Total Lv ${totalLevel}). Features auto-injected!`, 'level');
     } else {
       updateCharacter((prev) => {
         const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
@@ -607,12 +658,20 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           totalLevel
         );
 
+        const merged = mergeInjectedWithManual(
+          nextState.feats || [],
+          nextState.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+
         return {
           ...nextState,
+          feats: merged.feats,
+          proficiencies: merged.proficiencies,
           alias: title ? `Multiclass: ${title}` : prev.alias,
         };
       });
-      showToast('Classes Updated', 'Multiclass configuration saved', 'level');
+      showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     }
   }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
@@ -657,29 +716,67 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
-    updateCharacter((prev) => {
-      const newSpell = { ...spell, id: `spell-${Date.now()}` };
-      return {
+    const newSpell = { ...spell, id: `spell-${Date.now()}` };
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to Aria's spellbook`, 'power');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to Cyrus's spellbook`, 'power');
+    } else {
+      updateCharacter((prev) => ({
         ...prev,
         spellcasting: {
           ...prev.spellcasting,
           spells: [...(prev.spellcasting?.spells || []), newSpell],
         },
-      };
-    });
-    showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
-  }, [updateCharacter, showToast]);
+      }));
+      showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const deleteSpell = useCallback((id: string) => {
-    updateCharacter((prev) => ({
-      ...prev,
-      spellcasting: {
-        ...prev.spellcasting,
-        spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
-      },
-    }));
-    showToast('Spell Removed', 'Spell deleted', 'info');
-  }, [updateCharacter, showToast]);
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
 
   const useVesperSpellSlot = useCallback((level: number) => {
     updateCharacter((prev) => {
@@ -961,8 +1058,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const useCyrusSpellSlot = useCallback((level: number) => {
     updateCyrus((prev) => {
-      const currentSlots = prev.spellcasting.slots[level as 1 | 2];
-      if (!currentSlots || currentSlots.used >= currentSlots.max) return prev;
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      if (currentSlots.used >= currentSlots.max) return prev;
       return {
         ...prev,
         spellcasting: {
@@ -978,8 +1075,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const restoreCyrusSpellSlot = useCallback((level: number) => {
     updateCyrus((prev) => {
-      const currentSlots = prev.spellcasting.slots[level as 1 | 2];
-      if (!currentSlots || currentSlots.used <= 0) return prev;
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      if (currentSlots.used <= 0) return prev;
       return {
         ...prev,
         spellcasting: {
@@ -995,7 +1092,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const setCyrusSpellSlotMax = useCallback((level: number, max: number) => {
     updateCyrus((prev) => {
-      const currentSlots = prev.spellcasting.slots[level as 1 | 2] || { max: 0, used: 0 };
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
       const newMax = Math.max(0, Math.floor(max));
       return {
         ...prev,
