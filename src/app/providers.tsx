@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CharacterState, AbilityName, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId } from '@/lib/types';
+import type { CharacterState, AbilityName, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId, CustomMember } from '@/lib/types';
 import { createDefaultCharacterState, recalculateForLevel, saveCharacterState, loadCharacterState } from '@/lib/persistence';
 import { isPhantomMurmursActive, getMaxSouls, getVestigeStage } from '@/lib/orphans-tithe';
 import type { AriaState, LunarPhase } from '@/lib/aria-engine';
@@ -10,6 +10,8 @@ import type { CyrusState } from '@/lib/cyrus-engine';
 import { createDefaultCyrusState, calculateCyrusStats } from '@/lib/cyrus-engine';
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
 import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
+import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
+import { fetchSync, pushCharacterSync, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
@@ -18,6 +20,7 @@ const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
 const ACTIVE_CHAR_KEY = 'dnd_active_character_id';
 const ACTIVE_VIEW_KEY = 'dnd_active_view';
 const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
+const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
 
 export type ViewMode = 'menu' | 'character';
 
@@ -135,6 +138,16 @@ interface CharacterContextType {
   setCyrusCurrency: (currency: Currency) => void;
   setCyrusNotes: (notes: string) => void;
 
+  // Custom Party Roster
+  customMembers: CustomMember[];
+  setCustomMembers: (members: CustomMember[]) => void;
+
+  // Real-time SQLite Sync
+  syncStatus: SyncState;
+  dbInfo: DbStatusInfo | null;
+  lastSyncedAt: number | null;
+  forceSync: () => Promise<void>;
+
   isLoaded: boolean;
 }
 
@@ -157,9 +170,24 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<TabId>('character');
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const [syncStatus, setSyncStatus] = useState<SyncState>('syncing');
+  const [dbInfo, setDbInfo] = useState<DbStatusInfo | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [customMembers, setCustomMembersState] = useState<CustomMember[]>([]);
+
+  const lastServerTimestampRef = useRef<number>(0);
+  const vesperModifiedRef = useRef<number>(0);
+  const ariaModifiedRef = useRef<number>(0);
+  const cyrusModifiedRef = useRef<number>(0);
+  const mediaModifiedRef = useRef<number>(0);
+  const rosterModifiedRef = useRef<number>(0);
+  const isPollingRef = useRef<boolean>(false);
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ariaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cyrusSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rosterSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [customMedia, setCustomMediaState] = useState<CustomMedia>({
     portraits: {},
@@ -168,7 +196,87 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [mediaPickerTab, setMediaPickerTab] = useState<'portraits' | 'backgrounds'>('portraits');
 
-  // Hydration-safe load from localStorage
+  // Perform differential or full synchronization with SQLite backend
+  const performSync = useCallback(async (isFullSync = false) => {
+    if (isPollingRef.current) return;
+    isPollingRef.current = true;
+    try {
+      const since = isFullSync ? 0 : lastServerTimestampRef.current;
+      const res = await fetchSync(since);
+      if (!res) {
+        setSyncStatus('offline');
+        return;
+      }
+
+      if (res.upToDate) {
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+        return;
+      }
+
+      // Sync character updates
+      if (res.characters) {
+        // Vesper / Earl
+        const vesperRemote = res.characters.vesper;
+        if (vesperRemote && vesperRemote.updatedAt > vesperModifiedRef.current) {
+          setCharacter(vesperRemote.data);
+          saveCharacterState(vesperRemote.data);
+        }
+
+        // Aria
+        const ariaRemote = res.characters.aria;
+        if (ariaRemote && ariaRemote.updatedAt > ariaModifiedRef.current) {
+          setAria(ariaRemote.data);
+          try {
+            localStorage.setItem(ARIA_STORAGE_KEY, JSON.stringify(ariaRemote.data));
+          } catch {}
+        }
+
+        // Cyrus
+        const cyrusRemote = res.characters.cyrus;
+        if (cyrusRemote && cyrusRemote.updatedAt > cyrusModifiedRef.current) {
+          setCyrus(cyrusRemote.data);
+          try {
+            localStorage.setItem(CYRUS_STORAGE_KEY, JSON.stringify(cyrusRemote.data));
+          } catch {}
+        }
+      }
+
+      // Sync campaign updates
+      if (res.campaign) {
+        // Custom media
+        const mediaRemote = res.campaign.custom_media;
+        if (mediaRemote && mediaRemote.updatedAt > mediaModifiedRef.current) {
+          setCustomMediaState(mediaRemote.data);
+          try {
+            localStorage.setItem(CUSTOM_MEDIA_STORAGE_KEY, JSON.stringify(mediaRemote.data));
+          } catch {}
+        }
+
+        // Custom party roster
+        const rosterRemote = res.campaign.custom_roster;
+        if (rosterRemote && rosterRemote.updatedAt > rosterModifiedRef.current) {
+          setCustomMembersState(rosterRemote.data);
+          try {
+            localStorage.setItem(CUSTOM_ROSTER_KEY, JSON.stringify(rosterRemote.data));
+          } catch {}
+        }
+      }
+
+      if (res.lastUpdated) {
+        lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.lastUpdated);
+      }
+      setSyncStatus('synced');
+      setLastSyncedAt(Date.now());
+    } catch (err) {
+      console.warn('[CharacterProvider] Sync error:', err);
+      setSyncStatus('offline');
+    } finally {
+      isPollingRef.current = false;
+    }
+  }, []);
+
+  // Hydration-safe load from localStorage + background polling
   useEffect(() => {
     try {
       const savedActiveChar = localStorage.getItem(ACTIVE_CHAR_KEY);
@@ -194,19 +302,98 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedMediaRaw) {
         setCustomMediaState(JSON.parse(savedMediaRaw));
       }
+
+      const savedRosterRaw = localStorage.getItem(CUSTOM_ROSTER_KEY);
+      if (savedRosterRaw) {
+        setCustomMembersState(JSON.parse(savedRosterRaw));
+      }
     } catch (err) {
       console.error('Error loading characters from localStorage:', err);
     }
     setIsLoaded(true);
-  }, []);
+
+    // Check DB driver & connection
+    fetchDbStatus().then((info) => {
+      if (info) setDbInfo(info);
+    });
+
+    // Initial full sync from SQLite
+    performSync(true);
+
+    // Live background polling (every 3.5 seconds)
+    const interval = setInterval(() => {
+      performSync(false);
+    }, 3500);
+
+    // Sync on window focus or visibility change
+    const onFocus = () => performSync(false);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') performSync(false);
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [performSync]);
+
+  const forceSync = useCallback(async () => {
+    setSyncStatus('syncing');
+    const info = await fetchDbStatus();
+    if (info) setDbInfo(info);
+    await performSync(true);
+  }, [performSync]);
 
   const saveCustomMedia = useCallback((next: CustomMedia) => {
     setCustomMediaState(next);
+    mediaModifiedRef.current = Date.now();
     try {
       localStorage.setItem(CUSTOM_MEDIA_STORAGE_KEY, JSON.stringify(next));
     } catch (e) {
       console.error('Error saving custom media:', e);
     }
+    setSyncStatus('syncing');
+    if (mediaSaveTimerRef.current) clearTimeout(mediaSaveTimerRef.current);
+    mediaSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await pushCampaignSync('custom_media', next, mediaModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
+  }, []);
+
+  const setCustomMembers = useCallback((next: CustomMember[]) => {
+    setCustomMembersState(next);
+    rosterModifiedRef.current = Date.now();
+    try {
+      localStorage.setItem(CUSTOM_ROSTER_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.error('Error saving custom roster:', e);
+    }
+    setSyncStatus('syncing');
+    if (rosterSaveTimerRef.current) clearTimeout(rosterSaveTimerRef.current);
+    rosterSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await pushCampaignSync('custom_roster', next, rosterModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
   }, []);
 
   const setCustomPortrait = useCallback((characterId: string, dataUrl: string | null) => {
@@ -274,28 +461,68 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     setActiveView('character');
   }, [setActiveCharacterId, setActiveView]);
 
-  // Earl's Auto-save with debounce
+  // Earl's Auto-save with debounce & SQLite push
   const scheduleVesperSave = useCallback((state: CharacterState) => {
+    vesperModifiedRef.current = Date.now();
+    setSyncStatus('syncing');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
+    saveTimerRef.current = setTimeout(async () => {
       saveCharacterState(state);
-    }, 500);
+      try {
+        const res = await pushCharacterSync('vesper', state, vesperModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
   }, []);
 
-  // Aria's Auto-save with debounce
+  // Aria's Auto-save with debounce & SQLite push
   const scheduleAriaSave = useCallback((state: AriaState) => {
+    ariaModifiedRef.current = Date.now();
+    setSyncStatus('syncing');
     if (ariaSaveTimerRef.current) clearTimeout(ariaSaveTimerRef.current);
-    ariaSaveTimerRef.current = setTimeout(() => {
-      localStorage.setItem(ARIA_STORAGE_KEY, JSON.stringify(state));
-    }, 500);
+    ariaSaveTimerRef.current = setTimeout(async () => {
+      try {
+        localStorage.setItem(ARIA_STORAGE_KEY, JSON.stringify(state));
+      } catch {}
+      try {
+        const res = await pushCharacterSync('aria', state, ariaModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
   }, []);
 
-  // Cyrus's Auto-save with debounce
+  // Cyrus's Auto-save with debounce & SQLite push
   const scheduleCyrusSave = useCallback((state: CyrusState) => {
+    cyrusModifiedRef.current = Date.now();
+    setSyncStatus('syncing');
     if (cyrusSaveTimerRef.current) clearTimeout(cyrusSaveTimerRef.current);
-    cyrusSaveTimerRef.current = setTimeout(() => {
-      localStorage.setItem(CYRUS_STORAGE_KEY, JSON.stringify(state));
-    }, 500);
+    cyrusSaveTimerRef.current = setTimeout(async () => {
+      try {
+        localStorage.setItem(CYRUS_STORAGE_KEY, JSON.stringify(state));
+      } catch {}
+      try {
+        const res = await pushCharacterSync('cyrus', state, cyrusModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
   }, []);
 
   const updateCharacter = useCallback((updater: (prev: CharacterState) => CharacterState) => {
@@ -1259,6 +1486,12 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setCyrusInventory,
         setCyrusCurrency,
         setCyrusNotes,
+        customMembers,
+        setCustomMembers,
+        syncStatus,
+        dbInfo,
+        lastSyncedAt,
+        forceSync,
         isLoaded,
       }}
     >

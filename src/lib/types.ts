@@ -101,6 +101,21 @@ export interface CampaignMystery {
   resolved: boolean;
 }
 
+export interface CustomMember {
+  id: string;
+  name: string;
+  playerName: string;
+  race: string;
+  characterClass: string;
+  level: number;
+  currentHP: number;
+  maxHP: number;
+  ac: number;
+  role: 'Core Member' | 'Guest Companion';
+  avatar: string; // Emoji or image URL
+  notes: string;
+}
+
 export interface JournalEntry {
   id: string;
   title: string;

@@ -12,6 +12,7 @@ import CyrusSolarSanctuary from '@/components/ui/backgrounds/CyrusSolarSanctuary
 import TabNavigation from '@/components/ui/TabNavigation';
 import CampaignMainMenu from '@/components/campaign/CampaignMainMenu';
 import InventoryManager from '@/components/shared/InventoryManager';
+import SyncStatusBadge from '@/components/ui/SyncStatusBadge';
 
 // Vesper Ashwood components
 import CharacterHeader from '@/components/characters/vesper/CharacterHeader';
@@ -67,6 +68,7 @@ export default function Home() {
   const {
     activeView,
     activeCharacterId,
+    navigateToMenu,
     character,
     activeTab,
     setActiveTab,
@@ -342,6 +344,42 @@ export default function Home() {
       ) : (
         <AriaNightSky currentPhase={aria.lunarEngine.currentPhase} />
       )}
+
+      {/* Global Real-Time Sync & Navigation Top Bar */}
+      <header className="sticky top-0 z-40 bg-[#08090d]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-1.5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            {activeView === 'character' ? (
+              <button
+                onClick={navigateToMenu}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
+              >
+                <span>&larr;</span>
+                <span>Guildhall</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-200/90 font-serif">
+                <span>🏰</span>
+                <span>The Ashen Pact</span>
+              </div>
+            )}
+            <span className="text-zinc-600 text-xs hidden sm:inline">&bull;</span>
+            <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">
+              {activeView === 'menu'
+                ? 'Campaign Hub'
+                : isVesper
+                ? 'Vesper Ashwood'
+                : isCyrus
+                ? 'Cyrus Hyacinthus'
+                : "Aria Sil'aveth"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <SyncStatusBadge />
+          </div>
+        </div>
+      </header>
 
       {activeView === 'character' && (
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />

@@ -57,7 +57,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
 
 
   return (
-    <nav className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2">
+    <nav className="sticky top-[41px] z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2">
       <div className="max-w-4xl mx-auto px-4 flex items-center justify-center gap-1 sm:gap-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
