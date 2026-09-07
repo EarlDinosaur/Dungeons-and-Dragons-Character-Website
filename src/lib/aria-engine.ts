@@ -173,7 +173,7 @@ export function createDefaultAriaState(): AriaState {
     id: 'aria',
     name: 'Aria Sil\'aveth',
     subline: 'Lunar Weaver of Starlight',
-    race: 'High Elf',
+    race: 'Astral Elf',
     characterClass: 'Sorcerer',
     subclass: 'Lunar Sorcery',
     level: 10,
