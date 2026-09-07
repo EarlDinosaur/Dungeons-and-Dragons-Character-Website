@@ -80,7 +80,7 @@ interface CharacterContextType {
   getBackgroundUrl: (targetId: string) => string;
   isMediaPickerOpen: boolean;
   setIsMediaPickerOpen: (open: boolean) => void;
-  openMediaPicker: (defaultTab?: 'portraits' | 'backgrounds') => void;
+  openMediaPicker: (defaultTab?: 'portraits' | 'backgrounds', targetCharacter?: string) => void;
 
   // Earl's state & actions
   character: CharacterState;
@@ -224,6 +224,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   });
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [mediaPickerTab, setMediaPickerTab] = useState<'portraits' | 'backgrounds'>('portraits');
+  const [mediaPickerTargetChar, setMediaPickerTargetChar] = useState<string | undefined>(undefined);
 
   // Perform differential or full synchronization with SQLite backend
   const performSync = useCallback(async (isFullSync = false) => {
@@ -476,8 +477,9 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     return custom || DEFAULT_BACKGROUNDS[targetId] || '/images/cyrus-bg.jpg';
   }, [customMedia.backgrounds]);
 
-  const openMediaPicker = useCallback((tab: 'portraits' | 'backgrounds' = 'portraits') => {
+  const openMediaPicker = useCallback((tab: 'portraits' | 'backgrounds' = 'portraits', targetCharacter?: string) => {
     setMediaPickerTab(tab);
+    setMediaPickerTargetChar(targetCharacter);
     setIsMediaPickerOpen(true);
   }, []);
 
@@ -1796,6 +1798,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         isOpen={isMediaPickerOpen}
         onClose={() => setIsMediaPickerOpen(false)}
         defaultTab={mediaPickerTab}
+        targetCharacter={mediaPickerTargetChar}
       />
     </CharacterContext.Provider>
   );

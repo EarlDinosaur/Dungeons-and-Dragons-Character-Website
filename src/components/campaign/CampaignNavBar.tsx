@@ -45,7 +45,7 @@ export default function CampaignNavBar() {
         {/* Media Customizer Button (Mobile & Desktop Accessible) */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => openMediaPicker()}
+            onClick={() => openMediaPicker('portraits', activeCharacterId)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(255,215,0,0.12)] hover:bg-[rgba(255,215,0,0.25)] border border-[var(--color-gold-400)]/40 hover:border-[var(--color-gold-bright)] text-[var(--color-gold-300)] hover:text-white text-xs font-mono font-bold transition-all shadow-md active:scale-95 min-h-[36px]"
             title="Custom Mobile Media & Wallpaper Picker"
           >

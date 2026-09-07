@@ -9,6 +9,77 @@ interface MediaPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultTab?: 'portraits' | 'backgrounds';
+  targetCharacter?: string;
+}
+
+/**
+ * Automatically resize and compress image using HTML5 Canvas client-side.
+ * - Portraits: 400x400 center-crop square, JPEG 0.85 quality (~30-50KB).
+ * - Wallpapers: Max 1600x900 aspect fit, JPEG 0.82 quality (~120-180KB).
+ */
+function compressImage(file: File, type: 'portraits' | 'backgrounds'): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      if (!src) {
+        reject(new Error('Empty image payload'));
+        return;
+      }
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to decode image'));
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(src);
+            return;
+          }
+
+          if (type === 'portraits') {
+            const size = 400;
+            canvas.width = size;
+            canvas.height = size;
+
+            // Center-crop to square
+            const minDim = Math.min(img.width, img.height);
+            const sx = (img.width - minDim) / 2;
+            const sy = (img.height - minDim) / 2;
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } else {
+            const maxW = 1600;
+            const maxH = 900;
+            let targetW = img.width;
+            let targetH = img.height;
+
+            if (targetW > maxW || targetH > maxH) {
+              const ratio = Math.min(maxW / targetW, maxH / targetH);
+              targetW = Math.round(targetW * ratio);
+              targetH = Math.round(targetH * ratio);
+            }
+
+            canvas.width = targetW;
+            canvas.height = targetH;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          }
+        } catch (err) {
+          console.warn('[compressImage] Fallback to raw reader:', err);
+          resolve(src);
+        }
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 const PRESET_WALLPAPERS = [
@@ -24,48 +95,55 @@ const PRESET_WALLPAPERS = [
   { id: 'tavern-warm', name: 'Cozy Guildhall Tavern (Default Menu)', url: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1200&q=80', hero: 'menu' },
 ];
 
-export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portraits' }: MediaPickerModalProps) {
+export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portraits', targetCharacter }: MediaPickerModalProps) {
   const { customMedia, setCustomPortrait, setCustomBackground, resetMedia, getPortraitUrl, getBackgroundUrl, activeCharacterId } = useCharacter();
   const [activeTab, setActiveTab] = useState<'portraits' | 'backgrounds'>(defaultTab);
-  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'wynel' | 'menu'>(
-    (activeCharacterId as any) && ['vesper', 'aria', 'cyrus', 'wynel'].includes(activeCharacterId)
-      ? (activeCharacterId as any)
-      : 'cyrus'
-  );
+  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'wynel' | 'menu'>('cyrus');
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync tab & target hero every time modal is opened
   useEffect(() => {
-    if (isOpen && activeCharacterId && ['vesper', 'aria', 'cyrus', 'wynel'].includes(activeCharacterId)) {
-      setSelectedCharacter(activeCharacterId as any);
+    if (isOpen) {
+      if (defaultTab) {
+        setActiveTab(defaultTab);
+      }
+      const target = targetCharacter || activeCharacterId;
+      if (target && ['vesper', 'aria', 'cyrus', 'wynel', 'menu'].includes(target)) {
+        setSelectedCharacter(target as any);
+      }
     }
-  }, [isOpen, activeCharacterId]);
+  }, [isOpen, defaultTab, targetCharacter, activeCharacterId]);
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Limit file size (max 5MB for fast mobile performance)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image file is too large! Please choose an image under 5MB.');
+    if (file.size > 20 * 1024 * 1024) {
+      alert('Image file is too large! Please select an image under 20MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (!dataUrl) return;
+    try {
+      setIsProcessing(true);
+      const compressedDataUrl = await compressImage(file, activeTab);
 
       if (activeTab === 'portraits') {
         if (selectedCharacter !== 'menu') {
-          setCustomPortrait(selectedCharacter, dataUrl);
+          setCustomPortrait(selectedCharacter, compressedDataUrl);
         }
       } else {
-        setCustomBackground(selectedCharacter, dataUrl);
+        setCustomBackground(selectedCharacter, compressedDataUrl);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('[MediaPickerModal] Error compressing image:', err);
+      alert('Failed to process image. Please try another photo.');
+    } finally {
+      setIsProcessing(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const activePortrait = selectedCharacter !== 'menu' ? getPortraitUrl(selectedCharacter) : '';
@@ -214,14 +292,24 @@ export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portra
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="btn btn-gold w-full py-3 flex items-center justify-center gap-2 text-sm font-mono font-bold shadow-lg min-h-[48px] active:scale-95"
+              disabled={isProcessing}
+              className="btn btn-gold w-full py-3 flex items-center justify-center gap-2 text-sm font-mono font-bold shadow-lg min-h-[48px] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Upload size={18} />
-              Upload Custom Image from Phone / File Picker
+              {isProcessing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Optimizing &amp; Saving Image...</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={18} />
+                  <span>Upload Custom Image from Phone / File Picker</span>
+                </>
+              )}
             </button>
 
             <p className="text-[11px] text-[#b89d5e] text-center italic">
-              Supports JPG, PNG, WEBP from your mobile photo gallery or camera.
+              Auto-optimizes photos from camera roll or files for instant cloud sync.
             </p>
           </div>
 

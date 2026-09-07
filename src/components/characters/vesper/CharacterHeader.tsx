@@ -168,7 +168,7 @@ export default function CharacterHeader({
         {/* Avatar Portrait & Identity (4 cols) */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 lg:col-span-4">
           <div
-            onClick={() => openMediaPicker('portraits')}
+            onClick={() => openMediaPicker('portraits', 'vesper')}
             className="relative group shrink-0 mx-auto sm:mx-0 cursor-pointer"
             title="Tap to change portrait or wallpaper"
           >
