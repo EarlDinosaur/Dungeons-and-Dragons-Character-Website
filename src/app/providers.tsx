@@ -274,9 +274,21 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         // Wyn'el
         const wynelRemote = res.characters.wynel;
         if (wynelRemote && wynelRemote.updatedAt > wynelModifiedRef.current) {
-          setWynel(wynelRemote.data);
+          const defaultState = createDefaultWynelState();
+          const existingIds = new Set((wynelRemote.data?.spellcasting?.spells || []).map((s: any) => s.id));
+          const missingDefaults = defaultState.spellcasting.spells.filter((s) => !existingIds.has(s.id));
+          const mergedData = missingDefaults.length > 0
+            ? {
+                ...wynelRemote.data,
+                spellcasting: {
+                  ...wynelRemote.data.spellcasting,
+                  spells: [...(wynelRemote.data.spellcasting?.spells || []), ...missingDefaults],
+                },
+              }
+            : wynelRemote.data;
+          setWynel(mergedData);
           try {
-            localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(wynelRemote.data));
+            localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(mergedData));
           } catch {}
         }
       }
@@ -339,7 +351,28 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
       const savedWynelRaw = localStorage.getItem(WYNEL_STORAGE_KEY);
       if (savedWynelRaw) {
-        setWynel(JSON.parse(savedWynelRaw));
+        try {
+          const parsed = JSON.parse(savedWynelRaw);
+          const defaultState = createDefaultWynelState();
+          const existingIds = new Set((parsed.spellcasting?.spells || []).map((s: any) => s.id));
+          const missingDefaults = defaultState.spellcasting.spells.filter((s) => !existingIds.has(s.id));
+          if (missingDefaults.length > 0) {
+            parsed.spellcasting = {
+              ...parsed.spellcasting,
+              spells: [...(parsed.spellcasting?.spells || []), ...missingDefaults],
+            };
+          }
+          if (parsed.features && Array.isArray(parsed.features)) {
+            const hasAwakened = parsed.features.some((f: any) => f.name?.includes('Awakened Mind'));
+            if (!hasAwakened) {
+              const feat = defaultState.features.find((f) => f.name.includes('Awakened Mind'));
+              if (feat) parsed.features.push(feat);
+            }
+          }
+          setWynel(calculateWynelStats(parsed));
+        } catch {
+          setWynel(createDefaultWynelState());
+        }
       }
 
       const savedMediaRaw = localStorage.getItem(CUSTOM_MEDIA_STORAGE_KEY);

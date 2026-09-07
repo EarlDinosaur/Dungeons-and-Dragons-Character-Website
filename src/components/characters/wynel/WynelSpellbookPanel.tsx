@@ -89,16 +89,28 @@ export default function WynelSpellbookPanel({
     if (selectedFilter === 'chaos') {
       return [
         'eldritch-blast',
+        'friends',
+        'create-bonfire',
         'faerie-fire',
         'phantasmal-force',
         'hellish-rebuke',
         'sleep',
         'misty-step',
         'hold-person',
+        'comprehend-languages',
+        'sense-emotion',
+        'dissonant-whispers',
+        'tashas-hideous-laughter',
+        'invisibility',
+        'detect-thoughts',
       ].includes(s.id);
     }
     if (selectedFilter === 'tome') {
       return !!s.isTomeCantrip;
+    }
+    if (selectedFilter === 2) {
+      // Warlock Pact Spells (all leveled spells are cast using pact slots)
+      return s.level > 0;
     }
     return s.level === selectedFilter;
   });
