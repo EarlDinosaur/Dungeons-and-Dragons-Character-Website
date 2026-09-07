@@ -392,8 +392,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     await performSync(true);
   }, [performSync]);
 
-  const saveCustomMedia = useCallback((next: CustomMedia) => {
-    setCustomMediaState(next);
+  const scheduleCustomMediaSave = useCallback((next: CustomMedia) => {
     mediaModifiedRef.current = Date.now();
     try {
       localStorage.setItem(CUSTOM_MEDIA_STORAGE_KEY, JSON.stringify(next));
@@ -415,6 +414,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }
     }, 400);
   }, []);
+
+  const saveCustomMedia = useCallback((next: CustomMedia) => {
+    setCustomMediaState(next);
+    scheduleCustomMediaSave(next);
+  }, [scheduleCustomMediaSave]);
 
   const setCustomMembers = useCallback((next: CustomMember[]) => {
     setCustomMembersState(next);
@@ -449,11 +453,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           [characterId]: dataUrl || undefined,
         },
       };
-      saveCustomMedia(next);
+      scheduleCustomMediaSave(next);
       return next;
     });
     showToast('Portrait Updated', `Updated custom portrait for ${characterId}`, 'power');
-  }, [saveCustomMedia, showToast]);
+  }, [scheduleCustomMediaSave, showToast]);
 
   const setCustomBackground = useCallback((targetId: string, dataUrl: string | null) => {
     setCustomMediaState((prev) => {
@@ -464,16 +468,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           [targetId]: dataUrl || undefined,
         },
       };
-      saveCustomMedia(next);
+      scheduleCustomMediaSave(next);
       return next;
     });
     showToast('Wallpaper Updated', `Updated background wallpaper for ${targetId}`, 'power');
-  }, [saveCustomMedia, showToast]);
+  }, [scheduleCustomMediaSave, showToast]);
 
   const resetMedia = useCallback(() => {
-    saveCustomMedia({ portraits: {}, backgrounds: {} });
+    const next: CustomMedia = { portraits: {}, backgrounds: {} };
+    setCustomMediaState(next);
+    scheduleCustomMediaSave(next);
     showToast('Media Reset', 'Reset custom media to defaults', 'info');
-  }, [saveCustomMedia, showToast]);
+  }, [scheduleCustomMediaSave, showToast]);
 
   const getPortraitUrl = useCallback((characterId: string) => {
     const custom = customMedia.portraits[characterId as keyof CustomMedia['portraits']];
