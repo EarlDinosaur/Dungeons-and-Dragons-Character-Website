@@ -41,7 +41,12 @@ import type {
   CharacterSpellItem,
 } from '@/lib/types';
 import { formatModifier, getModifier } from '@/lib/character-engine';
-import { DND_CLASSES, getClassDefinition } from '@/lib/class-database';
+import {
+  DND_CLASSES,
+  getClassDefinition,
+  calculateMulticlassSpellcasterLevel,
+  getMulticlassSpellSlots,
+} from '@/lib/class-database';
 import {
   calculateACWithBreakdown,
   calculateInitiativeWithBreakdown,
@@ -86,10 +91,12 @@ interface UnifiedCharacterSheetProps {
   onToggleSkillProficiency?: (skillName: SkillName) => void;
   onUseSpellSlot?: (level: number) => void;
   onRestoreSpellSlot?: (level: number) => void;
+  onUpdateSpellSlots?: (slots: Record<number, { max: number; used: number }>) => void;
   onAddAttack?: (atk: Omit<AttackOption, 'id'>) => void;
   onEditAttack?: (atk: AttackOption) => void;
   onDeleteAttack?: (id: string) => void;
   onAddSpell?: (spell: CharacterSpellItem) => void;
+  onEditSpell?: (spell: CharacterSpellItem) => void;
   onDeleteSpell?: (spellId: string) => void;
   onOpenMediaPicker?: () => void;
 }
@@ -116,10 +123,12 @@ export default function UnifiedCharacterSheet({
   onToggleSkillProficiency,
   onUseSpellSlot,
   onRestoreSpellSlot,
+  onUpdateSpellSlots,
   onAddAttack,
   onEditAttack,
   onDeleteAttack,
   onAddSpell,
+  onEditSpell,
   onDeleteSpell,
   onOpenMediaPicker,
 }: UnifiedCharacterSheetProps) {
@@ -207,6 +216,41 @@ export default function UnifiedCharacterSheet({
     damageDice: '',
     prepared: true,
   });
+  const [editingSpellId, setEditingSpellId] = useState<string | null>(null);
+
+  const handleOpenAddSpell = () => {
+    setEditingSpellId(null);
+    setNewSpellForm({
+      name: '',
+      level: selectedSpellLevelFilter === 'all' ? 1 : selectedSpellLevelFilter,
+      school: 'Evocation',
+      castingTime: '1 Action',
+      range: '60 ft',
+      components: 'V, S',
+      duration: 'Instantaneous',
+      description: '',
+      damageDice: '',
+      prepared: true,
+    });
+    setIsAddSpellModalOpen(true);
+  };
+
+  const handleOpenEditSpell = (spell: CharacterSpellItem) => {
+    setEditingSpellId(spell.id);
+    setNewSpellForm({
+      name: spell.name,
+      level: spell.level,
+      school: spell.school || 'Evocation',
+      castingTime: spell.castingTime || '1 Action',
+      range: spell.range || '60 ft',
+      components: spell.components || 'V, S',
+      duration: spell.duration || 'Instantaneous',
+      description: spell.description || '',
+      damageDice: spell.damageDice || '',
+      prepared: spell.prepared ?? true,
+    });
+    setIsAddSpellModalOpen(true);
+  };
 
   const hasSpells = useMemo(() => {
     return (
@@ -223,6 +267,103 @@ export default function UnifiedCharacterSheet({
         ))
     );
   }, [character]);
+
+  // Edit Spell Slots Modal State & Handlers
+  const [isEditSlotsModalOpen, setIsEditSlotsModalOpen] = useState(false);
+  const [draftSlots, setDraftSlots] = useState<Record<number, { max: number; used: number }>>({});
+
+  const openEditSlotsModal = () => {
+    const existing = character.spellcasting?.slots || {};
+    const initial: Record<number, { max: number; used: number }> = {};
+    for (let i = 1; i <= 9; i++) {
+      initial[i] = {
+        max: existing[i]?.max || 0,
+        used: Math.min(existing[i]?.used || 0, existing[i]?.max || 0),
+      };
+    }
+    setDraftSlots(initial);
+    setIsEditSlotsModalOpen(true);
+  };
+
+  const handleSaveSpellSlots = () => {
+    const cleaned: Record<number, { max: number; used: number }> = {};
+    for (const [k, v] of Object.entries(draftSlots)) {
+      const lvl = parseInt(k, 10);
+      const max = Math.max(0, Math.floor(v.max || 0));
+      const used = Math.max(0, Math.min(max, Math.floor(v.used || 0)));
+      if (max > 0) {
+        cleaned[lvl] = { max, used };
+      }
+    }
+    if (onUpdateSpellSlots) {
+      onUpdateSpellSlots(cleaned);
+    } else if (character.spellcasting) {
+      character.spellcasting.slots = cleaned;
+    }
+    setIsEditSlotsModalOpen(false);
+  };
+
+  const handleResetSlotsToDefault = () => {
+    const currentClasses = character.classes && character.classes.length > 0
+      ? character.classes
+      : [{ className: character.class || 'Fighter', subclass: character.subclass || '', level: character.level || 1, hitDice: 'd8' }];
+
+    let defaultSlots: Record<number, { max: number; used: number }> = {};
+
+    if (currentClasses.length === 1 && currentClasses[0].className.toLowerCase() === 'warlock') {
+      const lvl = currentClasses[0].level;
+      const pactSlotLevel = Math.min(5, Math.ceil(lvl / 2));
+      const pactSlotCount = lvl >= 17 ? 4 : lvl >= 11 ? 3 : 2;
+      defaultSlots = { [pactSlotLevel]: { max: pactSlotCount, used: 0 } };
+    } else {
+      const casterLvl = calculateMulticlassSpellcasterLevel(currentClasses);
+      if (casterLvl > 0) {
+        defaultSlots = getMulticlassSpellSlots(casterLvl);
+      }
+    }
+
+    const next: Record<number, { max: number; used: number }> = {};
+    for (let i = 1; i <= 9; i++) {
+      next[i] = {
+        max: defaultSlots[i]?.max || 0,
+        used: 0,
+      };
+    }
+    setDraftSlots(next);
+  };
+
+  const handleClearAllSlots = () => {
+    const cleared: Record<number, { max: number; used: number }> = {};
+    for (let i = 1; i <= 9; i++) {
+      cleared[i] = { max: 0, used: 0 };
+    }
+    setDraftSlots(cleared);
+  };
+
+  const handleSlotMaxChange = (level: number, newMax: number) => {
+    const val = Math.max(0, Math.min(20, Math.floor(newMax)));
+    setDraftSlots((prev) => {
+      const current = prev[level] || { max: 0, used: 0 };
+      return {
+        ...prev,
+        [level]: {
+          ...current,
+          max: val,
+          used: Math.min(current.used, val),
+        },
+      };
+    });
+  };
+
+  const handleDeleteSpell = (spellId: string, spellName: string) => {
+    if (window.confirm(`Are you sure you want to remove "${spellName}" from your spellbook?`)) {
+      if (onDeleteSpell) {
+        onDeleteSpell(spellId);
+      } else if (character.spellcasting) {
+        character.spellcasting.spells = (character.spellcasting.spells || []).filter((s) => s.id !== spellId);
+      }
+    }
+  };
 
   // Editable Ability Scores Mode
   const [isEditingScores, setIsEditingScores] = useState(false);
@@ -810,43 +951,58 @@ export default function UnifiedCharacterSheet({
                 </div>
 
                 {/* Spell Slot Pips */}
-                {Object.keys(character.spellcasting?.slots || {}).length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap pt-1 pb-2 border-b border-zinc-800/60">
-                    {Object.entries(character.spellcasting?.slots || {}).map(([lvlStr, slotData]) => {
-                      const lvl = parseInt(lvlStr, 10);
-                      const available = Math.max(0, slotData.max - slotData.used);
-                      return (
-                        <div
-                          key={lvl}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
-                        >
-                          <span className="text-[10px] text-zinc-400 uppercase font-bold">
-                            {character.class === 'Warlock' ? 'Pact' : `Lvl ${lvl}`}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: slotData.max }).map((_, idx) => (
-                              <span
-                                key={idx}
-                                onClick={() => {
-                                  if (idx < available && onUseSpellSlot) onUseSpellSlot(lvl);
-                                  else if (onRestoreSpellSlot) onRestoreSpellSlot(lvl);
-                                }}
-                                className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
-                                    ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
-                                    : 'bg-zinc-800 border-zinc-700'
-                                  }`}
-                                title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
-                              />
-                            ))}
+                <div className="flex items-center justify-between gap-2 flex-wrap pt-1 pb-2 border-b border-zinc-800/60">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {Object.entries(character.spellcasting?.slots || {})
+                      .filter(([_, slotData]) => slotData && slotData.max > 0)
+                      .map(([lvlStr, slotData]) => {
+                        const lvl = parseInt(lvlStr, 10);
+                        const available = Math.max(0, slotData.max - slotData.used);
+                        return (
+                          <div
+                            key={lvl}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
+                          >
+                            <span className="text-[10px] text-zinc-400 uppercase font-bold">
+                              {character.class === 'Warlock' ? 'Pact' : `Lvl ${lvl}`}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: slotData.max }).map((_, idx) => (
+                                <span
+                                  key={idx}
+                                  onClick={() => {
+                                    if (idx < available && onUseSpellSlot) onUseSpellSlot(lvl);
+                                    else if (onRestoreSpellSlot) onRestoreSpellSlot(lvl);
+                                  }}
+                                  className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
+                                      ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                                      : 'bg-zinc-800 border-zinc-700'
+                                    }`}
+                                  title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[10px] text-zinc-400">
+                              {available}/{slotData.max}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-zinc-400">
-                            {available}/{slotData.max}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    {Object.values(character.spellcasting?.slots || {}).every((s) => !s || s.max === 0) && (
+                      <span className="text-xs font-mono text-zinc-500">No spell slots active</span>
+                    )}
                   </div>
-                )}
+
+                  <button
+                    type="button"
+                    onClick={openEditSlotsModal}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-purple-300 border border-zinc-700/80 text-xs font-mono transition-colors cursor-pointer shadow-xs"
+                    title="Edit Spell Slot Quantities"
+                  >
+                    <Edit2 size={11} />
+                    <span>Edit Slots</span>
+                  </button>
+                </div>
 
                 {/* Quick Cast Spells */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
@@ -1120,45 +1276,60 @@ export default function UnifiedCharacterSheet({
                 </div>
               </div>
 
-              {/* Slot Pips */}
+              {/* Slot Pips & Edit Action */}
               <div className="flex items-center gap-3 flex-wrap justify-center">
-                {Object.entries(character.spellcasting?.slots || {}).map(([lvlStr, slotData]) => {
-                  const lvl = parseInt(lvlStr, 10);
-                  const available = Math.max(0, slotData.max - slotData.used);
+                {Object.entries(character.spellcasting?.slots || {})
+                  .filter(([_, slotData]) => slotData && slotData.max > 0)
+                  .map(([lvlStr, slotData]) => {
+                    const lvl = parseInt(lvlStr, 10);
+                    const available = Math.max(0, slotData.max - slotData.used);
 
-                  return (
-                    <div
-                      key={lvl}
-                      className="flex flex-col items-center p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
-                    >
-                      <span className="text-[10px] text-zinc-400 uppercase mb-1">
-                        {character.class === 'Warlock' ? 'Pact Slots' : `Lvl ${lvl}`}
-                      </span>
-                      <div className="flex items-center gap-1 my-0.5">
-                        {Array.from({ length: slotData.max }).map((_, idx) => (
-                          <span
-                            key={idx}
-                            onClick={() => {
-                              if (idx < available && onUseSpellSlot) {
-                                onUseSpellSlot(lvl);
-                              } else if (onRestoreSpellSlot) {
-                                onRestoreSpellSlot(lvl);
-                              }
-                            }}
-                            className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
-                                ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
-                                : 'bg-zinc-800 border-zinc-700'
+                    return (
+                      <div
+                        key={lvl}
+                        className="flex flex-col items-center p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
+                      >
+                        <span className="text-[10px] text-zinc-400 uppercase mb-1">
+                          {character.class === 'Warlock' ? 'Pact Slots' : `Lvl ${lvl}`}
+                        </span>
+                        <div className="flex items-center gap-1 my-0.5">
+                          {Array.from({ length: slotData.max }).map((_, idx) => (
+                            <span
+                              key={idx}
+                              onClick={() => {
+                                if (idx < available && onUseSpellSlot) {
+                                  onUseSpellSlot(lvl);
+                                } else if (onRestoreSpellSlot) {
+                                  onRestoreSpellSlot(lvl);
+                                }
+                              }}
+                              className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${
+                                idx < available
+                                  ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                                  : 'bg-zinc-800 border-zinc-700'
                               }`}
-                            title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
-                          />
-                        ))}
+                              title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-zinc-400">
+                          {available} / {slotData.max}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-zinc-400">
-                        {available} / {slotData.max}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                {Object.values(character.spellcasting?.slots || {}).every((s) => !s || s.max === 0) && (
+                  <span className="text-xs font-mono text-zinc-500">No spell slots active</span>
+                )}
+                <button
+                  type="button"
+                  onClick={openEditSlotsModal}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 hover:text-white border border-purple-800/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
+                  title="Configure Spell Slot Quantities"
+                >
+                  <Edit2 size={13} />
+                  <span>Edit Slots</span>
+                </button>
               </div>
             </div>
 
@@ -1192,7 +1363,8 @@ export default function UnifiedCharacterSheet({
                 </div>
 
                 <button
-                  onClick={() => setIsAddSpellModalOpen(true)}
+                  type="button"
+                  onClick={handleOpenAddSpell}
                   className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
                 >
                   <Plus size={13} />
@@ -1223,7 +1395,8 @@ export default function UnifiedCharacterSheet({
                         : 'No spells match the current filter or search criteria.'}
                     </p>
                     <button
-                      onClick={() => setIsAddSpellModalOpen(true)}
+                      type="button"
+                      onClick={handleOpenAddSpell}
                       className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
                     >
                       <Plus size={14} /> Add First Spell
@@ -1270,15 +1443,22 @@ export default function UnifiedCharacterSheet({
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {onDeleteSpell && (
-                          <button
-                            onClick={() => onDeleteSpell(spell.id)}
-                            className="p-1.5 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            title="Delete Spell"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditSpell(spell)}
+                          className="p-2 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-purple-300 border border-zinc-800 hover:border-purple-800/60 transition-all cursor-pointer"
+                          title={`Edit ${spell.name}`}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSpell(spell.id, spell.name)}
+                          className="p-2 rounded-lg bg-zinc-900/80 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all cursor-pointer"
+                          title={`Delete ${spell.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                         <button
                           onClick={() => {
                             if (spell.level > 0 && onUseSpellSlot) {
@@ -1689,12 +1869,13 @@ export default function UnifiedCharacterSheet({
               <div className="flex items-center gap-2">
                 <Wand2 size={18} className="text-purple-400" />
                 <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
-                  Add Spell to Spellbook
+                  {editingSpellId ? 'Edit Spell' : 'Add Spell to Spellbook'}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsAddSpellModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1"
+                className="text-zinc-400 hover:text-white p-1 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1809,20 +1990,34 @@ export default function UnifiedCharacterSheet({
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (!newSpellForm.name.trim()) return;
-                  const newSpell: CharacterSpellItem = {
-                    ...newSpellForm,
-                    id: `spell-${Date.now()}`,
-                  };
-                  if (onAddSpell) {
-                    onAddSpell(newSpell);
+                  if (editingSpellId) {
+                    const updatedSpell: CharacterSpellItem = {
+                      ...newSpellForm,
+                      id: editingSpellId,
+                    };
+                    if (onEditSpell) {
+                      onEditSpell(updatedSpell);
+                    } else if (character.spellcasting) {
+                      character.spellcasting.spells = (character.spellcasting.spells || []).map((s) =>
+                        s.id === editingSpellId ? updatedSpell : s
+                      );
+                    }
                   } else {
-                    if (character.spellcasting) {
+                    const newSpell: CharacterSpellItem = {
+                      ...newSpellForm,
+                      id: `spell-${Date.now()}`,
+                    };
+                    if (onAddSpell) {
+                      onAddSpell(newSpell);
+                    } else if (character.spellcasting) {
                       character.spellcasting.spells = [...(character.spellcasting.spells || []), newSpell];
                     }
                   }
                   setIsAddSpellModalOpen(false);
+                  setEditingSpellId(null);
                   setNewSpellForm({
                     name: '',
                     level: 1,
@@ -1838,7 +2033,175 @@ export default function UnifiedCharacterSheet({
                 }}
                 className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold cursor-pointer shadow-md"
               >
-                Save Spell
+                {editingSpellId ? 'Update Spell' : 'Save Spell'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT SPELL SLOTS MODAL */}
+      {isEditSlotsModalOpen && (
+        <div
+          onClick={() => setIsEditSlotsModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl bg-[#0e1017] border border-purple-700/50 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Wand2 size={20} className="text-purple-400" />
+                <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
+                  Manage Spell Slots
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditSlotsModalOpen(false)}
+                className="text-zinc-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-xs text-zinc-400">
+                Configure maximum available spell slots for each level (1st through 9th).
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetSlotsToDefault}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-[11px] font-mono text-zinc-300 cursor-pointer"
+                  title="Compute standard 5e slot progression from current class level"
+                >
+                  <RotateCcw size={11} /> Reset Defaults
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearAllSlots}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-[11px] font-mono text-red-400 hover:text-red-300 cursor-pointer"
+                  title="Clear all spell slots"
+                >
+                  <Trash2 size={11} /> Clear All
+                </button>
+              </div>
+            </div>
+
+            {/* Spell Slot Rows */}
+            <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => {
+                const max = draftSlots[lvl]?.max || 0;
+                const used = draftSlots[lvl]?.used || 0;
+                const isPactSlot = character.class?.toLowerCase() === 'warlock' && lvl === Math.min(5, Math.ceil(character.level / 2));
+
+                return (
+                  <div
+                    key={lvl}
+                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      max > 0 ? 'bg-purple-950/20 border-purple-800/40' : 'bg-zinc-900/50 border-zinc-800/80'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${
+                          max > 0
+                            ? 'bg-purple-900/60 text-purple-200 border border-purple-700/60'
+                            : 'bg-zinc-800 text-zinc-500'
+                        }`}
+                      >
+                        {lvl}
+                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-zinc-200">
+                          Level {lvl} {isPactSlot && <span className="text-amber-400 text-[11px]">(Pact Slot)</span>}
+                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {max === 0 ? (
+                            <span className="text-[10px] text-zinc-500 font-mono">No slots</span>
+                          ) : (
+                            Array.from({ length: Math.min(max, 10) }).map((_, i) => (
+                              <span
+                                key={i}
+                                className={`w-2.5 h-2.5 rounded-full border ${
+                                  i < Math.max(0, max - used)
+                                    ? 'bg-purple-500 border-purple-400'
+                                    : 'bg-zinc-800 border-zinc-700'
+                                }`}
+                              />
+                            ))
+                          )}
+                          {max > 10 && (
+                            <span className="text-[10px] text-purple-300 font-mono font-bold">+{max - 10}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 self-end sm:self-center">
+                      <div className="flex items-center gap-1">
+                        {[0, 1, 2, 3, 4].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => handleSlotMaxChange(lvl, preset)}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer border ${
+                              max === preset
+                                ? 'bg-purple-600 border-purple-400 text-white font-bold'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleSlotMaxChange(lvl, Math.max(0, max - 1))}
+                          className="w-7 h-7 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold flex items-center justify-center cursor-pointer border border-zinc-700 text-sm"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={max}
+                          onChange={(e) => handleSlotMaxChange(lvl, parseInt(e.target.value, 10) || 0)}
+                          className="w-12 h-7 bg-black/60 border border-zinc-700 rounded text-center text-xs font-mono font-bold text-white focus:border-purple-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSlotMaxChange(lvl, Math.min(20, max + 1))}
+                          className="w-7 h-7 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold flex items-center justify-center cursor-pointer border border-zinc-700 text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setIsEditSlotsModalOpen(false)}
+                className="px-3.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 text-xs font-mono hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSpellSlots}
+                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <Check size={14} /> Save Slots
               </button>
             </div>
           </div>

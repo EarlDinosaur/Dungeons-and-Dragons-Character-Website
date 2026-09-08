@@ -74,6 +74,11 @@ export default function Home() {
     addAttack,
     editAttack,
     deleteAttack,
+    addSpell,
+    editSpell,
+    deleteSpell,
+    setSpellSlots,
+    setSpellSlotMax,
     openMediaPicker,
     getPortraitUrl,
     // Aria state
@@ -873,9 +878,13 @@ export default function Home() {
               onToggleSkillProficiency={toggleSkillProficiency}
               onUseSpellSlot={handleUseSpellSlot}
               onRestoreSpellSlot={handleRestoreSpellSlot}
-              onAddAttack={isVesper ? addAttack : undefined}
-              onEditAttack={isVesper ? editAttack : undefined}
-              onDeleteAttack={isVesper ? deleteAttack : undefined}
+              onUpdateSpellSlots={setSpellSlots}
+              onAddSpell={addSpell}
+              onEditSpell={editSpell}
+              onDeleteSpell={deleteSpell}
+              onAddAttack={addAttack}
+              onEditAttack={editAttack}
+              onDeleteAttack={deleteAttack}
               onOpenMediaPicker={() => openMediaPicker('portraits', activeCharacterId)}
             />
           </div>
