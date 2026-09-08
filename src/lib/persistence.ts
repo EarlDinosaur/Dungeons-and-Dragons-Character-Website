@@ -14,7 +14,7 @@ import {
   getDefaultProficiencies,
 } from './character-engine';
 import { getVestigeStage } from './orphans-tithe';
-import { calculateMulticlassSpellcasterLevel, getMulticlassSpellSlots } from './class-database';
+import { calculateMulticlassSpellcasterLevel, getMulticlassSpellSlots, getClassDefinition } from './class-database';
 
 const STORAGE_KEY = 'vesper-ashwood-character-state';
 const SCHEMA_VERSION = 1;
@@ -149,30 +149,52 @@ export function createDefaultCharacterState(): CharacterState {
  * Recalculate all derived stats when level or classes change.
  */
 export function recalculateForLevel(state: CharacterState, newLevel: number): CharacterState {
-  const abilities = calculateAbilityScores(newLevel);
-  const profBonus = state.overrides?.proficiencyBonus ?? calculateProficiencyBonus(newLevel);
-  const conMod = abilities.CON.modifier;
-  const dexMod = abilities.DEX.modifier;
-  const maxHP = calculateHP(newLevel, conMod);
+  const isVesper = !state.name || state.name.toLowerCase().includes('earl') || state.name.toLowerCase().includes('vesper');
+  const abilities = isVesper
+    ? calculateAbilityScores(newLevel)
+    : state.abilityScores;
 
-  const hpRatio = state.combat.maxHP > 0 ? state.combat.currentHP / state.combat.maxHP : 1;
+  const profBonus = state.overrides?.proficiencyBonus ?? calculateProficiencyBonus(newLevel);
+  const conMod = abilities.CON?.modifier ?? 0;
+  const dexMod = abilities.DEX?.modifier ?? 0;
 
   const currentClasses = state.classes && state.classes.length > 0
     ? state.classes
-    : [{ className: state.class || 'Rogue', subclass: state.subclass || 'Assassin', level: newLevel, hitDice: 'd8' }];
+    : [{ className: state.class || 'Fighter', subclass: state.subclass || '', level: newLevel, hitDice: 'd8' }];
 
+  let maxHP = state.combat.maxHP;
+  if (isVesper) {
+    maxHP = calculateHP(newLevel, conMod);
+  } else {
+    // 5e standard HP for any character: Hit die at level 1, then (avg + conMod) per level
+    const primaryDef = getClassDefinition(currentClasses[0]?.className || state.class || 'Fighter');
+    const hitDieVal = primaryDef.hitDieValue || 8;
+    const avgPerLevel = Math.floor(hitDieVal / 2) + 1;
+    maxHP = Math.max(1, (hitDieVal + conMod) + Math.max(0, newLevel - 1) * Math.max(1, avgPerLevel + conMod));
+  }
+
+  const hpRatio = state.combat.maxHP > 0 ? state.combat.currentHP / state.combat.maxHP : 1;
   const casterLevel = calculateMulticlassSpellcasterLevel(currentClasses);
+
+  let updatedSlots = state.spellcasting?.slots || {};
+  if (currentClasses.length === 1 && currentClasses[0].className.toLowerCase() === 'warlock') {
+    const pactSlotLevel = Math.min(5, Math.ceil(newLevel / 2));
+    const pactSlotCount = newLevel >= 17 ? 4 : newLevel >= 11 ? 3 : 2;
+    updatedSlots = { [pactSlotLevel]: { max: pactSlotCount, used: 0 } };
+  } else if (casterLevel > 0) {
+    updatedSlots = getMulticlassSpellSlots(casterLevel);
+  }
 
   return {
     ...state,
     level: newLevel,
     proficiencyBonus: profBonus,
     abilityScores: abilities,
-    skills: calculateSkills(newLevel, abilities),
-    ac: state.overrides?.ac ?? calculateAC(dexMod, newLevel >= 5),
-    initiative: state.overrides?.initiative ?? calculateInitiative(dexMod, state.orphansTithe?.phantomMurmursActive ? -2 : 0),
-    speed: state.overrides?.speed ?? 30,
-    passivePerception: calculatePassivePerception(abilities.WIS.modifier, profBonus, true),
+    skills: isVesper ? calculateSkills(newLevel, abilities) : state.skills,
+    ac: state.overrides?.ac ?? (isVesper ? calculateAC(dexMod, newLevel >= 5) : state.ac),
+    initiative: state.overrides?.initiative ?? (isVesper ? calculateInitiative(dexMod, state.orphansTithe?.phantomMurmursActive ? -2 : 0) : dexMod),
+    speed: state.overrides?.speed ?? state.speed ?? 30,
+    passivePerception: isVesper ? calculatePassivePerception(abilities.WIS.modifier, profBonus, true) : state.passivePerception,
     combat: {
       ...state.combat,
       currentHP: Math.round(maxHP * hpRatio),
@@ -184,12 +206,12 @@ export function recalculateForLevel(state: CharacterState, newLevel: number): Ch
     ),
     spellcasting: {
       ...state.spellcasting,
-      slots: getMulticlassSpellSlots(casterLevel),
+      slots: updatedSlots,
     },
-    orphansTithe: {
+    orphansTithe: isVesper ? {
       ...state.orphansTithe,
       vestigeStage: getVestigeStage(newLevel),
-    },
+    } : state.orphansTithe,
   };
 }
 

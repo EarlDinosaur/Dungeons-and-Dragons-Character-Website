@@ -23,49 +23,61 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
   const activeClasses = isVesper
     ? (character?.classes && character.classes.length > 0 ? character.classes : [{ className: character?.class || 'Rogue', subclass: character?.subclass || 'Assassin' }])
     : isCyrus
-    ? (cyrus?.classes && cyrus.classes.length > 0 ? cyrus.classes : [{ className: cyrus?.characterClass || 'Cleric', subclass: cyrus?.subclass || 'Solar Mystery' }])
+    ? (cyrus?.classes && cyrus.classes.length > 0 ? cyrus.classes : [{ className: cyrus?.characterClass || 'Oracle', subclass: cyrus?.subclass || 'Solar Mystery' }])
     : isWynel
     ? (wynel?.classes && wynel.classes.length > 0 ? wynel.classes : [{ className: wynel?.characterClass || 'Warlock', subclass: wynel?.subclass || 'The Archfey' }])
     : isAria
-    ? (aria?.classes && aria.classes.length > 0 ? aria.classes : [{ className: aria?.characterClass || 'Sorcerer', subclass: aria?.subclass || 'Lunar Sorcery' }])
+    ? (aria?.classes && aria.classes.length > 0 ? aria.classes : [{ className: aria?.characterClass || 'Lunar Sorcerer', subclass: aria?.subclass || 'Lunar Sorcery' }])
     : (customChar?.classes && customChar.classes.length > 0 ? customChar.classes : [{ className: customChar?.class || 'Fighter', subclass: customChar?.subclass || '' }]);
 
   const canCastSpells = hasSpellcastingClass(activeClasses);
+  const hasSpells =
+    isAria ||
+    isCyrus ||
+    isWynel ||
+    canCastSpells ||
+    (character?.spellcasting?.spells && character.spellcasting.spells.length > 0) ||
+    (customChar?.spellcasting?.spells && customChar.spellcasting.spells.length > 0) ||
+    (Object.keys(character?.spellcasting?.slots || {}).length > 0) ||
+    (Object.keys(customChar?.spellcasting?.slots || {}).length > 0);
 
   // Character-specific tab definitions
   const vesperTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
-    ...(canCastSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
+    ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
+    { id: 'artifact', label: 'Soul Harvester', icon: Gem },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'artifact', label: 'Soul Harvester', icon: Gem },
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
   ];
 
   const ariaTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Overview', icon: Moon },
-    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
-    { id: 'progression', label: 'Feats', icon: Sparkles },
+    { id: 'combat', label: 'Combat', icon: Swords },
+    { id: 'spells', label: 'Spellbook', icon: Wand2 },
     { id: 'artifact', label: 'Lunar Tides', icon: Sparkles },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'dossier', label: 'Grimoire', icon: Scroll },
   ];
 
   const cyrusTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Oracle Sheet', icon: Sparkles },
-    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
-    { id: 'progression', label: 'Feats', icon: Sparkles },
+    { id: 'combat', label: 'Combat', icon: Swords },
+    { id: 'spells', label: 'Solar Spells', icon: Wand2 },
     { id: 'artifact', label: 'Solar Engine', icon: Flame },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Equipment', icon: Package },
     { id: 'dossier', label: 'Prophecies', icon: Scroll },
   ];
 
   const wynelTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Stats & Heritage', icon: Shield },
-    { id: 'combat', label: canCastSpells ? 'Combat & Spells' : 'Combat', icon: Swords },
-    { id: 'progression', label: 'Feats', icon: Sparkles },
+    { id: 'combat', label: 'Combat', icon: Swords },
+    { id: 'spells', label: 'Pact Magic', icon: Wand2 },
     { id: 'artifact', label: 'Crimson Tattoo', icon: Heart },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Treasury', icon: Package },
     { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
   ];
@@ -73,10 +85,10 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
   const customTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
-    ...(canCastSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
+    ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
+    { id: 'artifact', label: 'Heroic Powers', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'artifact', label: 'Heroic Powers', icon: Sparkles },
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
   ];
 

@@ -1159,6 +1159,35 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return base;
       });
       showToast('Classes Updated', `Wyn'el's Multiclass saved (Total Lv ${totalLevel}).`, 'level');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => {
+        const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
+        const primaryClass = classes[0] || { className: prev.class || 'Fighter', subclass: prev.subclass || '', level: totalLevel, hitDice: 'd8' };
+
+        const nextState = recalculateForLevel(
+          {
+            ...prev,
+            class: primaryClass.className,
+            subclass: primaryClass.subclass || '',
+            classes,
+          },
+          totalLevel
+        );
+
+        const merged = mergeInjectedWithManual(
+          nextState.feats || [],
+          nextState.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+
+        return {
+          ...nextState,
+          feats: merged.feats,
+          proficiencies: merged.proficiencies,
+          alias: title ? `Multiclass: ${title}` : prev.alias,
+        };
+      });
+      showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     } else {
       updateCharacter((prev) => {
         const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
@@ -1189,7 +1218,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const addAttack = useCallback((attack: Omit<import('@/lib/types').AttackOption, 'id'>) => {
     const newAttack = { ...attack, id: (attack as any).id || `attack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };

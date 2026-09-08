@@ -275,15 +275,79 @@ export const DND_CLASSES: Record<string, ClassDefinition> = {
     ],
     description: 'A master of invention, using ingenuity and magic to unlock extraordinary capabilities in objects.',
   },
+  Oracle: {
+    name: 'Oracle',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbility: ['CHA'],
+    savingThrows: ['WIS', 'CHA'],
+    spellcastingType: 'full',
+    subclasses: [
+      'Solar Mystery',
+      'Lunar Mystery',
+      'Cosmos Mystery',
+      'Battle Mystery',
+      'Flame Mystery',
+      'Life Mystery',
+      'Time Mystery',
+      'Lore Mystery',
+      'Heavens Mystery',
+    ],
+    description: 'A conduit of divine power granted prophetic revelations and burdened with a sacred curse.',
+  },
+  'Lunar Sorcerer': {
+    name: 'Lunar Sorcerer',
+    hitDie: 'd6',
+    hitDieValue: 6,
+    primaryAbility: ['CHA'],
+    savingThrows: ['CON', 'CHA'],
+    spellcastingType: 'full',
+    subclasses: [
+      'Lunar Sorcery',
+      'Full Moon Affinity',
+      'New Moon Affinity',
+      'Crescent Moon Affinity',
+      'Eclipse Weaver',
+      'Cosmic Orbit',
+    ],
+    description: 'A spellcaster whose innate celestial magic is attuned to the ever-shifting phases of the moon.',
+  },
+  'Blood Hunter': {
+    name: 'Blood Hunter',
+    hitDie: 'd10',
+    hitDieValue: 10,
+    primaryAbility: ['STR', 'DEX', 'INT'],
+    savingThrows: ['DEX', 'INT'],
+    spellcastingType: 'third',
+    subclasses: [
+      'Order of the Ghostslayer',
+      'Order of the Lycan',
+      'Order of the Mutant',
+      'Order of the Profane Soul',
+    ],
+    description: 'A relentless warrior driven by an unending pursuit of evil who uses forbidden hemocraft blood magic.',
+  },
 };
 
 /**
  * Get class definition by name. Returns fallback if not found.
  */
 export function getClassDefinition(className: string): ClassDefinition {
-  const normalized = className.trim();
+  const normalized = (className || '').trim().toLowerCase();
+
+  // Common aliases
+  if (normalized === 'lunar sorcery' || normalized === 'lunar sorcerer' || normalized === 'lunar sorceress') {
+    return DND_CLASSES['Lunar Sorcerer'];
+  }
+  if (normalized === 'oracle' || normalized === 'solar oracle') {
+    return DND_CLASSES['Oracle'];
+  }
+  if (normalized === 'blood hunter' || normalized === 'bloodhunter') {
+    return DND_CLASSES['Blood Hunter'];
+  }
+
   const found = Object.keys(DND_CLASSES).find(
-    (k) => k.toLowerCase() === normalized.toLowerCase()
+    (k) => k.toLowerCase() === normalized
   );
 
   if (found) return DND_CLASSES[found];

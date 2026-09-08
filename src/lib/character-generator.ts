@@ -224,7 +224,7 @@ export function generateNewCharacter(input: CreateCharacterInput): CharacterStat
   let casterAbility: AbilityName = 'CHA';
   if (['Wizard', 'Artificer'].includes(className)) casterAbility = 'INT';
   else if (['Cleric', 'Druid', 'Ranger'].includes(className)) casterAbility = 'WIS';
-  else if (['Sorcerer', 'Warlock', 'Bard', 'Paladin'].includes(className)) casterAbility = 'CHA';
+  else if (['Sorcerer', 'Lunar Sorcerer', 'Oracle', 'Warlock', 'Bard', 'Paladin'].includes(className)) casterAbility = 'CHA';
 
   const isCaster = classDef.spellcastingType !== 'none';
   const spellSaveDC = isCaster ? 8 + profBonus + completeAbilityScores[casterAbility].modifier : 10;
@@ -251,7 +251,14 @@ export function generateNewCharacter(input: CreateCharacterInput): CharacterStat
   if (isCaster) {
     spells.push({
       id: `spell-cantrip-1-${Date.now()}`,
-      name: className === 'Warlock' ? 'Eldritch Blast' : className === 'Cleric' ? 'Sacred Flame' : 'Light',
+      name:
+        className === 'Warlock'
+          ? 'Eldritch Blast'
+          : ['Cleric', 'Oracle'].includes(className)
+          ? 'Sacred Flame'
+          : ['Sorcerer', 'Lunar Sorcerer'].includes(className)
+          ? 'Lunar Ray (Fire Bolt)'
+          : 'Light',
       level: 0,
       school: 'Evocation',
       castingTime: '1 Action',
@@ -264,14 +271,17 @@ export function generateNewCharacter(input: CreateCharacterInput): CharacterStat
     if (level >= 1) {
       spells.push({
         id: `spell-lvl1-1-${Date.now()}`,
-        name: className === 'Cleric' ? 'Cure Wounds' : className === 'Wizard' ? 'Magic Missile' : 'Shield',
+        name: ['Cleric', 'Oracle'].includes(className) ? 'Bless' : className === 'Wizard' ? 'Magic Missile' : 'Shield',
         level: 1,
-        school: className === 'Cleric' ? 'Evocation' : 'Abjuration',
-        castingTime: className === 'Cleric' ? '1 Action' : '1 Reaction',
-        range: className === 'Cleric' ? 'Touch' : 'Self',
+        school: ['Cleric', 'Oracle'].includes(className) ? 'Enchantment' : 'Abjuration',
+        castingTime: ['Cleric', 'Oracle'].includes(className) ? '1 Action' : '1 Reaction',
+        range: ['Cleric', 'Oracle'].includes(className) ? '30 ft' : 'Self',
         components: 'V, S',
-        duration: 'Instantaneous',
-        description: 'Channels arcane or divine force to protect or heal.',
+        duration: ['Cleric', 'Oracle'].includes(className) ? 'Concentration, up to 1 minute' : '1 round',
+        description:
+          ['Cleric', 'Oracle'].includes(className)
+            ? 'Bless up to three creatures. When a target makes an attack roll or saving throw, they add a d4.'
+            : 'An invisible barrier appears, granting +5 AC and immunity to magic missile until your next turn.',
         prepared: true,
       });
     }

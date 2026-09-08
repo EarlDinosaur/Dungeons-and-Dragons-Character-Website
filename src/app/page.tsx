@@ -121,6 +121,8 @@ export default function Home() {
     setWynelNotes,
     setWynelJournal,
     setWynelMysteries,
+    // Multiclass & Levels
+    setClasses,
     // Custom Characters
     customCharacters,
     customThemes,
@@ -857,6 +859,7 @@ export default function Home() {
               portraitUrl={activeTheme.portraitUrl}
               signatureTab={signatureTabConfig}
               onLevelChange={handleLevelChange}
+              onSaveClasses={setClasses}
               onHPChange={handleHPChange}
               onTempHPChange={handleTempHPChange}
               onShortRest={handleShortRest}

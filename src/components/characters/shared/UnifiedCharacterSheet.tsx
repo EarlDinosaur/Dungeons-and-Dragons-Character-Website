@@ -24,9 +24,24 @@ import {
   Zap,
   BookOpen,
   Info,
+  Layers,
+  Search,
 } from 'lucide-react';
-import type { CharacterState, AbilityName, SkillName, AttackOption, TabId, InventoryItem, Currency, JournalEntry, CampaignMystery } from '@/lib/types';
+import type {
+  CharacterState,
+  AbilityName,
+  SkillName,
+  AttackOption,
+  TabId,
+  InventoryItem,
+  Currency,
+  JournalEntry,
+  CampaignMystery,
+  ClassLevel,
+  CharacterSpellItem,
+} from '@/lib/types';
 import { formatModifier, getModifier } from '@/lib/character-engine';
+import { DND_CLASSES, getClassDefinition } from '@/lib/class-database';
 import {
   calculateACWithBreakdown,
   calculateInitiativeWithBreakdown,
@@ -57,6 +72,7 @@ interface UnifiedCharacterSheetProps {
     component: React.ReactNode;
   };
   onLevelChange?: (lvl: number) => void;
+  onSaveClasses?: (classes: ClassLevel[]) => void;
   onHPChange?: (hp: number) => void;
   onTempHPChange?: (tempHp: number) => void;
   onShortRest?: () => void;
@@ -73,6 +89,8 @@ interface UnifiedCharacterSheetProps {
   onAddAttack?: (atk: Omit<AttackOption, 'id'>) => void;
   onEditAttack?: (atk: AttackOption) => void;
   onDeleteAttack?: (id: string) => void;
+  onAddSpell?: (spell: CharacterSpellItem) => void;
+  onDeleteSpell?: (spellId: string) => void;
   onOpenMediaPicker?: () => void;
 }
 
@@ -84,6 +102,7 @@ export default function UnifiedCharacterSheet({
   portraitUrl,
   signatureTab,
   onLevelChange,
+  onSaveClasses,
   onHPChange,
   onTempHPChange,
   onShortRest,
@@ -100,6 +119,8 @@ export default function UnifiedCharacterSheet({
   onAddAttack,
   onEditAttack,
   onDeleteAttack,
+  onAddSpell,
+  onDeleteSpell,
   onOpenMediaPicker,
 }: UnifiedCharacterSheetProps) {
   // Stat Breakdown Modal State
@@ -110,6 +131,98 @@ export default function UnifiedCharacterSheet({
 
   // HP Adjuster Inputs
   const [hpDelta, setHpDelta] = useState<string>('');
+
+  // Multiclass & Level Manager Modal State
+  const [isMulticlassModalOpen, setIsMulticlassModalOpen] = useState(false);
+  const [draftClasses, setDraftClasses] = useState<ClassLevel[]>([]);
+
+  const openMulticlassModal = () => {
+    const initial =
+      character.classes && character.classes.length > 0
+        ? character.classes
+        : [
+          {
+            className: character.class || 'Fighter',
+            subclass: character.subclass || '',
+            level: character.level || 1,
+            hitDice: 'd8',
+          },
+        ];
+    setDraftClasses([...initial]);
+    setIsMulticlassModalOpen(true);
+  };
+
+  const handleSaveMulticlass = () => {
+    if (draftClasses.length === 0) return;
+    onSaveClasses?.(draftClasses);
+    setIsMulticlassModalOpen(false);
+  };
+
+  const handleAddClass = () => {
+    setDraftClasses([
+      ...draftClasses,
+      { className: 'Fighter', subclass: 'Champion', level: 1, hitDice: 'd10' },
+    ]);
+  };
+
+  const handleUpdateClass = (index: number, field: keyof ClassLevel, value: string | number) => {
+    const updated = [...draftClasses];
+    const target = { ...updated[index] };
+
+    if (field === 'className') {
+      const def = getClassDefinition(value as string);
+      target.className = def.name;
+      target.hitDice = def.hitDie;
+      target.subclass = def.subclasses[0] || '';
+    } else if (field === 'level') {
+      target.level = Math.max(1, Number(value));
+    } else if (field === 'subclass') {
+      target.subclass = value as string;
+    } else if (field === 'hitDice') {
+      target.hitDice = value as string;
+    }
+
+    updated[index] = target;
+    setDraftClasses(updated);
+  };
+
+  const handleRemoveClass = (index: number) => {
+    if (draftClasses.length <= 1) return;
+    setDraftClasses(draftClasses.filter((_, i) => i !== index));
+  };
+
+  // Spellbook Search, Filter, and Add Modal
+  const [spellSearchQuery, setSpellSearchQuery] = useState('');
+  const [selectedSpellLevelFilter, setSelectedSpellLevelFilter] = useState<'all' | number>('all');
+  const [isAddSpellModalOpen, setIsAddSpellModalOpen] = useState(false);
+  const [newSpellForm, setNewSpellForm] = useState<Omit<CharacterSpellItem, 'id'>>({
+    name: '',
+    level: 1,
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: '60 ft',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    description: '',
+    damageDice: '',
+    prepared: true,
+  });
+
+  const hasSpells = useMemo(() => {
+    return (
+      (character.spellcasting?.spells && character.spellcasting.spells.length > 0) ||
+      (character.spellcasting?.slots && Object.keys(character.spellcasting.slots).length > 0) ||
+      ['Wizard', 'Sorcerer', 'Lunar Sorcerer', 'Cleric', 'Oracle', 'Druid', 'Bard', 'Warlock', 'Paladin', 'Ranger', 'Artificer'].includes(
+        character.class
+      ) ||
+      (character.classes &&
+        character.classes.some((c) =>
+          ['Wizard', 'Sorcerer', 'Lunar Sorcerer', 'Cleric', 'Oracle', 'Druid', 'Bard', 'Warlock', 'Paladin', 'Ranger', 'Artificer'].includes(
+            c.className
+          )
+        ))
+    );
+  }, [character]);
 
   // Editable Ability Scores Mode
   const [isEditingScores, setIsEditingScores] = useState(false);
@@ -304,20 +417,53 @@ export default function UnifiedCharacterSheet({
 
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shadow-xs"
+                <button
+                  onClick={openMulticlassModal}
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shadow-xs hover:brightness-125 transition-all cursor-pointer group"
                   style={{
                     backgroundColor: `${primaryColor}20`,
                     borderColor: `${primaryColor}50`,
                     color: accentColor,
                   }}
+                  title="Click to manage Level & Multiclassing"
                 >
-                  Level {character.level} {character.class}
-                </span>
-                {character.subclass && (
-                  <span className="text-zinc-400 text-xs font-serif italic">
-                    ({character.subclass})
-                  </span>
+                  <Layers size={12} className="group-hover:rotate-12 transition-transform text-amber-400" />
+                  <span>Level {character.level} {character.class}</span>
+                  {character.subclass && (
+                    <span className="font-serif italic font-normal text-zinc-300">
+                      ({character.subclass})
+                    </span>
+                  )}
+                  {character.classes && character.classes.length > 1 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[9px] font-bold">
+                      +{character.classes.length - 1} Multi
+                    </span>
+                  )}
+                  <Edit2 size={10} className="opacity-60 group-hover:opacity-100 ml-0.5" />
+                </button>
+
+                {onLevelChange && (!character.classes || character.classes.length <= 1) && (
+                  <div className="flex items-center gap-1 bg-zinc-900/80 border border-zinc-700/80 rounded-full px-1.5 py-0.5">
+                    <button
+                      onClick={() => onLevelChange(Math.max(1, character.level - 1))}
+                      disabled={character.level <= 1}
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                      title="Level Down (-1)"
+                    >
+                      -
+                    </button>
+                    <span className="text-[10px] font-mono text-zinc-300 font-bold px-0.5">
+                      Lv {character.level}
+                    </span>
+                    <button
+                      onClick={() => onLevelChange(Math.min(20, character.level + 1))}
+                      disabled={character.level >= 20}
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                      title="Level Up (+1)"
+                    >
+                      +
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -389,13 +535,12 @@ export default function UnifiedCharacterSheet({
               {/* Progress Bar */}
               <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden mb-2 border border-zinc-800">
                 <div
-                  className={`h-full transition-all duration-500 ${
-                    hpPercent > 50
+                  className={`h-full transition-all duration-500 ${hpPercent > 50
                       ? 'bg-emerald-500'
                       : hpPercent > 20
-                      ? 'bg-amber-500'
-                      : 'bg-red-600 animate-pulse'
-                  }`}
+                        ? 'bg-amber-500'
+                        : 'bg-red-600 animate-pulse'
+                    }`}
                   style={{ width: `${hpPercent}%` }}
                 />
               </div>
@@ -642,6 +787,99 @@ export default function UnifiedCharacterSheet({
               ))}
             </div>
 
+            {/* Combat Spellcasting & Slot Quick-Tracker */}
+            {hasSpells && (
+              <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-purple-900/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wand2 size={18} className="text-purple-400" />
+                    <h3 className="text-sm font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
+                      Spell Slots &amp; Combat Quick-Casting
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
+                    <span>
+                      Save DC:{' '}
+                      <strong className="text-amber-300">{spellDCBreakdown.total}</strong>
+                    </span>
+                    <span>
+                      Spell Atk:{' '}
+                      <strong className="text-amber-300">{spellAtkBreakdown.displayValue}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Spell Slot Pips */}
+                {Object.keys(character.spellcasting?.slots || {}).length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1 pb-2 border-b border-zinc-800/60">
+                    {Object.entries(character.spellcasting?.slots || {}).map(([lvlStr, slotData]) => {
+                      const lvl = parseInt(lvlStr, 10);
+                      const available = Math.max(0, slotData.max - slotData.used);
+                      return (
+                        <div
+                          key={lvl}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
+                        >
+                          <span className="text-[10px] text-zinc-400 uppercase font-bold">
+                            {character.class === 'Warlock' ? 'Pact' : `Lvl ${lvl}`}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: slotData.max }).map((_, idx) => (
+                              <span
+                                key={idx}
+                                onClick={() => {
+                                  if (idx < available && onUseSpellSlot) onUseSpellSlot(lvl);
+                                  else if (onRestoreSpellSlot) onRestoreSpellSlot(lvl);
+                                }}
+                                className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
+                                    ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                                    : 'bg-zinc-800 border-zinc-700'
+                                  }`}
+                                title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-zinc-400">
+                            {available}/{slotData.max}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Quick Cast Spells */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+                  {(character.spellcasting?.spells || []).map((spell) => (
+                    <div
+                      key={spell.id}
+                      className="p-2.5 rounded-lg bg-zinc-900/70 border border-zinc-800/90 flex items-center justify-between gap-2 hover:border-zinc-700 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-zinc-200 truncate">{spell.name}</h4>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`} &bull; {spell.castingTime}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (spell.level > 0 && onUseSpellSlot) onUseSpellSlot(spell.level);
+                          rollCheck(
+                            `Cast ${spell.name}`,
+                            spellAtkBreakdown.total,
+                            spell.damageDice ? `Damage: ${spell.damageDice}` : undefined
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800/60 text-[11px] font-mono font-bold shrink-0 cursor-pointer shadow-xs"
+                      >
+                        Cast
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quick Conditions Banner */}
             <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-zinc-800">
               <span className="text-xs font-mono uppercase text-zinc-400 tracking-wider font-bold block mb-2">
@@ -654,11 +892,10 @@ export default function UnifiedCharacterSheet({
                     <button
                       key={cond}
                       onClick={() => toggleCondition(cond)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer border ${
-                        isActive
+                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer border ${isActive
                           ? 'bg-red-950 text-red-300 border-red-800 font-bold'
                           : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200'
-                      }`}
+                        }`}
                     >
                       {cond}
                     </button>
@@ -776,18 +1013,16 @@ export default function UnifiedCharacterSheet({
                         e.preventDefault();
                         setActiveBreakdown(saveBreakdown);
                       }}
-                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${
-                        stat.saveProficient
+                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${stat.saveProficient
                           ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 font-bold'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                      }`}
+                        }`}
                       title="Left-click to Roll Save, Right-click to Inspect Formula"
                     >
                       <span className="flex items-center gap-1">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            stat.saveProficient ? 'bg-amber-400' : 'bg-zinc-600'
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full ${stat.saveProficient ? 'bg-amber-400' : 'bg-zinc-600'
+                            }`}
                         />
                         <span>Save</span>
                       </span>
@@ -821,13 +1056,12 @@ export default function UnifiedCharacterSheet({
                           title="Toggle Proficiency"
                         >
                           <span
-                            className={`w-2.5 h-2.5 rounded-full inline-block ${
-                              sk.expertise
+                            className={`w-2.5 h-2.5 rounded-full inline-block ${sk.expertise
                                 ? 'bg-amber-400 ring-2 ring-amber-400/40'
                                 : sk.proficient
-                                ? 'bg-amber-400'
-                                : 'bg-zinc-700'
-                            }`}
+                                  ? 'bg-amber-400'
+                                  : 'bg-zinc-700'
+                              }`}
                           />
                         </button>
                         <span className="font-medium text-zinc-200">{sk.name}</span>
@@ -911,11 +1145,10 @@ export default function UnifiedCharacterSheet({
                                 onRestoreSpellSlot(lvl);
                               }
                             }}
-                            className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${
-                              idx < available
+                            className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
                                 ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
                                 : 'bg-zinc-800 border-zinc-700'
-                            }`}
+                              }`}
                             title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
                           />
                         ))}
@@ -929,55 +1162,144 @@ export default function UnifiedCharacterSheet({
               </div>
             </div>
 
-            {/* Spells List */}
-            <div className="space-y-3">
-              {(character.spellcasting?.spells || []).map((spell) => (
-                <div
-                  key={spell.id}
-                  className="p-3.5 rounded-xl bg-[#0e1017]/90 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-zinc-100">{spell.name}</h3>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                        {spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`}
-                      </span>
-                      {spell.school && (
-                        <span className="text-[10px] text-purple-400 font-serif italic">
-                          ({spell.school})
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
-                      {spell.description}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1.5 text-[10px] font-mono text-zinc-500">
-                      <span>Time: {spell.castingTime}</span>
-                      <span>&bull;</span>
-                      <span>Range: {spell.range}</span>
-                      <span>&bull;</span>
-                      <span>Comp: {spell.components}</span>
-                    </div>
-                  </div>
-
+            {/* Spell Filter & Search Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-mono">
+                {(['all', 0, 1, 2, 3, 4, 5] as const).map((lvl) => (
                   <button
-                    onClick={() => {
-                      if (spell.level > 0 && onUseSpellSlot) {
-                        onUseSpellSlot(spell.level);
-                      }
-                      rollCheck(
-                        `Cast ${spell.name}`,
-                        spellAtkBreakdown.total,
-                        spell.damageDice ? `Damage: ${spell.damageDice}` : undefined
-                      );
-                    }}
-                    className="px-3.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shrink-0"
+                    key={lvl}
+                    onClick={() => setSelectedSpellLevelFilter(lvl)}
+                    className={`px-3 py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap ${selectedSpellLevelFilter === lvl
+                        ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_8px_rgba(168,85,247,0.4)]'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      }`}
                   >
-                    Cast Spell
+                    {lvl === 'all' ? 'All Spells' : lvl === 0 ? 'Cantrips' : `Lvl ${lvl}`}
                   </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:w-48">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={spellSearchQuery}
+                    onChange={(e) => setSpellSearchQuery(e.target.value)}
+                    placeholder="Search spells..."
+                    className="w-full pl-8 pr-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white focus:outline-none focus:border-purple-400"
+                  />
                 </div>
-              ))}
+
+                <button
+                  onClick={() => setIsAddSpellModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
+                >
+                  <Plus size={13} />
+                  <span>Add Spell</span>
+                </button>
+              </div>
             </div>
+
+            {/* Spells List */}
+            {(() => {
+              const allSpells = character.spellcasting?.spells || [];
+              const filtered = allSpells.filter((s) => {
+                if (selectedSpellLevelFilter !== 'all' && s.level !== selectedSpellLevelFilter) return false;
+                if (spellSearchQuery.trim()) {
+                  const q = spellSearchQuery.toLowerCase();
+                  return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || (s.school && s.school.toLowerCase().includes(q));
+                }
+                return true;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-8 rounded-xl bg-[#0e1017]/90 border border-zinc-800 text-center space-y-3">
+                    <Wand2 size={28} className="mx-auto text-zinc-600" />
+                    <p className="text-sm font-serif text-zinc-400">
+                      {allSpells.length === 0
+                        ? 'No spells found in this character’s spellbook.'
+                        : 'No spells match the current filter or search criteria.'}
+                    </p>
+                    <button
+                      onClick={() => setIsAddSpellModalOpen(true)}
+                      className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <Plus size={14} /> Add First Spell
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {filtered.map((spell) => (
+                    <div
+                      key={spell.id}
+                      className="p-3.5 rounded-xl bg-[#0e1017]/90 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group shadow-xs"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-zinc-100">{spell.name}</h3>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
+                            {spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`}
+                          </span>
+                          {spell.school && (
+                            <span className="text-[10px] text-purple-400 font-serif italic">
+                              ({spell.school})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                          {spell.description}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1.5 text-[10px] font-mono text-zinc-500">
+                          <span>Time: {spell.castingTime}</span>
+                          <span>&bull;</span>
+                          <span>Range: {spell.range}</span>
+                          <span>&bull;</span>
+                          <span>Comp: {spell.components}</span>
+                          {spell.damageDice && (
+                            <>
+                              <span>&bull;</span>
+                              <span className="text-amber-400 font-bold">Dmg: {spell.damageDice}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {onDeleteSpell && (
+                          <button
+                            onClick={() => onDeleteSpell(spell.id)}
+                            className="p-1.5 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            title="Delete Spell"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (spell.level > 0 && onUseSpellSlot) {
+                              onUseSpellSlot(spell.level);
+                            }
+                            rollCheck(
+                              `Cast ${spell.name}`,
+                              spellAtkBreakdown.total,
+                              spell.damageDice ? `Damage: ${spell.damageDice}` : undefined
+                            );
+                          }}
+                          className="px-3.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shadow-xs"
+                        >
+                          Cast Spell
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1043,9 +1365,9 @@ export default function UnifiedCharacterSheet({
         {activeTab === 'dossier' && (
           <Dossier
             character={character}
-            onNotesChange={onNotesChange || (() => {})}
-            onJournalChange={onJournalChange || (() => {})}
-            onMysteriesChange={onMysteriesChange || (() => {})}
+            onNotesChange={onNotesChange || (() => { })}
+            onJournalChange={onJournalChange || (() => { })}
+            onMysteriesChange={onMysteriesChange || (() => { })}
           />
         )}
       </div>
@@ -1168,6 +1490,355 @@ export default function UnifiedCharacterSheet({
                 className="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold cursor-pointer"
               >
                 Save Attack
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MULTICLASSING & LEVEL MANAGER MODAL */}
+      {isMulticlassModalOpen && (
+        <div
+          onClick={() => setIsMulticlassModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl bg-[#0e1017] border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Layers size={20} className="text-amber-400" />
+                <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
+                  Level &amp; Multiclassing Manager
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsMulticlassModalOpen(false)}
+                className="text-zinc-400 hover:text-white p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Configure class levels and multiclass archetypes. Hit dice, spellcasting caster levels, and proficiency bonus scale automatically.
+            </p>
+
+            {/* Class Rows */}
+            <div className="space-y-3">
+              {draftClasses.map((clsItem, idx) => {
+                const classDef = getClassDefinition(clsItem.className);
+                const subclasses = classDef.subclasses || [];
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold uppercase text-amber-400">
+                        Class #{idx + 1} {draftClasses.length > 1 && `(Hit Die: ${classDef.hitDie})`}
+                      </span>
+                      {draftClasses.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveClass(idx)}
+                          className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 cursor-pointer font-mono"
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      {/* Class Selection */}
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">
+                          Class Name
+                        </label>
+                        <select
+                          value={clsItem.className}
+                          onChange={(e) => handleUpdateClass(idx, 'className', e.target.value)}
+                          className="w-full bg-black/60 border border-zinc-700 rounded-lg p-2 text-white font-semibold focus:border-amber-400 cursor-pointer"
+                        >
+                          {Object.keys(DND_CLASSES).map((cName) => (
+                            <option key={cName} value={cName}>
+                              {cName} ({DND_CLASSES[cName].hitDie})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Subclass Selection */}
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">
+                          Subclass / Archetype
+                        </label>
+                        {subclasses.length > 0 ? (
+                          <select
+                            value={clsItem.subclass || ''}
+                            onChange={(e) => handleUpdateClass(idx, 'subclass', e.target.value)}
+                            className="w-full bg-black/60 border border-zinc-700 rounded-lg p-2 text-white focus:border-amber-400 cursor-pointer"
+                          >
+                            <option value="">None / Custom</option>
+                            {subclasses.map((sc) => (
+                              <option key={sc} value={sc}>
+                                {sc}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={clsItem.subclass || ''}
+                            onChange={(e) => handleUpdateClass(idx, 'subclass', e.target.value)}
+                            placeholder="e.g. Archetype"
+                            className="w-full bg-black/60 border border-zinc-700 rounded-lg p-2 text-white focus:border-amber-400"
+                          />
+                        )}
+                      </div>
+
+                      {/* Level Input */}
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">
+                          Class Level (1–20)
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateClass(idx, 'level', Math.max(1, clsItem.level - 1))}
+                            className="w-7 h-8 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={20}
+                            value={clsItem.level}
+                            onChange={(e) =>
+                              handleUpdateClass(idx, 'level', Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))
+                            }
+                            className="w-full bg-black/60 border border-zinc-700 rounded-lg p-1.5 text-white font-mono font-bold text-center focus:border-amber-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateClass(idx, 'level', Math.min(20, clsItem.level + 1))}
+                            className="w-7 h-8 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add Class Button */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={handleAddClass}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-200 cursor-pointer"
+              >
+                <Plus size={14} /> Add Multiclass Dip
+              </button>
+
+              <div className="text-right font-mono text-xs text-zinc-400">
+                Total Level:{' '}
+                <strong className="text-amber-300">
+                  {draftClasses.reduce((sum, c) => sum + (c.level || 0), 0)}
+                </strong>{' '}
+                &bull; Prof:{' '}
+                <strong className="text-white">
+                  +{Math.ceil(draftClasses.reduce((sum, c) => sum + (c.level || 0), 0) / 4) + 1}
+                </strong>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+              <button
+                onClick={() => setIsMulticlassModalOpen(false)}
+                className="px-3.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 text-xs font-mono hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveMulticlass}
+                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <Check size={14} /> Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD CUSTOM SPELL MODAL */}
+      {isAddSpellModalOpen && (
+        <div
+          onClick={() => setIsAddSpellModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-[#0e1017] border border-purple-900/50 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Wand2 size={18} className="text-purple-400" />
+                <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
+                  Add Spell to Spellbook
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsAddSpellModalOpen(false)}
+                className="text-zinc-400 hover:text-white p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-zinc-400 font-mono mb-1 font-bold">Spell Name *</label>
+                <input
+                  type="text"
+                  value={newSpellForm.name}
+                  onChange={(e) => setNewSpellForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Misty Step or Guiding Bolt"
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Spell Level</label>
+                  <select
+                    value={newSpellForm.level}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, level: parseInt(e.target.value, 10) || 0 }))}
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white cursor-pointer"
+                  >
+                    <option value={0}>Cantrip (Level 0)</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
+                      <option key={lvl} value={lvl}>Level {lvl}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">School</label>
+                  <select
+                    value={newSpellForm.school}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, school: e.target.value }))}
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white cursor-pointer"
+                  >
+                    {['Evocation', 'Abjuration', 'Conjuration', 'Divination', 'Enchantment', 'Illusion', 'Necromancy', 'Transmutation'].map((sc) => (
+                      <option key={sc} value={sc}>{sc}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Casting Time</label>
+                  <input
+                    type="text"
+                    value={newSpellForm.castingTime}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, castingTime: e.target.value }))}
+                    placeholder="1 Action, Bonus Action..."
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Range</label>
+                  <input
+                    type="text"
+                    value={newSpellForm.range}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, range: e.target.value }))}
+                    placeholder="Self, Touch, 60 ft..."
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Components</label>
+                  <input
+                    type="text"
+                    value={newSpellForm.components}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, components: e.target.value }))}
+                    placeholder="V, S, M"
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Damage / Heal</label>
+                  <input
+                    type="text"
+                    value={newSpellForm.damageDice || ''}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, damageDice: e.target.value }))}
+                    placeholder="e.g. 2d8 radiant"
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-400 font-mono mb-1 font-bold">Spell Description</label>
+                <textarea
+                  rows={3}
+                  value={newSpellForm.description}
+                  onChange={(e) => setNewSpellForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe spell effects, mechanics, saving throws..."
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white leading-relaxed resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+              <button
+                onClick={() => setIsAddSpellModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 text-xs font-mono hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!newSpellForm.name.trim()) return;
+                  const newSpell: CharacterSpellItem = {
+                    ...newSpellForm,
+                    id: `spell-${Date.now()}`,
+                  };
+                  if (onAddSpell) {
+                    onAddSpell(newSpell);
+                  } else {
+                    if (character.spellcasting) {
+                      character.spellcasting.spells = [...(character.spellcasting.spells || []), newSpell];
+                    }
+                  }
+                  setIsAddSpellModalOpen(false);
+                  setNewSpellForm({
+                    name: '',
+                    level: 1,
+                    school: 'Evocation',
+                    castingTime: '1 Action',
+                    range: '60 ft',
+                    components: 'V, S',
+                    duration: 'Instantaneous',
+                    description: '',
+                    damageDice: '',
+                    prepared: true,
+                  });
+                }}
+                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold cursor-pointer shadow-md"
+              >
+                Save Spell
               </button>
             </div>
           </div>
