@@ -3,6 +3,7 @@ import {
   getAllCharacters,
   getAllCampaignState,
   saveCharacter,
+  deleteCharacterFromDb,
   saveCampaignState,
   addActivityLog,
 } from '@/lib/db';
@@ -86,6 +87,14 @@ export async function POST(request: NextRequest) {
         await addActivityLog(id, logMessage);
       }
       return NextResponse.json({ success: true, timestamp: savedTime, id });
+    }
+
+    if (type === 'delete_character' && id) {
+      await deleteCharacterFromDb(id);
+      if (logMessage) {
+        await addActivityLog(id, logMessage);
+      }
+      return NextResponse.json({ success: true, timestamp: now, id, deleted: true });
     }
 
     if (type === 'campaign' && key) {

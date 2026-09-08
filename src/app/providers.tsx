@@ -13,7 +13,7 @@ import { createDefaultWynelState, calculateWynelStats } from '@/lib/wynel-engine
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
 import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
-import { fetchSync, pushCharacterSync, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
+import { fetchSync, pushCharacterSync, pushCharacterDelete, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
@@ -24,6 +24,8 @@ const ACTIVE_CHAR_KEY = 'dnd_active_character_id';
 const ACTIVE_VIEW_KEY = 'dnd_active_view';
 const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
 const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
+const CUSTOM_CHARACTERS_STORAGE_KEY = 'dnd_custom_characters';
+const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
 
 export type ViewMode = 'menu' | 'character';
 
@@ -168,6 +170,13 @@ interface CharacterContextType {
   customMembers: CustomMember[];
   setCustomMembers: (members: CustomMember[]) => void;
 
+  // Dynamic / Custom Characters (Created on the website)
+  customCharacters: Record<string, CharacterState>;
+  customThemes: Record<string, { primary: string; accent: string; portraitUrl: string }>;
+  createCustomCharacter: (charId: string, charData: CharacterState, theme: { primary: string; accent: string; portraitUrl: string }) => void;
+  deleteCustomCharacter: (charId: string) => void;
+  updateCustomCharacter: (charId: string, updater: (prev: CharacterState) => CharacterState) => void;
+
   // Real-time SQLite Sync
   syncStatus: SyncState;
   dbInfo: DbStatusInfo | null;
@@ -201,6 +210,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [dbInfo, setDbInfo] = useState<DbStatusInfo | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [customMembers, setCustomMembersState] = useState<CustomMember[]>([]);
+  const [customCharacters, setCustomCharactersState] = useState<Record<string, CharacterState>>({});
+  const [customThemes, setCustomThemesState] = useState<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
 
   const lastServerTimestampRef = useRef<number>(0);
   const vesperModifiedRef = useRef<number>(0);
@@ -209,6 +220,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const wynelModifiedRef = useRef<number>(0);
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
+  const customCharactersRef = useRef<Record<string, CharacterState>>({});
+  const customThemesRef = useRef<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const isPollingRef = useRef<boolean>(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -290,6 +303,25 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           try {
             localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(mergedData));
           } catch {}
+        }
+
+        // Custom Characters from SQLite
+        const knownKeys = new Set(['vesper', 'aria', 'cyrus', 'wynel']);
+        const remoteCustoms: Record<string, CharacterState> = {};
+        for (const [id, val] of Object.entries(res.characters)) {
+          if (!knownKeys.has(id) && val?.data) {
+            remoteCustoms[id] = val.data;
+          }
+        }
+        if (Object.keys(remoteCustoms).length > 0) {
+          setCustomCharactersState((prev) => {
+            const next = { ...prev, ...remoteCustoms };
+            customCharactersRef.current = next;
+            try {
+              localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+            } catch {}
+            return next;
+          });
         }
       }
 
@@ -384,6 +416,24 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedRosterRaw) {
         setCustomMembersState(JSON.parse(savedRosterRaw));
       }
+
+      const savedCustomCharsRaw = localStorage.getItem(CUSTOM_CHARACTERS_STORAGE_KEY);
+      if (savedCustomCharsRaw) {
+        try {
+          const parsed = JSON.parse(savedCustomCharsRaw);
+          setCustomCharactersState(parsed);
+          customCharactersRef.current = parsed;
+        } catch {}
+      }
+
+      const savedCustomThemesRaw = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+      if (savedCustomThemesRaw) {
+        try {
+          const parsed = JSON.parse(savedCustomThemesRaw);
+          setCustomThemesState(parsed);
+          customThemesRef.current = parsed;
+        } catch {}
+      }
     } catch (err) {
       console.error('Error loading characters from localStorage:', err);
     }
@@ -476,6 +526,85 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }
     }, 400);
   }, []);
+
+  const createCustomCharacter = useCallback(
+    (charId: string, charData: CharacterState, theme: { primary: string; accent: string; portraitUrl: string }) => {
+      setCustomCharactersState((prev) => {
+        const next = { ...prev, [charId]: charData };
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCustomThemesState((prev) => {
+        const next = { ...prev, [charId]: theme };
+        customThemesRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      pushCharacterSync(charId, charData, Date.now(), `Created new hero: ${charData.name}`);
+      showToast('Hero Awakened', `${charData.name} has joined the campaign roster!`, 'level');
+      setActiveCharacterIdState(charId);
+      setActiveViewState('character');
+      setActiveTab('combat');
+    },
+    [showToast]
+  );
+
+  const deleteCustomCharacter = useCallback(
+    (charId: string) => {
+      setCustomCharactersState((prev) => {
+        const next = { ...prev };
+        delete next[charId];
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCustomThemesState((prev) => {
+        const next = { ...prev };
+        delete next[charId];
+        customThemesRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      pushCharacterDelete(charId, `Deleted hero: ${charId}`);
+      showToast('Hero Retired', `Character removed from campaign party.`, 'info');
+      if (activeCharacterId === charId) {
+        setActiveCharacterIdState('vesper');
+        setActiveViewState('menu');
+      }
+    },
+    [activeCharacterId, showToast]
+  );
+
+  const updateCustomCharacter = useCallback(
+    (charId: string, updater: (prev: CharacterState) => CharacterState) => {
+      setCustomCharactersState((prev) => {
+        const existing = prev[charId];
+        if (!existing) return prev;
+        const updated = updater(existing);
+        const next = { ...prev, [charId]: updated };
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        pushCharacterSync(charId, updated, Date.now());
+        return next;
+      });
+    },
+    []
+  );
 
   const setCustomPortrait = useCallback((characterId: string, dataUrl: string | null) => {
     setCustomMediaState((prev) => {
@@ -1833,6 +1962,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setWynelMysteries,
         customMembers,
         setCustomMembers,
+        customCharacters,
+        customThemes,
+        createCustomCharacter,
+        deleteCustomCharacter,
+        updateCustomCharacter,
         syncStatus,
         dbInfo,
         lastSyncedAt,

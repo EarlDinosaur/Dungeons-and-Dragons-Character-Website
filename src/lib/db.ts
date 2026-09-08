@@ -226,6 +226,18 @@ export async function saveCampaignState(key: string, data: any, clientTimestamp?
 }
 
 /**
+ * Delete a character from the database.
+ */
+export async function deleteCharacterFromDb(id: string): Promise<boolean> {
+  await initDb();
+  await db.execute({
+    sql: 'DELETE FROM characters WHERE id = ?',
+    args: [id],
+  });
+  return true;
+}
+
+/**
  * Log an activity event.
  */
 export async function addActivityLog(characterId: string, message: string): Promise<void> {
@@ -239,3 +251,4 @@ export async function addActivityLog(characterId: string, message: string): Prom
     console.error('[db] Error logging activity:', err);
   }
 }
+
