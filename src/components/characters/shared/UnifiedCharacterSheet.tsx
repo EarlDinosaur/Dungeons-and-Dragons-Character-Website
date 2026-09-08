@@ -27,6 +27,11 @@ import {
   Layers,
   Search,
   AlertTriangle,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Dices,
 } from 'lucide-react';
 import type {
   CharacterState,
@@ -104,6 +109,7 @@ interface UnifiedCharacterSheetProps {
   onEditSpell?: (spell: CharacterSpellItem) => void;
   onDeleteSpell?: (spellId: string) => void;
   onOpenMediaPicker?: () => void;
+  onBackToMenu?: () => void;
 }
 
 export default function UnifiedCharacterSheet({
@@ -137,6 +143,7 @@ export default function UnifiedCharacterSheet({
   onEditSpell,
   onDeleteSpell,
   onOpenMediaPicker,
+  onBackToMenu,
 }: UnifiedCharacterSheetProps) {
   // Stat Breakdown Modal State
   const [activeBreakdown, setActiveBreakdown] = useState<StatBreakdown | null>(null);
@@ -148,6 +155,7 @@ export default function UnifiedCharacterSheet({
 
   // D20 Interactive Roller Modal State
   const [activeRoll, setActiveRoll] = useState<RollRequest | null>(null);
+  const [activeRollKey, setActiveRollKey] = useState<number>(0);
 
   // HP Adjuster Inputs
   const [hpDelta, setHpDelta] = useState<string>('');
@@ -214,6 +222,10 @@ export default function UnifiedCharacterSheet({
   // Spellbook Search, Filter, and Add Modal
   const [spellSearchQuery, setSpellSearchQuery] = useState('');
   const [selectedSpellLevelFilter, setSelectedSpellLevelFilter] = useState<'all' | number>('all');
+  const [expandedSpellIds, setExpandedSpellIds] = useState<Record<string, boolean>>({});
+  const toggleSpellExpand = (id: string) => {
+    setExpandedSpellIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
   const [isAddSpellModalOpen, setIsAddSpellModalOpen] = useState(false);
   const [newSpellForm, setNewSpellForm] = useState<Omit<CharacterSpellItem, 'id'>>({
     name: '',
@@ -228,6 +240,82 @@ export default function UnifiedCharacterSheet({
     prepared: true,
   });
   const [editingSpellId, setEditingSpellId] = useState<string | null>(null);
+
+  // Helper to parse dice expressions like "2d8", "d6", "8d6 fire", "1d10 + 4 radiant"
+  const parseDiceExpression = (text: string) => {
+    if (!text || typeof text !== 'string') {
+      return { count: 1, die: null, modifier: '', damageType: '' };
+    }
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return { count: 1, die: null, modifier: '', damageType: '' };
+    }
+
+    // Pattern: optional count, "d", die (4,6,8,10,12,20,100), optional +/- mod, optional damage type
+    const regex = /^\s*(\d*)\s*d\s*(4|6|8|10|12|20|100)\s*(?:([+\-]\s*\d+))?\s*(.*)$/i;
+    const match = trimmed.match(regex);
+
+    if (match) {
+      const count = match[1] ? parseInt(match[1], 10) : 1;
+      const die = `d${match[2]}`.toLowerCase();
+      const modifier = match[3] ? match[3].replace(/\s+/g, '') : '';
+      const damageType = match[4] ? match[4].trim() : '';
+      return { count: Math.max(1, count), die, modifier, damageType };
+    }
+
+    // Loose match anywhere in the string
+    const looseMatch = trimmed.match(/(\d*)\s*d\s*(4|6|8|10|12|20|100)\b/i);
+    if (looseMatch) {
+      const count = looseMatch[1] ? parseInt(looseMatch[1], 10) : 1;
+      const die = `d${looseMatch[2]}`.toLowerCase();
+      const damageType = trimmed.replace(looseMatch[0], '').trim();
+      return { count: Math.max(1, count), die, modifier: '', damageType };
+    }
+
+    return { count: 1, die: null, modifier: '', damageType: trimmed };
+  };
+
+  const detectedDice = useMemo(() => {
+    return parseDiceExpression(newSpellForm.damageDice || '');
+  }, [newSpellForm.damageDice]);
+
+  const handleDiceSelect = (newDie: string | null, newCount?: number) => {
+    const current = parseDiceExpression(newSpellForm.damageDice || '');
+    const count = newCount !== undefined ? newCount : (current.count || 1);
+
+    if (!newDie) {
+      setNewSpellForm((prev) => ({ ...prev, damageDice: current.damageType }));
+      return;
+    }
+
+    const modPart = current.modifier ? ` ${current.modifier}` : '';
+    const dicePart = `${count}${newDie}${modPart}`;
+    const full = current.damageType ? `${dicePart} ${current.damageType}` : dicePart;
+    setNewSpellForm((prev) => ({ ...prev, damageDice: full }));
+  };
+
+  const handleDiceCountChange = (delta: number) => {
+    const current = parseDiceExpression(newSpellForm.damageDice || '');
+    const activeDie = current.die || 'd8';
+    const newCount = Math.max(1, Math.min(50, (current.count || 1) + delta));
+    const modPart = current.modifier ? ` ${current.modifier}` : '';
+    const dicePart = `${newCount}${activeDie}${modPart}`;
+    const full = current.damageType ? `${dicePart} ${current.damageType}` : dicePart;
+    setNewSpellForm((prev) => ({ ...prev, damageDice: full }));
+  };
+
+  const handleDamageTypeSelect = (dmgType: string) => {
+    const current = parseDiceExpression(newSpellForm.damageDice || '');
+    const activeDie = current.die ? `${current.count}${current.die}` : '';
+    const modPart = current.modifier ? ` ${current.modifier}` : '';
+    const dicePart = activeDie ? `${activeDie}${modPart}` : '';
+    const isSameType = current.damageType.toLowerCase() === dmgType.toLowerCase();
+
+    // Toggle type or replace
+    const targetType = isSameType ? '' : dmgType;
+    const full = dicePart && targetType ? `${dicePart} ${targetType}` : dicePart || targetType;
+    setNewSpellForm((prev) => ({ ...prev, damageDice: full }));
+  };
 
   const handleOpenAddSpell = () => {
     setEditingSpellId(null);
@@ -471,17 +559,94 @@ export default function UnifiedCharacterSheet({
     subtitle?: string,
     advantageMode: 'normal' | 'advantage' | 'disadvantage' = 'normal',
     advantageReason?: string,
-    isAutoFail: boolean = false
+    isAutoFail: boolean = false,
+    damageDice?: string,
+    rollType: 'check' | 'attack' | 'save' = 'check'
   ) => {
+    setActiveRollKey((prev) => prev + 1);
     setActiveRoll({
       title,
       modifier,
       subtitle,
-      rollType: 'check',
+      rollType,
       advantageMode,
       advantageReason,
       isAutoFail,
+      damageDice,
     });
+  };
+
+  const rollDamage = (title: string, damageDice: string, subtitle?: string) => {
+    setActiveRollKey((prev) => prev + 1);
+    setActiveRoll({
+      title,
+      subtitle,
+      modifier: 0,
+      rollType: 'damage',
+      damageDice,
+    });
+  };
+
+  const handleCastSpell = (spell: CharacterSpellItem) => {
+    if (spell.level > 0 && onUseSpellSlot) {
+      onUseSpellSlot(spell.level);
+    }
+
+    const desc = (spell.description || '').toLowerCase();
+    const isSaveSpell =
+      desc.includes('save') ||
+      desc.includes('saving throw') ||
+      desc.includes('dexterity') ||
+      desc.includes('wisdom') ||
+      desc.includes('constitution') ||
+      desc.includes('strength') ||
+      desc.includes('intelligence') ||
+      desc.includes('charisma');
+
+    const isAttackSpell =
+      desc.includes('spell attack') ||
+      desc.includes('ranged attack') ||
+      desc.includes('melee attack') ||
+      desc.includes('to hit') ||
+      spell.name.toLowerCase().includes('blast') ||
+      spell.name.toLowerCase().includes('bolt') ||
+      spell.name.toLowerCase().includes('ray') ||
+      spell.name.toLowerCase().includes('arrow');
+
+    if (isAttackSpell) {
+      rollCheck(
+        `Cast ${spell.name}`,
+        spellAtkBreakdown.total,
+        spell.damageDice ? `Spell Attack Roll • Damage: ${spell.damageDice}` : 'Spell Attack Roll (To Hit)',
+        'normal',
+        undefined,
+        false,
+        spell.damageDice,
+        'attack'
+      );
+    } else if (spell.damageDice) {
+      const isHealing = desc.includes('heal') || spell.damageDice.toLowerCase().includes('healing');
+      rollDamage(
+        `Cast ${spell.name}`,
+        spell.damageDice,
+        isSaveSpell
+          ? `Target DC ${spellDCBreakdown.total} Save • ${isHealing ? 'Healing' : 'Damage'} Roll`
+          : `${isHealing ? 'Healing' : 'Damage'} Roll`
+      );
+    } else {
+      rollCheck(
+        `Cast ${spell.name}`,
+        spellDCBreakdown.total,
+        isSaveSpell
+          ? `Spell Save DC: ${spellDCBreakdown.total} vs Target`
+          : `Level ${spell.level === 0 ? 'Cantrip' : spell.level} • ${spell.school || 'General'} Spell`,
+        'normal',
+        undefined,
+        false,
+        undefined,
+        'check'
+      );
+    }
   };
 
   const handleSaveAttack = () => {
@@ -560,6 +725,18 @@ export default function UnifiedCharacterSheet({
           className="absolute -top-16 -left-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-20"
           style={{ backgroundColor: primaryColor }}
         />
+
+        {onBackToMenu && (
+          <div className="md:hidden relative z-10 mb-3">
+            <button
+              onClick={onBackToMenu}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
+            >
+              <ArrowLeft size={13} />
+              <span>Guildhall</span>
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
           {/* Avatar & Hero Identity */}
@@ -984,7 +1161,10 @@ export default function UnifiedCharacterSheet({
                             ? `d20 + ${atk.attackBonus} [DISADVANTAGE (${conditionMods.attackDisadvantageReasons.join(', ')})]`
                             : `d20 + ${atk.attackBonus} vs Target AC`,
                           conditionMods.hasDisadvantageOnAttacks ? 'disadvantage' : 'normal',
-                          conditionMods.attackDisadvantageReasons.join(', ')
+                          conditionMods.attackDisadvantageReasons.join(', '),
+                          false,
+                          `${atk.damage} ${atk.damageType}`,
+                          'attack'
                         )
                       }
                       className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
@@ -1006,16 +1186,15 @@ export default function UnifiedCharacterSheet({
 
                     <button
                       onClick={() =>
-                        rollCheck(
-                          `${atk.name} (Damage)`,
-                          0,
-                          `${atk.damage} ${atk.damageType} damage`
+                        rollDamage(
+                          `${atk.name} Damage`,
+                          `${atk.damage} ${atk.damageType}`
                         )
                       }
                       className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-zinc-700/60"
                     >
                       <span>Damage</span>
-                      <span className="font-bold">{atk.damage}</span>
+                      <span className="font-bold text-amber-300">{atk.damage}</span>
                       <span className="text-[10px] text-zinc-400">({atk.damageType})</span>
                     </button>
                   </div>
@@ -1113,14 +1292,7 @@ export default function UnifiedCharacterSheet({
                         </span>
                       </div>
                       <button
-                        onClick={() => {
-                          if (spell.level > 0 && onUseSpellSlot) onUseSpellSlot(spell.level);
-                          rollCheck(
-                            `Cast ${spell.name}`,
-                            spellAtkBreakdown.total,
-                            spell.damageDice ? `Damage: ${spell.damageDice}` : undefined
-                          );
-                        }}
+                        onClick={() => handleCastSpell(spell)}
                         className="px-2.5 py-1 rounded bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800/60 text-[11px] font-mono font-bold shrink-0 cursor-pointer shadow-xs"
                       >
                         Cast
@@ -1398,28 +1570,45 @@ export default function UnifiedCharacterSheet({
           </div>
         )}
 
-        {/* TAB 3: SPELLS & MAGIC */}
+        {/* TAB 3: SPELLS & MAGIC (MOBILE-OPTIMIZED) */}
         {activeTab === 'spells' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Spellcasting Header Banner */}
-            <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-800/40 text-purple-300">
-                  <Wand2 size={20} />
+            <div className="p-3.5 sm:p-5 rounded-2xl bg-[#0e1017]/95 border border-zinc-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xl">
+              {/* Left: Info & DCs */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-950/60 border border-purple-800/50 text-purple-300 shadow-xs shrink-0">
+                    <Wand2 size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
+                      Spellcasting
+                    </h2>
+                    <span className="text-[11px] text-zinc-400 font-mono">
+                      {character.class || 'Caster'} Magic
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
-                    Spellcasting Dashboard
-                  </h2>
-                  <p className="text-xs text-zinc-400 font-mono">
-                    Save DC: <strong className="text-white">{spellDCBreakdown.total}</strong> &bull;{' '}
-                    Attack: <strong className="text-white">{spellAtkBreakdown.displayValue}</strong>
-                  </p>
+
+                {/* Vitals Badges (DC & Attack) */}
+                <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+                  <div className="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-center">
+                    <span className="text-[9px] text-zinc-500 uppercase block leading-none mb-0.5">Save DC</span>
+                    <span className="font-bold text-amber-300">{spellDCBreakdown.total}</span>
+                  </div>
+                  <div className="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-center">
+                    <span className="text-[9px] text-zinc-500 uppercase block leading-none mb-0.5">Spell Atk</span>
+                    <span className="font-bold text-purple-300">{spellAtkBreakdown.displayValue}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Slot Pips & Edit Action */}
-              <div className="flex items-center gap-3 flex-wrap justify-center">
+              {/* Right: Slot Pips Strip & Edit Slots */}
+              <div
+                className="flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none py-1 touch-pan-x overscroll-x-contain"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {Object.entries(character.spellcasting?.slots || {})
                   .filter(([_, slotData]) => slotData && slotData.max > 0)
                   .map(([lvlStr, slotData]) => {
@@ -1429,15 +1618,16 @@ export default function UnifiedCharacterSheet({
                     return (
                       <div
                         key={lvl}
-                        className="flex flex-col items-center p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono"
+                        className="flex flex-col items-center p-2 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs font-mono shrink-0 min-w-[68px]"
                       >
-                        <span className="text-[10px] text-zinc-400 uppercase mb-1">
-                          {character.class === 'Warlock' ? 'Pact Slots' : `Lvl ${lvl}`}
+                        <span className="text-[9px] text-zinc-400 uppercase font-semibold mb-1">
+                          {character.class === 'Warlock' ? 'Pact' : `Lvl ${lvl}`}
                         </span>
-                        <div className="flex items-center gap-1 my-0.5">
+                        <div className="flex items-center gap-1.5 my-1">
                           {Array.from({ length: slotData.max }).map((_, idx) => (
-                            <span
+                            <button
                               key={idx}
+                              type="button"
                               onClick={() => {
                                 if (idx < available && onUseSpellSlot) {
                                   onUseSpellSlot(lvl);
@@ -1445,73 +1635,99 @@ export default function UnifiedCharacterSheet({
                                   onRestoreSpellSlot(lvl);
                                 }
                               }}
-                              className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${
+                              className={`w-4.5 h-4.5 rounded-full border cursor-pointer transition-all active:scale-90 ${
                                 idx < available
-                                  ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
-                                  : 'bg-zinc-800 border-zinc-700'
+                                  ? 'bg-purple-500 border-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                                  : 'bg-zinc-950 border-zinc-700'
                               }`}
-                              title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
+                              title={idx < available ? 'Tap to expend slot' : 'Tap to restore slot'}
+                              aria-label={idx < available ? `Expend Level ${lvl} slot` : `Restore Level ${lvl} slot`}
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] text-zinc-400">
+                        <span className="text-[10px] text-zinc-400 font-bold">
                           {available} / {slotData.max}
                         </span>
                       </div>
                     );
                   })}
-                {Object.values(character.spellcasting?.slots || {}).every((s) => !s || s.max === 0) && (
-                  <span className="text-xs font-mono text-zinc-500">No spell slots active</span>
-                )}
+
                 <button
                   type="button"
                   onClick={openEditSlotsModal}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 hover:text-white border border-purple-800/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer shrink-0 shadow-xs"
                   title="Configure Spell Slot Quantities"
                 >
-                  <Edit2 size={13} />
-                  <span>Edit Slots</span>
+                  <Edit2 size={13} className="text-purple-400" />
+                  <span className="whitespace-nowrap">Slots</span>
                 </button>
               </div>
             </div>
 
             {/* Spell Filter & Search Toolbar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-mono">
-                {(['all', 0, 1, 2, 3, 4, 5] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => setSelectedSpellLevelFilter(lvl)}
-                    className={`px-3 py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap ${selectedSpellLevelFilter === lvl
-                        ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_8px_rgba(168,85,247,0.4)]'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                      }`}
-                  >
-                    {lvl === 'all' ? 'All Spells' : lvl === 0 ? 'Cantrips' : `Lvl ${lvl}`}
-                  </button>
-                ))}
-              </div>
-
+            <div className="space-y-2.5 pt-1">
               <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:w-48">
-                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <input
                     type="text"
                     value={spellSearchQuery}
                     onChange={(e) => setSpellSearchQuery(e.target.value)}
-                    placeholder="Search spells..."
-                    className="w-full pl-8 pr-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white focus:outline-none focus:border-purple-400"
+                    placeholder="Search spells, schools..."
+                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0b0d14] border border-zinc-700/80 text-xs text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-zinc-500 shadow-inner"
                   />
+                  {spellSearchQuery && (
+                    <button
+                      onClick={() => setSpellSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                 </div>
 
                 <button
                   type="button"
                   onClick={handleOpenAddSpell}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
                 >
-                  <Plus size={13} />
+                  <Plus size={14} />
                   <span>Add Spell</span>
                 </button>
+              </div>
+
+              {/* Level Filter Horizontal Strip */}
+              <div
+                className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth py-1 text-xs font-mono touch-pan-x overscroll-x-contain"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {(['all', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const).map((lvl) => {
+                  const count = (character.spellcasting?.spells || []).filter(
+                    (s) => lvl === 'all' || s.level === lvl
+                  ).length;
+                  if (lvl !== 'all' && lvl > 0 && count === 0) return null;
+
+                  return (
+                    <button
+                      key={lvl}
+                      onClick={() => setSelectedSpellLevelFilter(lvl)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                        selectedSpellLevelFilter === lvl
+                          ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                          : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {lvl === 'all' ? 'All Spells' : lvl === 0 ? 'Cantrips' : `Lvl ${lvl}`}
+                      {count > 0 && (
+                        <span className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${
+                          selectedSpellLevelFilter === lvl ? 'bg-purple-900/80 text-purple-200' : 'bg-zinc-800 text-zinc-500'
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1548,77 +1764,176 @@ export default function UnifiedCharacterSheet({
               }
 
               return (
-                <div className="space-y-3">
-                  {filtered.map((spell) => (
-                    <div
-                      key={spell.id}
-                      className="p-3.5 rounded-xl bg-[#0e1017]/90 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group shadow-xs"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-zinc-100">{spell.name}</h3>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                            {spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`}
-                          </span>
-                          {spell.school && (
-                            <span className="text-[10px] text-purple-400 font-serif italic">
-                              ({spell.school})
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
-                          {spell.description}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1.5 text-[10px] font-mono text-zinc-500">
-                          <span>Time: {spell.castingTime}</span>
-                          <span>&bull;</span>
-                          <span>Range: {spell.range}</span>
-                          <span>&bull;</span>
-                          <span>Comp: {spell.components}</span>
-                          {spell.damageDice && (
-                            <>
-                              <span>&bull;</span>
-                              <span className="text-amber-400 font-bold">Dmg: {spell.damageDice}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                <div className="space-y-2.5">
+                  {filtered.map((spell) => {
+                    const isExpanded = !!expandedSpellIds[spell.id];
+                    const hasAvailableSlot =
+                      spell.level === 0 ||
+                      (character.spellcasting?.slots?.[spell.level]?.used || 0) <
+                        (character.spellcasting?.slots?.[spell.level]?.max || 0);
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditSpell(spell)}
-                          className="p-2 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-purple-300 border border-zinc-800 hover:border-purple-800/60 transition-all cursor-pointer"
-                          title={`Edit ${spell.name}`}
+                    return (
+                      <div
+                        key={spell.id}
+                        className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+                          isExpanded
+                            ? 'bg-[#10131e] border-purple-800/70 shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
+                            : 'bg-[#0e1017]/90 hover:bg-[#121520] border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        {/* CARD TOP ROW (Always Visible & Interactive) */}
+                        <div
+                          onClick={() => toggleSpellExpand(spell.id)}
+                          className="p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
                         >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSpell(spell.id, spell.name)}
-                          className="p-2 rounded-lg bg-zinc-900/80 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all cursor-pointer"
-                          title={`Delete ${spell.name}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (spell.level > 0 && onUseSpellSlot) {
-                              onUseSpellSlot(spell.level);
-                            }
-                            rollCheck(
-                              `Cast ${spell.name}`,
-                              spellAtkBreakdown.total,
-                              spell.damageDice ? `Damage: ${spell.damageDice}` : undefined
-                            );
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-colors cursor-pointer shadow-xs"
-                        >
-                          Cast Spell
-                        </button>
+                          {/* Left: Name & Badges */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h3 className="text-sm sm:text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100 group-hover:text-purple-300 truncate">
+                                {spell.name}
+                              </h3>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                                spell.level === 0
+                                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
+                                  : 'bg-purple-950/80 text-purple-300 border border-purple-800/60'
+                              }`}>
+                                {spell.level === 0 ? 'Cantrip' : `Lvl ${spell.level}`}
+                              </span>
+                              {spell.school && (
+                                <span className="text-[10px] text-zinc-400 font-mono hidden min-[360px]:inline">
+                                  {spell.school}
+                                </span>
+                              )}
+                              {spell.prepared && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/50">
+                                  Prepared
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Vitals Summary Strip (Wraps cleanly on mobile) */}
+                            <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap text-[10px] sm:text-[11px] font-mono text-zinc-400">
+                              {spell.castingTime && (
+                                <span className="flex items-center gap-1 text-zinc-300">
+                                  <Clock size={11} className="text-purple-400" />
+                                  <span>{spell.castingTime}</span>
+                                </span>
+                              )}
+                              {spell.range && (
+                                <span className="text-zinc-400">&bull; {spell.range}</span>
+                              )}
+                              {spell.damageDice && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    rollDamage(`${spell.name} Damage`, spell.damageDice!);
+                                  }}
+                                  className="text-amber-300 hover:text-amber-100 font-bold bg-amber-950/60 hover:bg-amber-900/80 px-2 py-0.5 rounded-lg border border-amber-600/60 hover:border-amber-400 transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+                                  title={`Click to roll ${spell.damageDice} damage`}
+                                >
+                                  <Flame size={11} className="text-amber-400" />
+                                  <span>{spell.damageDice}</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: Quick Cast Button & Expand Arrow */}
+                          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCastSpell(spell);
+                              }}
+                              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${
+                                !hasAvailableSlot
+                                  ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                                  : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200 hover:text-white border-purple-700/60 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                              }`}
+                              title={
+                                !hasAvailableSlot
+                                  ? `No Level ${spell.level} slots remaining (tap to roll anyway)`
+                                  : `Cast ${spell.name}`
+                              }
+                            >
+                              <Wand2 size={13} className={hasAvailableSlot ? 'text-purple-300' : 'text-zinc-500'} />
+                              <span>{hasAvailableSlot ? 'Cast' : 'Cast (0)'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="p-1.5 text-zinc-400 hover:text-white transition-transform"
+                              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* EXPANDABLE DETAILS ACCORDION */}
+                        {isExpanded && (
+                          <div className="px-3.5 pb-3.5 pt-2 border-t border-zinc-800/80 space-y-3 animate-fade-in text-xs">
+                            {/* Full Spell Description */}
+                            <div className="p-3 rounded-xl bg-black/40 border border-zinc-800/80">
+                              <p className="text-xs text-zinc-300 font-serif leading-relaxed whitespace-pre-line">
+                                {spell.description || 'No detailed description provided for this spell.'}
+                              </p>
+                            </div>
+
+                            {/* Spell Detailed Metadata Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+                              <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60">
+                                <span className="text-[9px] text-zinc-500 uppercase block">School</span>
+                                <span className="text-zinc-200 font-semibold">{spell.school || 'General'}</span>
+                              </div>
+                              <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60">
+                                <span className="text-[9px] text-zinc-500 uppercase block">Components</span>
+                                <span className="text-zinc-200 font-semibold">{spell.components || 'None'}</span>
+                              </div>
+                              <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60">
+                                <span className="text-[9px] text-zinc-500 uppercase block">Duration</span>
+                                <span className="text-zinc-200 font-semibold">{spell.duration || 'Instantaneous'}</span>
+                              </div>
+                              <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60">
+                                <span className="text-[9px] text-zinc-500 uppercase block">Damage / Effect</span>
+                                <span className="text-amber-400 font-bold">{spell.damageDice || 'Utility / Status'}</span>
+                              </div>
+                            </div>
+
+                            {/* Action Bar */}
+                            <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-zinc-800/60">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditSpell(spell)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-mono transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                >
+                                  <Edit2 size={12} className="text-purple-400" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSpell(spell.id, spell.name)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-zinc-800 text-xs font-mono transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                >
+                                  <Trash2 size={12} />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+
+                              {spell.level > 0 && (
+                                <span className="text-[10px] font-mono text-purple-400 bg-purple-950/40 px-2 py-1 rounded border border-purple-800/40">
+                                  Expends Level {spell.level} Slot
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -1700,10 +2015,13 @@ export default function UnifiedCharacterSheet({
         onClose={() => setActiveBreakdown(null)}
       />
 
-      <UnifiedDiceRollerModal
-        roll={activeRoll}
-        onClose={() => setActiveRoll(null)}
-      />
+      {activeRoll && (
+        <UnifiedDiceRollerModal
+          key={activeRollKey}
+          roll={activeRoll}
+          onClose={() => setActiveRoll(null)}
+        />
+      )}
 
       {/* Add / Edit Attack Modal */}
       {isAttackModalOpen && (
@@ -2005,7 +2323,8 @@ export default function UnifiedCharacterSheet({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-[#0e1017] border border-purple-900/50 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg bg-[#0e1017] border border-purple-900/50 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
@@ -2023,7 +2342,7 @@ export default function UnifiedCharacterSheet({
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
                 <label className="block text-zinc-400 font-mono mb-1 font-bold">Spell Name *</label>
                 <input
@@ -2031,7 +2350,7 @@ export default function UnifiedCharacterSheet({
                   value={newSpellForm.name}
                   onChange={(e) => setNewSpellForm((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. Misty Step or Guiding Bolt"
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:border-purple-400"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white focus:outline-none focus:border-purple-400"
                 />
               </div>
 
@@ -2041,7 +2360,7 @@ export default function UnifiedCharacterSheet({
                   <select
                     value={newSpellForm.level}
                     onChange={(e) => setNewSpellForm((prev) => ({ ...prev, level: parseInt(e.target.value, 10) || 0 }))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white cursor-pointer"
                   >
                     <option value={0}>Cantrip (Level 0)</option>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
@@ -2055,7 +2374,7 @@ export default function UnifiedCharacterSheet({
                   <select
                     value={newSpellForm.school}
                     onChange={(e) => setNewSpellForm((prev) => ({ ...prev, school: e.target.value }))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white cursor-pointer"
                   >
                     {['Evocation', 'Abjuration', 'Conjuration', 'Divination', 'Enchantment', 'Illusion', 'Necromancy', 'Transmutation'].map((sc) => (
                       <option key={sc} value={sc}>{sc}</option>
@@ -2072,7 +2391,7 @@ export default function UnifiedCharacterSheet({
                     value={newSpellForm.castingTime}
                     onChange={(e) => setNewSpellForm((prev) => ({ ...prev, castingTime: e.target.value }))}
                     placeholder="1 Action, Bonus Action..."
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white placeholder:text-zinc-500"
                   />
                 </div>
 
@@ -2083,7 +2402,7 @@ export default function UnifiedCharacterSheet({
                     value={newSpellForm.range}
                     onChange={(e) => setNewSpellForm((prev) => ({ ...prev, range: e.target.value }))}
                     placeholder="Self, Touch, 60 ft..."
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white placeholder:text-zinc-500"
                   />
                 </div>
               </div>
@@ -2096,19 +2415,192 @@ export default function UnifiedCharacterSheet({
                     value={newSpellForm.components}
                     onChange={(e) => setNewSpellForm((prev) => ({ ...prev, components: e.target.value }))}
                     placeholder="V, S, M"
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white placeholder:text-zinc-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Damage / Heal</label>
+                  <label className="block text-zinc-400 font-mono mb-1 font-bold">Duration</label>
                   <input
                     type="text"
-                    value={newSpellForm.damageDice || ''}
-                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, damageDice: e.target.value }))}
-                    placeholder="e.g. 2d8 radiant"
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white font-mono"
+                    value={newSpellForm.duration}
+                    onChange={(e) => setNewSpellForm((prev) => ({ ...prev, duration: e.target.value }))}
+                    placeholder="Instantaneous, 1 Min..."
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white placeholder:text-zinc-500"
                   />
+                </div>
+              </div>
+
+              {/* DEDICATED DAMAGE / EFFECT DICE & AUTO-DETECTOR */}
+              <div className="p-3.5 rounded-2xl bg-purple-950/20 border border-purple-800/40 space-y-3 shadow-inner">
+                {/* Header row with auto-detection pill */}
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="text-zinc-200 font-mono font-bold flex items-center gap-1.5">
+                    <Dices size={15} className="text-purple-400" />
+                    <span>Damage / Effect Dice</span>
+                  </label>
+
+                  {detectedDice.die ? (
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-900/70 text-purple-200 border border-purple-600/70 font-bold flex items-center gap-1 shadow-xs animate-fade-in">
+                      <Sparkles size={11} className="text-amber-400" />
+                      <span>Auto-detected: <strong className="text-amber-300">{detectedDice.count}{detectedDice.die}</strong></span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      Utility / No Dice
+                    </span>
+                  )}
+                </div>
+
+                {/* Die Type Selector Buttons */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                    <span>Choose Die Type:</span>
+                    {detectedDice.die && (
+                      <button
+                        type="button"
+                        onClick={() => handleDiceSelect(null)}
+                        className="text-zinc-400 hover:text-rose-400 text-[10px] cursor-pointer transition-colors"
+                      >
+                        Clear Die
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                    {(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'] as const).map((die) => {
+                      const isSelected = detectedDice.die === die;
+                      return (
+                        <button
+                          key={die}
+                          type="button"
+                          onClick={() => handleDiceSelect(die)}
+                          className={`py-1.5 px-1 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border text-center active:scale-95 ${
+                            isSelected
+                              ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
+                              : 'bg-zinc-900/90 border-zinc-700/70 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500 hover:text-white'
+                          }`}
+                        >
+                          {die}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => handleDiceSelect(null)}
+                      className={`py-1.5 px-1 rounded-xl font-mono text-[10px] transition-all cursor-pointer border text-center ${
+                        !detectedDice.die
+                          ? 'bg-zinc-800 border-zinc-600 text-zinc-200 font-bold'
+                          : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                      }`}
+                      title="Utility or Non-Damaging Spell"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dice Count Stepper & Direct Expression Input */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center pt-1">
+                  {/* Stepper for Quantity (Col 1-5) */}
+                  <div className="sm:col-span-6 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-mono text-zinc-400 shrink-0">Quantity:</span>
+                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded-xl p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleDiceCountChange(-1)}
+                        className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold flex items-center justify-center cursor-pointer text-sm active:scale-90 transition-all"
+                        title="Decrease dice count"
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-mono font-bold text-xs text-amber-300">
+                        {detectedDice.count || 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDiceCountChange(1)}
+                        className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold flex items-center justify-center cursor-pointer text-sm active:scale-90 transition-all"
+                        title="Increase dice count"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Quick quantity chips */}
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 8].map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => handleDiceSelect(detectedDice.die || 'd8', q)}
+                          className={`w-6 h-6 rounded-lg text-[10px] font-mono cursor-pointer transition-all border ${
+                            detectedDice.count === q
+                              ? 'bg-purple-900/90 border-purple-500 text-purple-200 font-bold shadow-xs'
+                              : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Direct Custom Expression Input (Col 6-12) */}
+                  <div className="sm:col-span-6">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={newSpellForm.damageDice || ''}
+                        onChange={(e) => setNewSpellForm((prev) => ({ ...prev, damageDice: e.target.value }))}
+                        placeholder="e.g. 2d8 radiant, 8d6 fire"
+                        className="w-full px-3 py-2 pr-8 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs focus:outline-none focus:border-purple-400 placeholder:text-zinc-600 shadow-inner"
+                      />
+                      {newSpellForm.damageDice && (
+                        <button
+                          type="button"
+                          onClick={() => setNewSpellForm((prev) => ({ ...prev, damageDice: '' }))}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-0.5 cursor-pointer"
+                          title="Clear expression"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Damage / Effect Type Pills */}
+                <div className="space-y-1.5 pt-1 border-t border-purple-900/30">
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase block">Quick Damage / Effect Type:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      'radiant',
+                      'fire',
+                      'necrotic',
+                      'force',
+                      'lightning',
+                      'cold',
+                      'psychic',
+                      'thunder',
+                      'healing',
+                    ].map((dmg) => {
+                      const isCurrent = (newSpellForm.damageDice || '').toLowerCase().includes(dmg);
+                      return (
+                        <button
+                          key={dmg}
+                          type="button"
+                          onClick={() => handleDamageTypeSelect(dmg)}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer border ${
+                            isCurrent
+                              ? 'bg-amber-950/80 border-amber-600 text-amber-200 font-bold shadow-xs'
+                              : 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                          }`}
+                        >
+                          {dmg}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -2119,7 +2611,7 @@ export default function UnifiedCharacterSheet({
                   value={newSpellForm.description}
                   onChange={(e) => setNewSpellForm((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Describe spell effects, mechanics, saving throws..."
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white leading-relaxed resize-none"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white leading-relaxed resize-none placeholder:text-zinc-500"
                 />
               </div>
             </div>
