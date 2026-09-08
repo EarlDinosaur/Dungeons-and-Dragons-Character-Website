@@ -14,6 +14,9 @@ import WynelScarletSigil from '@/components/ui/backgrounds/WynelScarletSigil';
 
 // Shared UI & Campaign components
 import TabNavigation from '@/components/ui/TabNavigation';
+import MobileCharacterDock from '@/components/ui/MobileCharacterDock';
+import MobileTabSelectorModal from '@/components/ui/MobileTabSelectorModal';
+import MobileDiceRollerModal from '@/components/ui/MobileDiceRollerModal';
 import CampaignMainMenu from '@/components/campaign/CampaignMainMenu';
 import SyncStatusBadge from '@/components/ui/SyncStatusBadge';
 import UnifiedCharacterSheet from '@/components/characters/shared/UnifiedCharacterSheet';
@@ -144,6 +147,10 @@ export default function Home() {
 
   // DM Dashboard State
   const [partyInspiration, setPartyInspiration] = useState<Record<string, boolean>>({});
+
+  // Mobile Navigation & Tactical Dice Roller States (D&D Beyond mobile portability)
+  const [isMobileTabMenuOpen, setIsMobileTabMenuOpen] = useState(false);
+  const [isMobileDiceRollerOpen, setIsMobileDiceRollerOpen] = useState(false);
 
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
@@ -1061,8 +1068,8 @@ export default function Home() {
         <TavernBackground />
       )}
 
-      {/* Global Real-Time Sync & Navigation Top Bar */}
-      <header className="sticky top-0 z-40 bg-[#08090d]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-1.5">
+      {/* Global Real-Time Sync & Navigation Top Bar (Desktop / Tablet Only) */}
+      <header className="sticky top-0 z-40 bg-[#08090d]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-1.5 hidden md:block">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             {activeView === 'character' || activeView === 'dm' ? (
@@ -1114,7 +1121,9 @@ export default function Home() {
       </header>
 
       {activeView === 'character' && (
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="hidden md:block">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
       )}
 
       {/* Main View Area */}
@@ -1136,7 +1145,7 @@ export default function Home() {
           />
         </div>
       ) : (
-        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
+        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 pb-28 md:pb-6 flex-1">
           <div className="animate-fade-in-up">
             <UnifiedCharacterSheet
               character={activeCharState}
@@ -1145,6 +1154,7 @@ export default function Home() {
               accentColor={activeTheme.accent}
               portraitUrl={activeTheme.portraitUrl}
               signatureTab={signatureTabConfig}
+              onBackToMenu={navigateToMenu}
               onLevelChange={handleLevelChange}
               onSaveClasses={setClasses}
               onHPChange={handleHPChange}
@@ -1172,6 +1182,30 @@ export default function Home() {
             />
           </div>
         </main>
+      )}
+
+      {/* Mobile Portable Navigation Dock & Modals (Inspired by D&D Beyond) */}
+      {activeView === 'character' && (
+        <>
+          <MobileCharacterDock
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onOpenTabSelector={() => setIsMobileTabMenuOpen(true)}
+            onOpenDiceRoller={() => setIsMobileDiceRollerOpen(true)}
+          />
+
+          <MobileTabSelectorModal
+            isOpen={isMobileTabMenuOpen}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onClose={() => setIsMobileTabMenuOpen(false)}
+          />
+
+          <MobileDiceRollerModal
+            isOpen={isMobileDiceRollerOpen}
+            onClose={() => setIsMobileDiceRollerOpen(false)}
+          />
+        </>
       )}
 
       {/* Campaign Footer */}

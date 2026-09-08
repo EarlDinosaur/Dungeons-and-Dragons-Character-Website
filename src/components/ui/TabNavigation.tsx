@@ -11,7 +11,13 @@ interface TabNavigationProps {
   onTabChange: (tab: TabId) => void;
 }
 
-export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
+export interface CharacterTabItem {
+  id: TabId;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}
+
+export function useCharacterTabs() {
   const { character, aria, cyrus, wynel, activeCharacterId, customCharacters, customThemes } = useCharacter();
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
@@ -42,7 +48,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     (Object.keys(customChar?.spellcasting?.slots || {}).length > 0);
 
   // Character-specific tab definitions
-  const vesperTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  const vesperTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
@@ -52,7 +58,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
   ];
 
-  const ariaTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  const ariaTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Overview', icon: Moon },
     { id: 'combat', label: 'Combat', icon: Swords },
     { id: 'spells', label: 'Spellbook', icon: Wand2 },
@@ -62,7 +68,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     { id: 'dossier', label: 'Grimoire', icon: Scroll },
   ];
 
-  const cyrusTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  const cyrusTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Oracle Sheet', icon: Sparkles },
     { id: 'combat', label: 'Combat', icon: Swords },
     { id: 'spells', label: 'Solar Spells', icon: Wand2 },
@@ -72,7 +78,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     { id: 'dossier', label: 'Prophecies', icon: Scroll },
   ];
 
-  const wynelTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  const wynelTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Stats & Heritage', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     { id: 'spells', label: 'Pact Magic', icon: Wand2 },
@@ -82,7 +88,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
     { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
   ];
 
-  const customTabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  const customTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
@@ -94,9 +100,31 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
 
   const tabs = isVesper ? vesperTabs : isCyrus ? cyrusTabs : isWynel ? wynelTabs : isAria ? ariaTabs : customTabs;
 
+  return {
+    tabs,
+    isVesper,
+    isCyrus,
+    isWynel,
+    isAria,
+    activeCharacterId,
+    character,
+    aria,
+    cyrus,
+    wynel,
+    customChar,
+    customTheme,
+  };
+}
+
+export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
+  const { tabs, isVesper, isCyrus, isWynel, isAria } = useCharacterTabs();
+
   return (
-    <nav className="sticky top-[41px] z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2">
-      <div className="max-w-4xl mx-auto px-2 sm:px-4 flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+    <nav className="sticky top-[41px] z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2 hidden md:block">
+      <div
+        className="max-w-6xl mx-auto px-2 sm:px-4 flex items-center justify-start md:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth touch-pan-x overscroll-x-contain"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
