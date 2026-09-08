@@ -13,7 +13,7 @@ import { createDefaultWynelState, calculateWynelStats } from '@/lib/wynel-engine
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
 import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
-import { fetchSync, pushCharacterSync, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
+import { fetchSync, pushCharacterSync, pushCharacterDelete, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 
@@ -24,8 +24,10 @@ const ACTIVE_CHAR_KEY = 'dnd_active_character_id';
 const ACTIVE_VIEW_KEY = 'dnd_active_view';
 const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
 const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
+const CUSTOM_CHARACTERS_STORAGE_KEY = 'dnd_custom_characters';
+const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
 
-export type ViewMode = 'menu' | 'character';
+export type ViewMode = 'menu' | 'character' | 'dm';
 
 export interface CustomMedia {
   portraits: {
@@ -63,6 +65,7 @@ interface CharacterContextType {
   setActiveView: (view: ViewMode) => void;
   navigateToMenu: () => void;
   navigateToCharacter: (id: string) => void;
+  navigateToDM: () => void;
 
   activeCharacterId: string;
   setActiveCharacterId: (id: string) => void;
@@ -98,16 +101,20 @@ interface CharacterContextType {
   // New Progression & Field Editability Actions
   updateAbilityBaseScore: (ability: AbilityName, newBase: number) => void;
   toggleSkillProficiency: (skillName: import('@/lib/types').SkillName) => void;
+  toggleCharacterCondition: (charId: string, condition: string) => void;
   setCombatOverrides: (overrides: Partial<import('@/lib/types').CombatOverrides>) => void;
   setClasses: (classes: import('@/lib/types').ClassLevel[]) => void;
   addAttack: (attack: Omit<import('@/lib/types').AttackOption, 'id'>) => void;
   editAttack: (attack: import('@/lib/types').AttackOption) => void;
   deleteAttack: (id: string) => void;
   addSpell: (spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => void;
+  editSpell: (spell: import('@/lib/types').CharacterSpellItem) => void;
   deleteSpell: (id: string) => void;
   useVesperSpellSlot: (level: number) => void;
   restoreVesperSpellSlot: (level: number) => void;
   setVesperSpellSlotMax: (level: number, max: number) => void;
+  setSpellSlots: (slots: Record<number, { max: number; used: number }>) => void;
+  setSpellSlotMax: (level: number, max: number) => void;
   addFeat: (feat: Omit<import('@/lib/types').CustomFeat, 'id'>) => void;
   deleteFeat: (id: string) => void;
   updateProficiencies: (category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => void;
@@ -168,6 +175,13 @@ interface CharacterContextType {
   customMembers: CustomMember[];
   setCustomMembers: (members: CustomMember[]) => void;
 
+  // Dynamic / Custom Characters (Created on the website)
+  customCharacters: Record<string, CharacterState>;
+  customThemes: Record<string, { primary: string; accent: string; portraitUrl: string }>;
+  createCustomCharacter: (charId: string, charData: CharacterState, theme: { primary: string; accent: string; portraitUrl: string }) => void;
+  deleteCustomCharacter: (charId: string) => void;
+  updateCustomCharacter: (charId: string, updater: (prev: CharacterState) => CharacterState) => void;
+
   // Real-time SQLite Sync
   syncStatus: SyncState;
   dbInfo: DbStatusInfo | null;
@@ -201,6 +215,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [dbInfo, setDbInfo] = useState<DbStatusInfo | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [customMembers, setCustomMembersState] = useState<CustomMember[]>([]);
+  const [customCharacters, setCustomCharactersState] = useState<Record<string, CharacterState>>({});
+  const [customThemes, setCustomThemesState] = useState<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
 
   const lastServerTimestampRef = useRef<number>(0);
   const vesperModifiedRef = useRef<number>(0);
@@ -209,6 +225,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const wynelModifiedRef = useRef<number>(0);
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
+  const customCharactersRef = useRef<Record<string, CharacterState>>({});
+  const customThemesRef = useRef<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const isPollingRef = useRef<boolean>(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -290,6 +308,25 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           try {
             localStorage.setItem(WYNEL_STORAGE_KEY, JSON.stringify(mergedData));
           } catch {}
+        }
+
+        // Custom Characters from SQLite
+        const knownKeys = new Set(['vesper', 'aria', 'cyrus', 'wynel']);
+        const remoteCustoms: Record<string, CharacterState> = {};
+        for (const [id, val] of Object.entries(res.characters)) {
+          if (!knownKeys.has(id) && val?.data) {
+            remoteCustoms[id] = val.data;
+          }
+        }
+        if (Object.keys(remoteCustoms).length > 0) {
+          setCustomCharactersState((prev) => {
+            const next = { ...prev, ...remoteCustoms };
+            customCharactersRef.current = next;
+            try {
+              localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+            } catch {}
+            return next;
+          });
         }
       }
 
@@ -384,6 +421,24 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedRosterRaw) {
         setCustomMembersState(JSON.parse(savedRosterRaw));
       }
+
+      const savedCustomCharsRaw = localStorage.getItem(CUSTOM_CHARACTERS_STORAGE_KEY);
+      if (savedCustomCharsRaw) {
+        try {
+          const parsed = JSON.parse(savedCustomCharsRaw);
+          setCustomCharactersState(parsed);
+          customCharactersRef.current = parsed;
+        } catch {}
+      }
+
+      const savedCustomThemesRaw = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+      if (savedCustomThemesRaw) {
+        try {
+          const parsed = JSON.parse(savedCustomThemesRaw);
+          setCustomThemesState(parsed);
+          customThemesRef.current = parsed;
+        } catch {}
+      }
     } catch (err) {
       console.error('Error loading characters from localStorage:', err);
     }
@@ -477,6 +532,85 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     }, 400);
   }, []);
 
+  const createCustomCharacter = useCallback(
+    (charId: string, charData: CharacterState, theme: { primary: string; accent: string; portraitUrl: string }) => {
+      setCustomCharactersState((prev) => {
+        const next = { ...prev, [charId]: charData };
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCustomThemesState((prev) => {
+        const next = { ...prev, [charId]: theme };
+        customThemesRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      pushCharacterSync(charId, charData, Date.now(), `Created new hero: ${charData.name}`);
+      showToast('Hero Awakened', `${charData.name} has joined the campaign roster!`, 'level');
+      setActiveCharacterIdState(charId);
+      setActiveViewState('character');
+      setActiveTab('combat');
+    },
+    [showToast]
+  );
+
+  const deleteCustomCharacter = useCallback(
+    (charId: string) => {
+      setCustomCharactersState((prev) => {
+        const next = { ...prev };
+        delete next[charId];
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCustomThemesState((prev) => {
+        const next = { ...prev };
+        delete next[charId];
+        customThemesRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      pushCharacterDelete(charId, `Deleted hero: ${charId}`);
+      showToast('Hero Retired', `Character removed from campaign party.`, 'info');
+      if (activeCharacterId === charId) {
+        setActiveCharacterIdState('vesper');
+        setActiveViewState('menu');
+      }
+    },
+    [activeCharacterId, showToast]
+  );
+
+  const updateCustomCharacter = useCallback(
+    (charId: string, updater: (prev: CharacterState) => CharacterState) => {
+      setCustomCharactersState((prev) => {
+        const existing = prev[charId];
+        if (!existing) return prev;
+        const updated = updater(existing);
+        const next = { ...prev, [charId]: updated };
+        customCharactersRef.current = next;
+        try {
+          localStorage.setItem(CUSTOM_CHARACTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        pushCharacterSync(charId, updated, Date.now());
+        return next;
+      });
+    },
+    []
+  );
+
   const setCustomPortrait = useCallback((characterId: string, dataUrl: string | null) => {
     setCustomMediaState((prev) => {
       const next: CustomMedia = {
@@ -552,6 +686,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     setActiveCharacterId(id);
     setActiveView('character');
   }, [setActiveCharacterId, setActiveView]);
+
+  const navigateToDM = useCallback(() => {
+    setActiveView('dm');
+  }, [setActiveView]);
 
   // Earl's Auto-save with debounce & SQLite push
   const scheduleVesperSave = useCallback((state: CharacterState) => {
@@ -670,6 +808,80 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, [scheduleWynelSave]);
+
+  const toggleCharacterCondition = useCallback((charId: string, condition: string) => {
+    if (charId === 'vesper') {
+      updateCharacter((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'aria') {
+      updateAria((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'cyrus') {
+      updateCyrus((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'wynel') {
+      updateWynel((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else {
+      updateCustomCharacter(charId, (prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    }
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateCustomCharacter]);
 
   // Earl Actions
   const setLevel = useCallback((level: number) => {
@@ -1030,6 +1242,35 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return base;
       });
       showToast('Classes Updated', `Wyn'el's Multiclass saved (Total Lv ${totalLevel}).`, 'level');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => {
+        const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
+        const primaryClass = classes[0] || { className: prev.class || 'Fighter', subclass: prev.subclass || '', level: totalLevel, hitDice: 'd8' };
+
+        const nextState = recalculateForLevel(
+          {
+            ...prev,
+            class: primaryClass.className,
+            subclass: primaryClass.subclass || '',
+            classes,
+          },
+          totalLevel
+        );
+
+        const merged = mergeInjectedWithManual(
+          nextState.feats || [],
+          nextState.proficiencies || { armor: [], weapons: [], tools: [], languages: [] },
+          injected
+        );
+
+        return {
+          ...nextState,
+          feats: merged.feats,
+          proficiencies: merged.proficiencies,
+          alias: title ? `Multiclass: ${title}` : prev.alias,
+        };
+      });
+      showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     } else {
       updateCharacter((prev) => {
         const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
@@ -1060,7 +1301,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const addAttack = useCallback((attack: Omit<import('@/lib/types').AttackOption, 'id'>) => {
     const newAttack = { ...attack, id: (attack as any).id || `attack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -1070,11 +1311,13 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else {
       updateCharacter((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     }
     showToast('Attack Added', `${attack.name} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const editAttack = useCallback((attack: import('@/lib/types').AttackOption) => {
     if (activeCharacterId === 'aria') {
@@ -1083,6 +1326,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)),
+      }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1090,7 +1338,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Updated', `${attack.name} updated`, 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteAttack = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1099,6 +1347,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        attacks: (prev.attacks || []).filter((a) => a.id !== id),
+      }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1106,7 +1359,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Removed', 'Attack option deleted', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
     const newSpell = { ...spell, id: (spell as any).id || `spell-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -1137,6 +1390,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Added', `${spell.name} added to Wyn'el's grimoire`, 'power');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1147,7 +1409,56 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+
+  const editSpell = useCallback((spell: import('@/lib/types').CharacterSpellItem) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? (spell as any) : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? (spell as any) : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
+    } else if (activeCharacterId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? ({ ...s, ...spell } as any) : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? spell : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? spell : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteSpell = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1177,6 +1488,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1187,7 +1507,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const useVesperSpellSlot = useCallback((level: number) => {
     updateCharacter((prev) => {
@@ -1242,8 +1562,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       };
     });
-    showToastNotification('Spell Slots Updated', `Level ${level} max slots set to ${max}`, 'info');
-  }, [updateCharacter, showToastNotification]);
+    showToast('Spell Slots Updated', `Level ${level} max slots set to ${max}`, 'info');
+  }, [updateCharacter, showToast]);
+
+
 
   const addFeat = useCallback((feat: Omit<import('@/lib/types').CustomFeat, 'id'>) => {
     const newFeat = { ...feat, id: (feat as any).id || `feat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -1253,11 +1575,13 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else {
       updateCharacter((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     }
     showToast('Feat/Trait Added', `${feat.title} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteFeat = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1266,6 +1590,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        feats: (prev.feats || []).filter((f) => f.id !== id),
+      }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1273,7 +1602,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Feat Removed', 'Feat/trait removed', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
 
   const updateProficiencies = useCallback((category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => {
     if (activeCharacterId === 'aria') {
@@ -1300,6 +1629,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           [category]: tags,
         },
       }));
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
     } else {
       updateCharacter((prev) => ({
         ...prev,
@@ -1309,7 +1646,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter]);
 
 
   // Aria Actions
@@ -1653,8 +1990,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       };
     });
-    showToastNotification('Pact Slots Updated', `Pact slot max set to ${max}`, 'info');
-  }, [updateWynel, showToastNotification]);
+    showToast('Pact Slots Updated', `Pact slot max set to ${max}`, 'info');
+  }, [updateWynel, showToast]);
 
   const wynelShortRest = useCallback(() => {
     updateWynel((prev) => ({
@@ -1739,6 +2076,80 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     updateWynel((prev) => ({ ...prev, mysteries }));
   }, [updateWynel]);
 
+  const setSpellSlots = useCallback((slots: Record<number, { max: number; used: number }>) => {
+    if (activeCharacterId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: { ...prev.spellcasting.slots, ...slots },
+        },
+      }));
+      showToast('Spell Slots Updated', "Aria's spell slots updated", 'info');
+    } else if (activeCharacterId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: { ...prev.spellcasting.slots, ...slots },
+        },
+      }));
+      showToast('Spell Slots Updated', "Cyrus's spell slots updated", 'info');
+    } else if (activeCharacterId === 'wynel') {
+      const slotLevel = wynel.pactEngine.slotLevel;
+      const matchingSlot = slots[slotLevel];
+      const newSlotsMax = matchingSlot ? matchingSlot.max : wynel.pactEngine.slotsMax;
+      setWynelPactSlotMax(newSlotsMax);
+      showToast('Pact Slots Updated', "Wyn'el's pact slots updated", 'info');
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots,
+        },
+      }));
+      showToast('Spell Slots Updated', 'Spell slots updated', 'info');
+    } else {
+      updateCharacter((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots,
+        },
+      }));
+      showToast('Spell Slots Updated', 'Spell slots updated', 'info');
+    }
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, wynel, setWynelPactSlotMax, customCharacters, updateCustomCharacter, showToast]);
+
+  const setSpellSlotMax = useCallback((level: number, max: number) => {
+    const validMax = Math.max(0, Math.floor(max));
+    if (activeCharacterId === 'aria') {
+      setAriaSpellSlotMax(level, validMax);
+    } else if (activeCharacterId === 'cyrus') {
+      setCyrusSpellSlotMax(level, validMax);
+    } else if (activeCharacterId === 'wynel') {
+      setWynelPactSlotMax(validMax);
+    } else if (customCharacters[activeCharacterId]) {
+      updateCustomCharacter(activeCharacterId, (prev) => {
+        const current = prev.spellcasting?.slots?.[level] || { max: 0, used: 0 };
+        return {
+          ...prev,
+          spellcasting: {
+            ...prev.spellcasting,
+            slots: {
+              ...(prev.spellcasting?.slots || {}),
+              [level]: { ...current, max: validMax, used: Math.min(current.used, validMax) },
+            },
+          },
+        };
+      });
+      showToast('Spell Slots Updated', `Level ${level} max slots set to ${validMax}`, 'info');
+    } else {
+      setVesperSpellSlotMax(level, validMax);
+    }
+  }, [activeCharacterId, setAriaSpellSlotMax, setCyrusSpellSlotMax, setWynelPactSlotMax, customCharacters, updateCustomCharacter, setVesperSpellSlotMax, showToast]);
+
   return (
     <CharacterContext.Provider
       value={{
@@ -1746,6 +2157,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setActiveView,
         navigateToMenu,
         navigateToCharacter,
+        navigateToDM,
         activeCharacterId,
         setActiveCharacterId,
         activeTab,
@@ -1773,16 +2185,20 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setMysteries,
         updateAbilityBaseScore,
         toggleSkillProficiency,
+        toggleCharacterCondition,
         setCombatOverrides,
         setClasses,
         addAttack,
         editAttack,
         deleteAttack,
         addSpell,
+        editSpell,
         deleteSpell,
         useVesperSpellSlot,
         restoreVesperSpellSlot,
         setVesperSpellSlotMax,
+        setSpellSlots,
+        setSpellSlotMax,
         addFeat,
         deleteFeat,
         updateProficiencies,
@@ -1833,6 +2249,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setWynelMysteries,
         customMembers,
         setCustomMembers,
+        customCharacters,
+        customThemes,
+        createCustomCharacter,
+        deleteCustomCharacter,
+        updateCustomCharacter,
         syncStatus,
         dbInfo,
         lastSyncedAt,

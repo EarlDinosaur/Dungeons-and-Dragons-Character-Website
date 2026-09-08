@@ -88,6 +88,38 @@ export async function pushCharacterSync(
 }
 
 /**
+ * Push character deletion to SQLite.
+ */
+export async function pushCharacterDelete(
+  id: string,
+  logMessage?: string
+): Promise<{ success: boolean; id: string } | null> {
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'delete_character',
+        id,
+        logMessage,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[SyncEngine] POST /api/sync delete_character returned ${res.status}`);
+      return null;
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.warn('[SyncEngine] Network error deleting character:', err);
+    return null;
+  }
+}
+
+/**
  * Push campaign state mutation to SQLite.
  */
 export async function pushCampaignSync(
