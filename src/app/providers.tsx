@@ -27,7 +27,7 @@ const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
 const CUSTOM_CHARACTERS_STORAGE_KEY = 'dnd_custom_characters';
 const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
 
-export type ViewMode = 'menu' | 'character';
+export type ViewMode = 'menu' | 'character' | 'dm';
 
 export interface CustomMedia {
   portraits: {
@@ -65,6 +65,7 @@ interface CharacterContextType {
   setActiveView: (view: ViewMode) => void;
   navigateToMenu: () => void;
   navigateToCharacter: (id: string) => void;
+  navigateToDM: () => void;
 
   activeCharacterId: string;
   setActiveCharacterId: (id: string) => void;
@@ -100,6 +101,7 @@ interface CharacterContextType {
   // New Progression & Field Editability Actions
   updateAbilityBaseScore: (ability: AbilityName, newBase: number) => void;
   toggleSkillProficiency: (skillName: import('@/lib/types').SkillName) => void;
+  toggleCharacterCondition: (charId: string, condition: string) => void;
   setCombatOverrides: (overrides: Partial<import('@/lib/types').CombatOverrides>) => void;
   setClasses: (classes: import('@/lib/types').ClassLevel[]) => void;
   addAttack: (attack: Omit<import('@/lib/types').AttackOption, 'id'>) => void;
@@ -685,6 +687,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     setActiveView('character');
   }, [setActiveCharacterId, setActiveView]);
 
+  const navigateToDM = useCallback(() => {
+    setActiveView('dm');
+  }, [setActiveView]);
+
   // Earl's Auto-save with debounce & SQLite push
   const scheduleVesperSave = useCallback((state: CharacterState) => {
     vesperModifiedRef.current = Date.now();
@@ -802,6 +808,80 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, [scheduleWynelSave]);
+
+  const toggleCharacterCondition = useCallback((charId: string, condition: string) => {
+    if (charId === 'vesper') {
+      updateCharacter((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'aria') {
+      updateAria((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'cyrus') {
+      updateCyrus((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else if (charId === 'wynel') {
+      updateWynel((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    } else {
+      updateCustomCharacter(charId, (prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
+    }
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateCustomCharacter]);
 
   // Earl Actions
   const setLevel = useCallback((level: number) => {
@@ -2077,6 +2157,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setActiveView,
         navigateToMenu,
         navigateToCharacter,
+        navigateToDM,
         activeCharacterId,
         setActiveCharacterId,
         activeTab,
@@ -2104,6 +2185,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setMysteries,
         updateAbilityBaseScore,
         toggleSkillProficiency,
+        toggleCharacterCondition,
         setCombatOverrides,
         setClasses,
         addAttack,

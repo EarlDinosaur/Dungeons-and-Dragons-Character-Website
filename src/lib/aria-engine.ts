@@ -48,6 +48,7 @@ export interface AriaState {
     initiative: number;
     speed: number;
     deathSaves: { successes: number; failures: number };
+    conditions?: string[];
   };
 
   lunarEngine: {
@@ -198,6 +199,7 @@ export function createDefaultAriaState(): AriaState {
       initiative: 2,
       speed: 30,
       deathSaves: { successes: 0, failures: 0 },
+      conditions: [],
     },
 
     lunarEngine: {

@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Clock,
   Camera,
+  Swords,
 } from 'lucide-react';
 import SpotlightCard from '../ui/SpotlightCard';
 import GlowButton from '../ui/GlowButton';
@@ -56,6 +57,7 @@ export default function CampaignMainMenu() {
     cyrus,
     wynel,
     navigateToCharacter,
+    navigateToDM,
     setMysteries,
     showToastNotification,
     getPortraitUrl,
@@ -250,6 +252,41 @@ export default function CampaignMainMenu() {
       </div>
 
       {/* ====================================================================
+         1.5 DUNGEON MASTER TACTICAL COMMAND & LIVE PARTY HUD BANNER
+         ==================================================================== */}
+      <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(217,119,6,0.18)_0%,transparent_70%),linear-gradient(135deg,rgba(26,18,14,0.96)_0%,rgba(14,10,10,0.98)_100%)] p-5 sm:p-6 shadow-[0_12px_45px_rgba(0,0,0,0.85)] flex flex-col md:flex-row items-center justify-between gap-5 group hover:border-amber-400/80 transition-all">
+        {/* Glow top edge */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-amber-400 to-red-600" />
+
+        <div className="flex items-center gap-4 text-center sm:text-left">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 group-hover:scale-105 transition-transform">
+            <Swords size={28} className="text-amber-300 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
+              <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider text-glow-gold">
+                Dungeon Master Tactical Console
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                Live Party HUD &amp; Automation
+              </span>
+            </div>
+            <p className="text-xs text-[var(--color-parchment-muted)] italic max-w-xl">
+              Real-time party vitals (Passive Perception, AC, HP/THP), instant damage/heal overrides, 5e condition toggles, automated initiative tracker, and contextual scratchpad notes.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={navigateToDM}
+          className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2.5 shadow-[0_4px_20px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer shrink-0"
+        >
+          <span>Launch DM Sheet</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+
+      {/* ====================================================================
          2. PARTY HERO ROSTER BOARD (FANTASY TAVERN BOARD - NO TEXT OVERLAPS!)
          ==================================================================== */}
       <div className="space-y-4">
@@ -264,6 +301,14 @@ export default function CampaignMainMenu() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={navigateToDM}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-rose-900 via-amber-800 to-amber-700 hover:from-rose-800 hover:to-amber-600 text-amber-200 border border-amber-400/60 font-bold px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all shadow-md hover:-translate-y-0.5 active:scale-95 min-h-[38px] cursor-pointer"
+            >
+              <Swords size={14} className="text-amber-300" />
+              <span>DM Console &amp; HUD</span>
+            </button>
+
             <button
               onClick={() => setIsCreatorModalOpen(true)}
               className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black border border-amber-300 font-bold px-4 py-1.5 rounded-xl text-xs font-mono transition-all shadow-lg hover:-translate-y-0.5 active:scale-95 min-h-[38px] cursor-pointer"
@@ -1003,28 +1048,25 @@ export default function CampaignMainMenu() {
                 mysteries.map((quest) => (
                   <div
                     key={quest.id}
-                    className={`p-4 rounded-xl border transition-all text-xs relative ${
-                      quest.resolved
+                    className={`p-4 rounded-xl border transition-all text-xs relative ${quest.resolved
                         ? 'bg-black/40 border-stone-800 opacity-60'
                         : 'medieval-parchment-scroll border-[#d9b872]/40 hover:border-[#d9b872] shadow-md'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm">📌</span>
                         <h4
-                          className={`font-bold text-base font-['Cormorant_Garamond',serif] ${
-                            quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
-                          }`}
+                          className={`font-bold text-base font-['Cormorant_Garamond',serif] ${quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
+                            }`}
                         >
                           {quest.title}
                         </h4>
                         <span
-                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border font-bold ${
-                            quest.resolved
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border font-bold ${quest.resolved
                               ? 'bg-zinc-900 text-zinc-400 border-zinc-700'
                               : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
-                          }`}
+                            }`}
                         >
                           {quest.resolved ? 'RESOLVED' : 'ACTIVE BOUNTY'}
                         </span>
@@ -1033,11 +1075,10 @@ export default function CampaignMainMenu() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleToggleQuestResolved(quest)}
-                          className={`p-1 rounded transition-colors cursor-pointer ${
-                            quest.resolved
+                          className={`p-1 rounded transition-colors cursor-pointer ${quest.resolved
                               ? 'text-zinc-500 hover:text-amber-300'
                               : 'text-amber-400 hover:text-emerald-400'
-                          }`}
+                            }`}
                           title={quest.resolved ? 'Reactivate Quest' : 'Mark Quest Resolved'}
                         >
                           <CheckCircle2 size={16} />
@@ -1089,7 +1130,7 @@ export default function CampaignMainMenu() {
          ==================================================================== */}
       {isMemberModalOpen && editingMember && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#181310] border-2 border-[#d9b872] rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(217,184,114,0.3)] space-y-4 animate-fade-in-up font-['Spectral',serif]">
+          <div className="bg-[#181310] border-2 border-[#d9b872] rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(217,184,114,0.3)] space-y-4 animate-fade-in-up font-['Spectral',serif] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#d9b872]/30">
               <h3 className="text-xl font-bold text-amber-200 font-['Cormorant_Garamond',serif] flex items-center gap-2">
                 <UserPlus size={18} className="text-amber-400" />
@@ -1248,7 +1289,7 @@ export default function CampaignMainMenu() {
          ==================================================================== */}
       {isQuestModalOpen && editingQuest && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#181310] border-2 border-[#d9b872] rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(217,184,114,0.3)] space-y-4 animate-fade-in-up font-['Spectral',serif]">
+          <div className="bg-[#181310] border-2 border-[#d9b872] rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(217,184,114,0.3)] space-y-4 animate-fade-in-up font-['Spectral',serif] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#d9b872]/30">
               <h3 className="text-xl font-bold text-amber-200 font-['Cormorant_Garamond',serif] flex items-center gap-2">
                 <Scroll size={18} className="text-amber-400" />

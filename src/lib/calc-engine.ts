@@ -338,15 +338,30 @@ export function calculatePassiveSenseWithBreakdown(
     formulaParts.push(`+${bonus} (Prof)`);
   }
 
-  const total = 10 + abilityMod + bonus;
+  // 5e Condition Penalty: Blinded imposes disadvantage on perception checks requiring sight (-5 to passive perception)
+  const isBlinded = sense === 'Perception' && char.combat?.conditions?.includes('Blinded');
+  if (isBlinded) {
+    parts.push({
+      label: 'Blinded Penalty',
+      value: '-5',
+      type: 'penalty',
+      description: '5e rules impose a -5 penalty to passive Perception when Blinded',
+    });
+    formulaParts.push('- 5 (Blinded)');
+  }
+
+  const total = Math.max(0, 10 + abilityMod + bonus - (isBlinded ? 5 : 0));
 
   return {
     statName: `Passive ${sense}`,
     total,
     displayValue: `${total}`,
     formula: formulaParts.join(' + '),
-    summary: `Default score for ${sense} without having to actively roll dice.`,
+    summary: isBlinded
+      ? `Passive ${sense} suffers a -5 penalty while Blinded.`
+      : `Default score for ${sense} without having to actively roll dice.`,
     parts,
+    notes: isBlinded ? 'Character cannot see and auto-fails checks requiring sight.' : undefined,
   };
 }
 
@@ -361,6 +376,12 @@ export function calculateSavingThrowWithBreakdown(
   const mod = abilityScore.modifier;
   const isProf = abilityScore.saveProficient;
   const prof = char.proficiencyBonus;
+  const conditions = char.combat?.conditions || [];
+
+  // Check 5e auto-fail conditions for STR and DEX saves
+  const autoFailConditions = ['Paralyzed', 'Petrified', 'Stunned', 'Unconscious'].filter((c) =>
+    conditions.includes(c)
+  );
 
   const parts: StatBreakdownPart[] = [
     { label: `${ability} Modifier`, value: formatModifier(mod), type: 'ability' },
@@ -375,12 +396,84 @@ export function calculateSavingThrowWithBreakdown(
     formulaParts.push(`+${prof} (Prof)`);
   }
 
+  if (['STR', 'DEX'].includes(ability) && autoFailConditions.length > 0) {
+    parts.push({
+      label: 'Condition Automatic Failure',
+      value: 'FAIL',
+      type: 'penalty',
+      description: `Automatically fails ${ability} saving throws while ${autoFailConditions.join(', ')}`,
+    });
+    return {
+      statName: `${ability} Saving Throw`,
+      total: 0,
+      displayValue: 'AUTO-FAIL',
+      formula: `Automatic Failure (${autoFailConditions.join(', ')})`,
+      summary: `You automatically fail ${ability} saves due to active condition: ${autoFailConditions.join(', ')}.`,
+      parts,
+      notes: 'Under 5e rules, paralyzed, petrified, stunned, and unconscious creatures auto-fail Strength and Dexterity saving throws.',
+    };
+  }
+
+  // Check Disadvantage on DEX saves from Restrained
+  const hasDexDisadv = ability === 'DEX' && conditions.includes('Restrained');
+  if (hasDexDisadv) {
+    parts.push({
+      label: 'Restrained Condition',
+      value: 'Disadvantage',
+      type: 'penalty',
+      description: 'Restrained imposes disadvantage on Dexterity saving throws',
+    });
+  }
+
   return {
     statName: `${ability} Saving Throw`,
     total,
     displayValue: formatModifier(total),
     formula: formulaParts.join(' '),
-    summary: `Used to resist spells, poisons, traps, and hazards targeting your ${abilityScore.label}.`,
+    summary: `Used to resist spells, poisons, traps, and hazards targeting your ${abilityScore.label}.${hasDexDisadv ? ' (Rolled with Disadvantage due to Restrained)' : ''}`,
+    parts,
+    notes: hasDexDisadv ? 'Roll with Disadvantage while Restrained.' : undefined,
+  };
+}
+
+/**
+ * Calculate Speed with detailed breakdown, factoring in 5e conditions.
+ */
+export function calculateSpeedWithBreakdown(char: CharacterState): StatBreakdown {
+  const baseSpeed = char.overrides?.speed ?? char.speed ?? 30;
+  const conditions = char.combat?.conditions || [];
+  const speedZeroConditions = ['Grappled', 'Restrained', 'Paralyzed', 'Petrified', 'Stunned', 'Unconscious'].filter((c) =>
+    conditions.includes(c)
+  );
+
+  const parts: StatBreakdownPart[] = [
+    { label: 'Base Speed', value: `${baseSpeed} ft`, type: 'base', description: 'Base walking speed' },
+  ];
+
+  if (speedZeroConditions.length > 0) {
+    parts.push({
+      label: 'Movement Lock Penalty',
+      value: '0 ft',
+      type: 'penalty',
+      description: `Active condition (${speedZeroConditions.join(', ')}) reduces movement speed to 0 ft`,
+    });
+    return {
+      statName: 'Movement Speed',
+      total: 0,
+      displayValue: '0 ft',
+      formula: `0 ft (${speedZeroConditions.join(', ')})`,
+      summary: `Speed is reduced to 0 ft while ${speedZeroConditions.join(', ')}.`,
+      parts,
+      notes: 'Under 5e rules, a creature whose speed is 0 ft cannot benefit from any bonus to its speed.',
+    };
+  }
+
+  return {
+    statName: 'Movement Speed',
+    total: baseSpeed,
+    displayValue: `${baseSpeed} ft`,
+    formula: `${baseSpeed} ft (Walking)`,
+    summary: 'Maximum distance you can move on your turn.',
     parts,
   };
 }

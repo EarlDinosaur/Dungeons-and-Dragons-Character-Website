@@ -1,6 +1,9 @@
 'use client';
-
+import { useState, useMemo } from 'react';
+import { Swords } from 'lucide-react';
 import { useCharacter } from './providers';
+import DMDashboardGrid from '@/components/dm/DMDashboardGrid';
+import type { PartyMemberHUDState } from '@/lib/dm-types';
 
 // Background UI components
 import TavernBackground from '@/components/ui/backgrounds/TavernBackground';
@@ -54,6 +57,9 @@ export default function Home() {
     activeView,
     activeCharacterId,
     navigateToMenu,
+    navigateToCharacter,
+    navigateToDM,
+    showToastNotification,
     character,
     activeTab,
     setActiveTab,
@@ -132,22 +138,12 @@ export default function Home() {
     customCharacters,
     customThemes,
     updateCustomCharacter,
+    toggleCharacterCondition,
     isLoaded,
   } = useCharacter();
 
-  // Loading skeleton during hydration
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-16 h-16 border-2 border-[var(--color-gold-700)] border-t-[var(--color-gold-bright)] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm font-[family-name:var(--font-heading)] text-[var(--color-parchment-dim)] uppercase tracking-widest">
-            Loading Campaign Suite...
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // DM Dashboard State
+  const [partyInspiration, setPartyInspiration] = useState<Record<string, boolean>>({});
 
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
@@ -265,7 +261,7 @@ export default function Home() {
         tempHP: ariaState.combat.tempHP,
         hitDice: { total: ariaState.level, used: 0, diceType: 'd6' },
         deathSaves: ariaState.combat.deathSaves,
-        conditions: [],
+        conditions: ariaState.combat?.conditions || [],
       },
       sneakAttackDice: 0,
       inventory: ariaState.inventory,
@@ -405,7 +401,7 @@ export default function Home() {
         tempHP: cyrusState.combat.tempHP,
         hitDice: { total: cyrusState.level, used: 0, diceType: 'd8' },
         deathSaves: cyrusState.combat.deathSaves,
-        conditions: [],
+        conditions: cyrusState.combat?.conditions || [],
       },
       sneakAttackDice: 0,
       inventory: cyrusState.inventory,
@@ -564,7 +560,7 @@ export default function Home() {
         tempHP: wynelState.combat.tempHP,
         hitDice: { total: wynelState.level, used: wynelState.combat.hitDice.used, diceType: 'd8' },
         deathSaves: wynelState.combat.deathSaves,
-        conditions: [],
+        conditions: wynelState.combat?.conditions || [],
       },
       sneakAttackDice: 0,
       inventory: wynelState.inventory,
@@ -795,10 +791,260 @@ export default function Home() {
     }
   };
 
+  // DM Dashboard Handlers
+  const handleDMUpdateHP = (charId: string, currentHP: number, tempHP?: number) => {
+    if (charId === 'vesper') {
+      setCurrentHP(currentHP);
+      if (tempHP !== undefined) setTempHP(tempHP);
+    } else if (charId === 'aria') {
+      setAriaHP(currentHP);
+      if (tempHP !== undefined) setAriaTempHP(tempHP);
+    } else if (charId === 'cyrus') {
+      setCyrusHP(currentHP);
+      if (tempHP !== undefined) setCyrusTempHP(tempHP);
+    } else if (charId === 'wynel') {
+      setWynelHP(currentHP);
+      if (tempHP !== undefined) setWynelTempHP(tempHP);
+    } else {
+      updateCustomCharacter(charId, (prev) => ({
+        ...prev,
+        combat: {
+          ...prev.combat,
+          currentHP,
+          tempHP: tempHP ?? prev.combat.tempHP,
+        },
+      }));
+    }
+  };
+
+  const handleDMToggleCondition = (charId: string, condition: string) => {
+    toggleCharacterCondition(charId, condition);
+    showToastNotification('Condition Updated', `${condition} toggled for ${charId}`, 'power');
+  };
+
+  const handleDMToggleInspiration = (charId: string) => {
+    setPartyInspiration((prev) => ({
+      ...prev,
+      [charId]: !prev[charId],
+    }));
+  };
+
+  const handleDMTriggerRest = (charId: string, type: 'short' | 'long') => {
+    if (type === 'long') {
+      if (charId === 'vesper') longRest();
+      else if (charId === 'aria') ariaLongRest();
+      else if (charId === 'cyrus') cyrusLongRest();
+      else if (charId === 'wynel') wynelLongRest();
+      else handleLongRest();
+      showToastNotification('Long Rest', `Completed for ${charId}`, 'rest');
+    } else {
+      if (charId === 'vesper') handleShortRest();
+      else if (charId === 'wynel') wynelShortRest();
+      else handleShortRest();
+      showToastNotification('Short Rest', `Completed for ${charId}`, 'rest');
+    }
+  };
+
+  const handleDMBulkRest = (type: 'short' | 'long') => {
+    if (type === 'long') {
+      longRest();
+      ariaLongRest();
+      cyrusLongRest();
+      wynelLongRest();
+      showToastNotification('Party Long Rest', 'All party members completed a Long Rest', 'rest');
+    } else {
+      handleShortRest();
+      wynelShortRest();
+      showToastNotification('Party Short Rest', 'All party members completed a Short Rest', 'rest');
+    }
+  };
+
+  const partyHUDMembers: PartyMemberHUDState[] = useMemo(() => {
+    // 1. Vesper
+    const vesperHUD: PartyMemberHUDState = {
+      id: 'vesper',
+      name: character.name || 'Earl (Vesper Ashwood)',
+      characterClass: character.class || 'Rogue',
+      subclass: character.subclass || 'Assassin',
+      level: character.level,
+      portraitUrl: getPortraitUrl('vesper'),
+      primaryColor: '#e11d48',
+      accentColor: '#f43f5e',
+      currentHP: character.combat.currentHP,
+      maxHP: character.combat.maxHP,
+      tempHP: character.combat.tempHP,
+      ac: character.ac,
+      spellSaveDC: character.spellcasting?.spellSaveDC || 15,
+      spellAttackBonus: character.spellcasting?.spellAttackBonus || 7,
+      passivePerception: character.passivePerception || 17,
+      passiveInsight: 10 + (character.skills?.find((s) => s.name === 'Insight')?.bonus || 0),
+      passiveInvestigation: 10 + (character.skills?.find((s) => s.name === 'Investigation')?.bonus || 0),
+      initiativeBonus: character.initiative || 4,
+      conditions: character.combat?.conditions || [],
+      inspiration: !!partyInspiration['vesper'],
+      deathSaves: character.combat.deathSaves || { successes: 0, failures: 0 },
+      slots: character.spellcasting?.slots || {},
+      hitDice: character.combat.hitDice || { total: character.level, used: 0, diceType: 'd8' },
+    };
+
+    // 2. Aria
+    const ariaProf = Math.floor((aria.level - 1) / 4) + 2;
+    const ariaChaMod = Math.floor((aria.abilityScores.CHA - 10) / 2);
+    const ariaWisMod = Math.floor((aria.abilityScores.WIS - 10) / 2);
+    const ariaIntMod = Math.floor((aria.abilityScores.INT - 10) / 2);
+    const ariaDexMod = Math.floor((aria.abilityScores.DEX - 10) / 2);
+
+    const ariaHUD: PartyMemberHUDState = {
+      id: 'aria',
+      name: aria.name,
+      characterClass: aria.characterClass,
+      subclass: aria.subclass,
+      level: aria.level,
+      portraitUrl: getPortraitUrl('aria'),
+      primaryColor: '#7c3aed',
+      accentColor: '#a855f7',
+      currentHP: aria.combat.currentHP,
+      maxHP: aria.combat.maxHP,
+      tempHP: aria.combat.tempHP,
+      ac: aria.combat.ac,
+      spellSaveDC: aria.spellcasting?.spellSaveDC || 8 + ariaProf + ariaChaMod,
+      spellAttackBonus: aria.spellcasting?.spellAttackBonus || ariaProf + ariaChaMod,
+      passivePerception: 10 + ariaWisMod,
+      passiveInsight: 10 + ariaWisMod + ariaProf,
+      passiveInvestigation: 10 + ariaIntMod,
+      initiativeBonus: ariaDexMod,
+      conditions: aria.combat?.conditions || [],
+      inspiration: !!partyInspiration['aria'],
+      deathSaves: aria.combat.deathSaves || { successes: 0, failures: 0 },
+      slots: aria.spellcasting?.slots || {},
+      hitDice: { total: aria.level, used: 0, diceType: 'd6' },
+    };
+
+    // 3. Cyrus
+    const cyrusProf = Math.floor(((cyrus?.level || 10) - 1) / 4) + 2;
+    const cyrusWisMod = Math.floor(((cyrus?.abilityScores?.WIS || 18) - 10) / 2);
+    const cyrusIntMod = Math.floor(((cyrus?.abilityScores?.INT || 14) - 10) / 2);
+    const cyrusDexMod = Math.floor(((cyrus?.abilityScores?.DEX || 12) - 10) / 2);
+
+    const cyrusHUD: PartyMemberHUDState = {
+      id: 'cyrus',
+      name: cyrus?.name || 'Cyrus Drake',
+      characterClass: cyrus?.characterClass || 'Oracle',
+      subclass: cyrus?.subclass || 'Solar Sanctuary',
+      level: cyrus?.level || 10,
+      portraitUrl: getPortraitUrl('cyrus'),
+      primaryColor: '#d97706',
+      accentColor: '#f59e0b',
+      currentHP: cyrus?.combat?.currentHP || 78,
+      maxHP: cyrus?.combat?.maxHP || 78,
+      tempHP: cyrus?.combat?.tempHP || 0,
+      ac: cyrus?.combat?.ac || 18,
+      spellSaveDC: cyrus?.spellcasting?.spellSaveDC || 8 + cyrusProf + cyrusWisMod,
+      spellAttackBonus: cyrus?.spellcasting?.spellAttackBonus || cyrusProf + cyrusWisMod,
+      passivePerception: 10 + cyrusWisMod + cyrusProf,
+      passiveInsight: 10 + cyrusWisMod + cyrusProf,
+      passiveInvestigation: 10 + cyrusIntMod,
+      initiativeBonus: cyrusDexMod,
+      conditions: cyrus?.combat?.conditions || [],
+      inspiration: !!partyInspiration['cyrus'],
+      deathSaves: cyrus?.combat?.deathSaves || { successes: 0, failures: 0 },
+      slots: cyrus?.spellcasting?.slots || {},
+      hitDice: { total: cyrus?.level || 10, used: 0, diceType: 'd8' },
+    };
+
+    // 4. Wyn'el
+    const wynelProf = Math.floor(((wynel?.level || 10) - 1) / 4) + 2;
+    const wynelChaMod = Math.floor(((wynel?.abilityScores?.CHA || 18) - 10) / 2);
+    const wynelWisMod = Math.floor(((wynel?.abilityScores?.WIS || 12) - 10) / 2);
+    const wynelIntMod = Math.floor(((wynel?.abilityScores?.INT || 12) - 10) / 2);
+    const wynelDexMod = Math.floor(((wynel?.abilityScores?.DEX || 14) - 10) / 2);
+
+    const wynelHUD: PartyMemberHUDState = {
+      id: 'wynel',
+      name: wynel?.name || "Wyn'el",
+      characterClass: wynel?.characterClass || 'Warlock',
+      subclass: wynel?.subclass || 'Archfey / Crimson Pact',
+      level: wynel?.level || 10,
+      portraitUrl: getPortraitUrl('wynel'),
+      primaryColor: '#dc2626',
+      accentColor: '#ef4444',
+      currentHP: wynel?.combat?.currentHP || 72,
+      maxHP: wynel?.combat?.maxHP || 72,
+      tempHP: wynel?.combat?.tempHP || 0,
+      ac: wynel?.combat?.ac || 15,
+      spellSaveDC: 8 + wynelProf + wynelChaMod,
+      spellAttackBonus: wynelProf + wynelChaMod,
+      passivePerception: 10 + wynelWisMod,
+      passiveInsight: 10 + wynelWisMod,
+      passiveInvestigation: 10 + wynelIntMod,
+      initiativeBonus: wynelDexMod,
+      conditions: wynel?.combat?.conditions || [],
+      inspiration: !!partyInspiration['wynel'],
+      deathSaves: { successes: 0, failures: 0 },
+      slots: { 5: { max: 2, used: 0 } },
+      hitDice: { total: wynel?.level || 10, used: 0, diceType: 'd8' },
+    };
+
+    // 5. Custom Characters
+    const customHUDs: PartyMemberHUDState[] = Object.values(customCharacters || {}).map((c: CharacterState) => {
+      const theme = customThemes[c.name] || { primary: '#6366f1', accent: '#818cf8', portraitUrl: '' };
+      return {
+        id: c.name,
+        name: c.name,
+        characterClass: c.class,
+        subclass: c.subclass,
+        level: c.level,
+        portraitUrl: theme.portraitUrl || getPortraitUrl(c.name),
+        primaryColor: theme.primary,
+        accentColor: theme.accent,
+        currentHP: c.combat.currentHP,
+        maxHP: c.combat.maxHP,
+        tempHP: c.combat.tempHP,
+        ac: c.ac,
+        spellSaveDC: c.spellcasting?.spellSaveDC || 14,
+        spellAttackBonus: c.spellcasting?.spellAttackBonus || 6,
+        passivePerception: c.passivePerception || 12,
+        passiveInsight: 12,
+        passiveInvestigation: 12,
+        initiativeBonus: c.initiative || 0,
+        conditions: c.combat?.conditions || [],
+        inspiration: !!partyInspiration[c.name],
+        deathSaves: c.combat.deathSaves || { successes: 0, failures: 0 },
+        slots: c.spellcasting?.slots || {},
+        hitDice: c.combat.hitDice || { total: c.level, used: 0, diceType: 'd8' },
+      };
+    });
+
+    return [vesperHUD, ariaHUD, cyrusHUD, wynelHUD, ...customHUDs];
+  }, [
+    character,
+    aria,
+    cyrus,
+    wynel,
+    customCharacters,
+    customThemes,
+    getPortraitUrl,
+    partyInspiration,
+  ]);
+
+  // Loading skeleton during hydration
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-2 border-[var(--color-gold-700)] border-t-[var(--color-gold-bright)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-[family-name:var(--font-heading)] text-[var(--color-parchment-dim)] uppercase tracking-widest">
+            Loading Campaign Suite...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Dynamic Background Canvas per Character */}
-      {activeView === 'menu' ? (
+      {activeView === 'menu' || activeView === 'dm' ? (
         <TavernBackground />
       ) : isVesper ? (
         <VesperShadowRealm
@@ -817,9 +1063,9 @@ export default function Home() {
 
       {/* Global Real-Time Sync & Navigation Top Bar */}
       <header className="sticky top-0 z-40 bg-[#08090d]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-1.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            {activeView === 'character' ? (
+            {activeView === 'character' || activeView === 'dm' ? (
               <button
                 onClick={navigateToMenu}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
@@ -835,11 +1081,33 @@ export default function Home() {
             )}
             <span className="text-zinc-600 text-xs hidden sm:inline">&bull;</span>
             <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">
-              {activeView === 'menu' ? 'Campaign Hub' : activeCharState.name}
+              {activeView === 'menu'
+                ? 'Campaign Hub'
+                : activeView === 'dm'
+                ? 'Dungeon Master Tactical Command'
+                : activeCharState.name}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
+            {activeView !== 'dm' ? (
+              <button
+                onClick={navigateToDM}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs"
+                title="Launch DM Tactical Console"
+              >
+                <Swords size={13} className="text-amber-400" />
+                <span>DM</span>
+                <span className="hidden sm:inline"> Console</span>
+              </button>
+            ) : (
+              <button
+                onClick={navigateToMenu}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer"
+              >
+                <span>Exit DM</span>
+              </button>
+            )}
             <SyncStatusBadge />
           </div>
         </div>
@@ -849,12 +1117,26 @@ export default function Home() {
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       )}
 
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
-        {/* VIEW 1: CAMPAIGN MAIN MENU */}
-        {activeView === 'menu' ? (
+      {/* Main View Area */}
+      {activeView === 'menu' ? (
+        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
           <CampaignMainMenu />
-        ) : (
-          /* VIEW 2: UNIFIED CHARACTER SHEET (D&D BEYOND-STYLE ARCHITECTURE) */
+        </main>
+      ) : activeView === 'dm' ? (
+        <div className="relative z-10 w-full animate-fade-in-up">
+          <DMDashboardGrid
+            partyMembers={partyHUDMembers}
+            onUpdatePartyHP={handleDMUpdateHP}
+            onTogglePartyCondition={handleDMToggleCondition}
+            onToggleInspiration={handleDMToggleInspiration}
+            onTriggerRest={handleDMTriggerRest}
+            onBulkRest={handleDMBulkRest}
+            onInspectCharacter={navigateToCharacter}
+            onBackToMenu={navigateToMenu}
+          />
+        </div>
+      ) : (
+        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
           <div className="animate-fade-in-up">
             <UnifiedCharacterSheet
               character={activeCharState}
@@ -885,19 +1167,22 @@ export default function Home() {
               onAddAttack={addAttack}
               onEditAttack={editAttack}
               onDeleteAttack={deleteAttack}
+              onToggleCondition={(cond) => toggleCharacterCondition(activeCharacterId, cond)}
               onOpenMediaPicker={() => openMediaPicker('portraits', activeCharacterId)}
             />
           </div>
-        )}
+        </main>
+      )}
 
-        {/* Campaign Footer */}
+      {/* Campaign Footer */}
+      {activeView !== 'dm' && (
         <footer className="mt-12 pb-6 text-center">
           <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-[var(--color-gold-700)] to-transparent mx-auto mb-3" />
           <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
             The Ashen Pact &bull; D&amp;D 5e Interactive Campaign Hub
           </p>
         </footer>
-      </main>
+      )}
     </>
   );
 }

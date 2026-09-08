@@ -59,6 +59,7 @@ export interface CyrusState {
     speed: number;
     hitDice: { total: number; used: number };
     deathSaves: { successes: number; failures: number };
+    conditions?: string[];
   };
 
   oracleEngine: {
@@ -217,6 +218,7 @@ export function createDefaultCyrusState(): CyrusState {
       speed: 20,
       hitDice: { total: 3, used: 0 },
       deathSaves: { successes: 0, failures: 0 },
+      conditions: [],
     },
 
     oracleEngine: {

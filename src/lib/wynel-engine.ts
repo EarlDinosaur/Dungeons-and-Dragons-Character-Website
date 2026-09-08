@@ -69,6 +69,7 @@ export interface WynelState {
     speed: number;
     hitDice: { total: number; used: number };
     deathSaves: { successes: number; failures: number };
+    conditions?: string[];
   };
 
   pactEngine: {
@@ -550,6 +551,7 @@ export function createDefaultWynelState(): WynelState {
       speed: 30,
       hitDice: { total: 3, used: 0 },
       deathSaves: { successes: 0, failures: 0 },
+      conditions: [],
     },
 
     pactEngine: {

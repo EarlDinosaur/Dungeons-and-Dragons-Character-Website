@@ -96,7 +96,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
 
   return (
     <nav className="sticky top-[41px] z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2">
-      <div className="max-w-4xl mx-auto px-4 flex items-center justify-center gap-1 sm:gap-2">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -129,13 +129,13 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider font-bold transition-all duration-300 relative ${isActive
+              className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider font-bold transition-all duration-300 relative shrink-0 whitespace-nowrap cursor-pointer ${isActive
                   ? getActiveStyle()
                   : 'text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] hover:bg-white/5'
                 }`}
             >
-              <Icon size={16} className={isActive ? getIconStyle() : 'text-[var(--color-parchment-dim)]'} />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon size={15} className={isActive ? getIconStyle() : 'text-[var(--color-parchment-dim)]'} />
+              <span className="text-[11px] sm:text-xs">{tab.label}</span>
 
               {isActive && (
                 <div

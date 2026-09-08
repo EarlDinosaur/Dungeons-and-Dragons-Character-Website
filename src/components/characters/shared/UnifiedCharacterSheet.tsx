@@ -26,6 +26,7 @@ import {
   Info,
   Layers,
   Search,
+  AlertTriangle,
 } from 'lucide-react';
 import type {
   CharacterState,
@@ -55,10 +56,13 @@ import {
   calculatePassiveSenseWithBreakdown,
   calculateSavingThrowWithBreakdown,
   calculateSkillWithBreakdown,
+  calculateSpeedWithBreakdown,
   calculateEncumbranceWithBreakdown,
   calculateHPBreakdown,
   type StatBreakdown,
 } from '@/lib/calc-engine';
+import { calculateConditionModifiers } from '@/lib/conditions-engine';
+import ActiveConditionsBar from './ActiveConditionsBar';
 import StatBreakdownModal from '@/components/ui/StatBreakdownModal';
 import UnifiedDiceRollerModal, { type RollRequest } from '@/components/ui/UnifiedDiceRollerModal';
 import InventoryManager from '@/components/shared/InventoryManager';
@@ -89,6 +93,7 @@ interface UnifiedCharacterSheetProps {
   onMysteriesChange?: (mysteries: CampaignMystery[]) => void;
   onAbilityBaseScoreChange?: (ability: AbilityName, newBase: number) => void;
   onToggleSkillProficiency?: (skillName: SkillName) => void;
+  onToggleCondition?: (conditionName: string) => void;
   onUseSpellSlot?: (level: number) => void;
   onRestoreSpellSlot?: (level: number) => void;
   onUpdateSpellSlots?: (slots: Record<number, { max: number; used: number }>) => void;
@@ -121,6 +126,7 @@ export default function UnifiedCharacterSheet({
   onMysteriesChange,
   onAbilityBaseScoreChange,
   onToggleSkillProficiency,
+  onToggleCondition,
   onUseSpellSlot,
   onRestoreSpellSlot,
   onUpdateSpellSlots,
@@ -134,6 +140,11 @@ export default function UnifiedCharacterSheet({
 }: UnifiedCharacterSheetProps) {
   // Stat Breakdown Modal State
   const [activeBreakdown, setActiveBreakdown] = useState<StatBreakdown | null>(null);
+
+  // 5e Active Conditions & Mechanical Modifiers
+  const conditionMods = useMemo(() => {
+    return calculateConditionModifiers(character.combat?.conditions || []);
+  }, [character.combat?.conditions]);
 
   // D20 Interactive Roller Modal State
   const [activeRoll, setActiveRoll] = useState<RollRequest | null>(null);
@@ -398,6 +409,7 @@ export default function UnifiedCharacterSheet({
     [character]
   );
   const hpBreakdown = useMemo(() => calculateHPBreakdown(character), [character]);
+  const speedBreakdown = useMemo(() => calculateSpeedWithBreakdown(character), [character]);
   const encumbrance = useMemo(() => calculateEncumbranceWithBreakdown(character), [character]);
 
   // HP Math Helpers
@@ -453,12 +465,22 @@ export default function UnifiedCharacterSheet({
     setIsEditingScores(false);
   };
 
-  const rollCheck = (title: string, modifier: number, subtitle?: string) => {
+  const rollCheck = (
+    title: string,
+    modifier: number,
+    subtitle?: string,
+    advantageMode: 'normal' | 'advantage' | 'disadvantage' = 'normal',
+    advantageReason?: string,
+    isAutoFail: boolean = false
+  ) => {
     setActiveRoll({
       title,
       modifier,
       subtitle,
       rollType: 'check',
+      advantageMode,
+      advantageReason,
+      isAutoFail,
     });
   };
 
@@ -511,10 +533,14 @@ export default function UnifiedCharacterSheet({
   ];
 
   const toggleCondition = (cond: string) => {
-    const current = character.combat.conditions || [];
-    const exists = current.includes(cond);
-    const updated = exists ? current.filter((c) => c !== cond) : [...current, cond];
-    character.combat.conditions = updated;
+    if (onToggleCondition) {
+      onToggleCondition(cond);
+    } else {
+      const current = character.combat.conditions || [];
+      const exists = current.includes(cond);
+      const updated = exists ? current.filter((c) => c !== cond) : [...current, cond];
+      character.combat.conditions = updated;
+    }
   };
 
   return (
@@ -620,9 +646,9 @@ export default function UnifiedCharacterSheet({
           </div>
 
           {/* Quick Resting & HP Vitality Controls */}
-          <div className="w-full md:w-auto flex flex-col items-end gap-3">
+          <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
             {/* Rest Buttons */}
-            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end flex-wrap">
               {onShortRest && (
                 <button
                   onClick={onShortRest}
@@ -770,15 +796,34 @@ export default function UnifiedCharacterSheet({
           </button>
 
           {/* Speed */}
-          <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col items-center">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-              Speed
+          <button
+            onClick={() => setActiveBreakdown(speedBreakdown)}
+            className={`p-2 rounded-xl border flex flex-col items-center transition-all group cursor-pointer ${
+              conditionMods.isSpeedZero
+                ? 'bg-red-950/60 border-red-800 text-red-300'
+                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
+            }`}
+            title={
+              conditionMods.isSpeedZero
+                ? `Speed reduced to 0 ft due to: ${conditionMods.speedZeroReasons.join(', ')}. Click for breakdown.`
+                : 'Click to inspect speed calculation'
+            }
+          >
+            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+              <span>Speed</span>
+              <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
             </span>
-            <span className="text-xl font-black font-mono text-white tracking-tight">
-              {character.speed} ft
+            <span
+              className={`text-xl font-black font-mono tracking-tight ${
+                conditionMods.isSpeedZero ? 'text-red-400 animate-pulse' : 'text-white'
+              }`}
+            >
+              {conditionMods.isSpeedZero ? '0' : character.speed} ft
             </span>
-            <span className="text-[9px] font-mono text-zinc-500">Walking</span>
-          </div>
+            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+              {conditionMods.isSpeedZero ? conditionMods.speedZeroReasons.join(', ') : 'Walking'}
+            </span>
+          </button>
 
           {/* Proficiency Bonus */}
           <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col items-center">
@@ -794,17 +839,25 @@ export default function UnifiedCharacterSheet({
           {/* Passive Perception */}
           <button
             onClick={() => setActiveBreakdown(passivePerceptionBreakdown)}
-            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+            className={`p-2 rounded-xl border transition-all flex flex-col items-center group cursor-pointer ${
+              conditionMods.passivePerceptionPenalty > 0
+                ? 'bg-amber-950/40 border-amber-800/80'
+                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
+            }`}
           >
             <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
               <span>Pass. Percept.</span>
               <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
             </span>
-            <span className="text-xl font-black font-mono text-white tracking-tight">
-              {passivePerceptionBreakdown.total}
+            <span
+              className={`text-xl font-black font-mono tracking-tight ${
+                conditionMods.passivePerceptionPenalty > 0 ? 'text-amber-400' : 'text-white'
+              }`}
+            >
+              {Math.max(0, passivePerceptionBreakdown.total - conditionMods.passivePerceptionPenalty)}
             </span>
             <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              10 + WIS + Prof
+              {conditionMods.passivePerceptionPenalty > 0 ? '-5 Blinded' : '10 + WIS + Prof'}
             </span>
           </button>
 
@@ -824,6 +877,14 @@ export default function UnifiedCharacterSheet({
               {spellAtkBreakdown.displayValue} Atk Bonus
             </span>
           </button>
+        </div>
+
+        {/* 2.5 ACTIVE CONDITIONS & MECHANICAL IMPACTS BAR */}
+        <div className="mt-4">
+          <ActiveConditionsBar
+            conditions={character.combat?.conditions || []}
+            onToggleCondition={onToggleCondition}
+          />
         </div>
       </div>
 
@@ -859,6 +920,25 @@ export default function UnifiedCharacterSheet({
                 <span>Add Attack</span>
               </button>
             </div>
+
+            {/* Active Condition Combat Warning Banners */}
+            {conditionMods.cannotTakeActions && (
+              <div className="p-3 rounded-xl bg-red-950/80 border border-red-800 text-xs font-mono text-red-200 flex items-center gap-2 mb-3 shadow-sm">
+                <AlertTriangle size={15} className="text-red-400 shrink-0" />
+                <span>
+                  <strong>INCAPACITATED ({conditionMods.actionLockoutReasons.join(', ')}):</strong> Cannot take actions or reactions! Any ongoing concentration is broken.
+                </span>
+              </div>
+            )}
+
+            {conditionMods.hasDisadvantageOnAttacks && !conditionMods.cannotTakeActions && (
+              <div className="p-2.5 rounded-xl bg-amber-950/60 border border-amber-800 text-xs font-mono text-amber-300 flex items-center gap-2 mb-3 shadow-sm">
+                <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+                <span>
+                  <strong>DISADVANTAGE ON ATTACKS:</strong> Active conditions impose disadvantage on your attack rolls ({conditionMods.attackDisadvantageReasons.join(', ')}).
+                </span>
+              </div>
+            )}
 
             {/* Attack Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -900,13 +980,28 @@ export default function UnifiedCharacterSheet({
                         rollCheck(
                           `${atk.name} (To-Hit)`,
                           atk.attackBonus,
-                          `d20 + ${atk.attackBonus} vs Target AC`
+                          conditionMods.hasDisadvantageOnAttacks
+                            ? `d20 + ${atk.attackBonus} [DISADVANTAGE (${conditionMods.attackDisadvantageReasons.join(', ')})]`
+                            : `d20 + ${atk.attackBonus} vs Target AC`,
+                          conditionMods.hasDisadvantageOnAttacks ? 'disadvantage' : 'normal',
+                          conditionMods.attackDisadvantageReasons.join(', ')
                         )
                       }
-                      className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-300 text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                        conditionMods.cannotTakeActions
+                          ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed opacity-60'
+                          : conditionMods.hasDisadvantageOnAttacks
+                          ? 'bg-amber-950/60 text-amber-300 border border-amber-800/80 hover:bg-amber-900'
+                          : 'bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-300'
+                      }`}
                     >
                       <span>To-Hit</span>
                       <span>{formatModifier(atk.attackBonus)}</span>
+                      {conditionMods.hasDisadvantageOnAttacks && (
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-amber-900/80 text-amber-200">
+                          Disadv
+                        </span>
+                      )}
                     </button>
 
                     <button
@@ -1127,10 +1222,26 @@ export default function UnifiedCharacterSheet({
                     {/* Big Modifier (Clickable to roll Ability Check) */}
                     <button
                       onClick={() =>
-                        rollCheck(`${ability} Check`, stat.modifier, `d20 + ${stat.modifier}`)
+                        rollCheck(
+                          `${ability} Check`,
+                          stat.modifier,
+                          conditionMods.hasDisadvantageOnChecks
+                            ? `d20 + ${stat.modifier} [DISADVANTAGE (${conditionMods.checkDisadvantageReasons.join(', ')})]`
+                            : `d20 + ${stat.modifier}`,
+                          conditionMods.hasDisadvantageOnChecks ? 'disadvantage' : 'normal',
+                          conditionMods.checkDisadvantageReasons.join(', ')
+                        )
                       }
-                      className="text-3xl font-black font-mono text-zinc-100 hover:text-amber-300 transition-colors cursor-pointer my-0.5"
-                      title="Click to roll Ability Check"
+                      className={`text-3xl font-black font-mono transition-colors cursor-pointer my-0.5 ${
+                        conditionMods.hasDisadvantageOnChecks
+                          ? 'text-amber-400'
+                          : 'text-zinc-100 hover:text-amber-300'
+                      }`}
+                      title={
+                        conditionMods.hasDisadvantageOnChecks
+                          ? `Disadvantage on checks due to: ${conditionMods.checkDisadvantageReasons.join(', ')}`
+                          : 'Click to roll Ability Check'
+                      }
                     >
                       {formatModifier(stat.modifier)}
                     </button>
@@ -1158,31 +1269,58 @@ export default function UnifiedCharacterSheet({
 
                     {/* Saving Throw Button */}
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        const isAutoFail = conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX');
+                        const isDisadv = conditionMods.hasDisadvantageOnDEXSaves && ability === 'DEX';
                         rollCheck(
                           `${ability} Saving Throw`,
-                          saveBreakdown.total,
-                          `d20 + ${saveBreakdown.total} (Save)`
-                        )
-                      }
+                          isAutoFail ? 0 : saveBreakdown.total,
+                          isAutoFail
+                            ? `AUTOMATIC FAILURE (${conditionMods.actionLockoutReasons.join(', ')})`
+                            : isDisadv
+                            ? `d20 + ${saveBreakdown.total} [DISADVANTAGE (Restrained)]`
+                            : `d20 + ${saveBreakdown.total} (Save)`,
+                          isDisadv ? 'disadvantage' : 'normal',
+                          isDisadv ? 'Restrained' : isAutoFail ? conditionMods.actionLockoutReasons.join(', ') : undefined,
+                          isAutoFail
+                        );
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setActiveBreakdown(saveBreakdown);
                       }}
-                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${stat.saveProficient
+                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${
+                        conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                          ? 'bg-red-950/80 border-red-700 text-red-300 font-bold animate-pulse'
+                          : conditionMods.hasDisadvantageOnDEXSaves && ability === 'DEX'
+                          ? 'bg-amber-950/50 border-amber-600 text-amber-200'
+                          : stat.saveProficient
                           ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 font-bold'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      title="Left-click to Roll Save, Right-click to Inspect Formula"
+                      }`}
+                      title={
+                        conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                          ? 'Auto-fails saving throw due to active condition'
+                          : 'Left-click to Roll Save, Right-click to Inspect Formula'
+                      }
                     >
                       <span className="flex items-center gap-1">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${stat.saveProficient ? 'bg-amber-400' : 'bg-zinc-600'
-                            }`}
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                              ? 'bg-red-500'
+                              : stat.saveProficient
+                              ? 'bg-amber-400'
+                              : 'bg-zinc-600'
+                          }`}
                         />
                         <span>Save</span>
                       </span>
-                      <span>{saveBreakdown.displayValue}</span>
+                      <span>
+                        {conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                          ? 'Auto-Fail'
+                          : saveBreakdown.displayValue}
+                      </span>
                     </button>
                   </div>
                 );
@@ -1240,7 +1378,11 @@ export default function UnifiedCharacterSheet({
                             rollCheck(
                               `${sk.name} (${sk.ability}) Check`,
                               breakdown.total,
-                              `d20 + ${breakdown.total}`
+                              conditionMods.hasDisadvantageOnChecks
+                                ? `d20 + ${breakdown.total} [DISADVANTAGE (${conditionMods.checkDisadvantageReasons.join(', ')})]`
+                                : `d20 + ${breakdown.total}`,
+                              conditionMods.hasDisadvantageOnChecks ? 'disadvantage' : 'normal',
+                              conditionMods.checkDisadvantageReasons.join(', ')
                             )
                           }
                           className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-amber-500 hover:text-black font-mono font-bold text-zinc-200 transition-colors cursor-pointer"
