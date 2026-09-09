@@ -24,6 +24,7 @@ import type { CustomNPC } from '@/lib/npc-types';
 import { DEFAULT_CAMPAIGN_NPCS } from '@/lib/npc-types';
 import type { CampaignShop, ShopItem } from '@/lib/shop-types';
 import { DEFAULT_CAMPAIGN_SHOPS } from '@/lib/shop-types';
+import { isItemCompatibleWithSlot, getSlotTypeName } from '@/components/characters/shared/BG3EquipmentPaperdoll';
 
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
@@ -2998,10 +2999,19 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   // Equipment Slot Management (BG3 Paperdoll)
   // ----------------------------------------------------
   const equipInventoryItem = useCallback((charId: string, itemId: string, slot?: EquipmentSlotId) => {
+    let wasBlocked = false;
+    let blockReason = '';
+
     const updateInv = (prevInv: InventoryItem[]) => {
       const target = prevInv.find((i) => i.id === itemId);
       if (!target) return prevInv;
       const targetSlot = slot || target.slot;
+
+      if (targetSlot && !isItemCompatibleWithSlot(target, targetSlot)) {
+        wasBlocked = true;
+        blockReason = `${target.name} cannot be equipped to the ${getSlotTypeName(targetSlot)} slot. Only matching ${getSlotTypeName(targetSlot)} items allowed.`;
+        return prevInv;
+      }
 
       return prevInv.map((i) => {
         if (i.id === itemId) {
@@ -3027,7 +3037,11 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     } else {
       updateCustomCharacter(charId, (prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
     }
-  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
+
+    if (wasBlocked) {
+      showToast('Incompatible Slot', blockReason, 'inventory');
+    }
+  }, [showToast, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
 
   const unequipInventoryItem = useCallback((charId: string, itemId: string) => {
     const updateInv = (prevInv: InventoryItem[]) => {

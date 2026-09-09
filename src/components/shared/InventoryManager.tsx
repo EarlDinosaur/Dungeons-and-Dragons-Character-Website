@@ -2,16 +2,30 @@
 
 import { useState } from 'react';
 import {
-  Package, Plus, Trash2, Edit2, Check, X, Search,
-  Weight, Coins, AlertTriangle, ChevronDown, ChevronUp
+  Package,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  Search,
+  Weight,
+  Coins,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  ListOrdered,
 } from 'lucide-react';
 import SpotlightCard from '../ui/SpotlightCard';
 import { useToast } from '../ui/ToastNotification';
 import type { CharacterState, InventoryItem, Currency } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useCharacter } from '@/app/providers';
-import BG3EquipmentPaperdoll from '@/components/characters/shared/BG3EquipmentPaperdoll';
-import { ShieldCheck, ListOrdered } from 'lucide-react';
+import BG3EquipmentPaperdoll, {
+  getItemRarity,
+  RARITY_COLORS,
+} from '@/components/characters/shared/BG3EquipmentPaperdoll';
 
 interface InventoryManagerProps {
   character: CharacterState;
@@ -336,61 +350,84 @@ export default function InventoryManager({
 
             {/* Items List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={cn(
-                    'flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-lg transition-all group',
-                    item.equipped
-                      ? 'bg-[rgba(255,215,0,0.05)] border border-[rgba(255,215,0,0.1)]'
-                      : 'bg-[rgba(255,255,255,0.02)] border border-transparent hover:bg-[rgba(255,255,255,0.03)]'
-                  )}
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {/* Equipped checkbox */}
-                    <button
-                      onClick={() => handleToggleEquipped(item.id)}
-                      className={cn(
-                        'w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all active:scale-95',
-                        item.equipped
-                          ? 'bg-[var(--color-gold-700)] border-[var(--color-gold-500)]'
-                          : 'border-[rgba(255,255,255,0.15)] hover:border-[var(--color-gold-500)]'
-                      )}
-                      aria-label={`Toggle ${item.name} equipped`}
-                    >
-                      {item.equipped && <Check size={12} className="text-white" />}
-                    </button>
+              {filteredItems.map((item) => {
+                const rarity = getItemRarity(item);
+                const rarityStyle = RARITY_COLORS[rarity] || RARITY_COLORS.Common;
 
-                    {/* Category dot */}
-                    <div
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: CATEGORY_COLORS[item.category] }}
-                    />
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      'flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-lg transition-all group border',
+                      item.equipped
+                        ? `${rarityStyle.border} ${rarityStyle.bg} ${rarityStyle.glow}`
+                        : 'bg-[rgba(255,255,255,0.02)] border-transparent hover:bg-[rgba(255,255,255,0.03)]'
+                    )}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {/* Equipped checkbox */}
+                      <button
+                        onClick={() => handleToggleEquipped(item.id)}
+                        className={cn(
+                          'w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all active:scale-95',
+                          item.equipped
+                            ? rarityStyle.border
+                            : 'border-[rgba(255,255,255,0.15)] hover:border-[var(--color-gold-500)]'
+                        )}
+                        style={{
+                          backgroundColor: item.equipped ? rarityStyle.accent : undefined,
+                        }}
+                        aria-label={`Toggle ${item.name} equipped`}
+                      >
+                        {item.equipped && <Check size={12} className="text-black font-bold" />}
+                      </button>
 
-                    {/* Item info */}
-                    <div className="flex-1 min-w-0">
-                      {editingId === item.id ? (
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                          onBlur={() => setEditingId(null)}
-                          onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)}
-                          className="!text-sm !p-0 !bg-transparent !border-b !border-t-0 !border-l-0 !border-r-0 !rounded-none"
-                          autoFocus
-                        />
-                      ) : (
-                        <span className="text-sm text-[var(--color-parchment)] truncate block font-medium">
-                          {item.name}
-                        </span>
-                      )}
-                      {item.description && (
-                        <span className="text-[10px] text-[var(--color-parchment-dim)] truncate block">
-                          {item.description}
-                        </span>
-                      )}
+                      {/* Category dot */}
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: CATEGORY_COLORS[item.category] }}
+                      />
+
+                      {/* Item info */}
+                      <div className="flex-1 min-w-0">
+                        {editingId === item.id ? (
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                            onBlur={() => setEditingId(null)}
+                            onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)}
+                            className="!text-sm !p-0 !bg-transparent !border-b !border-t-0 !border-l-0 !border-r-0 !rounded-none"
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={cn(
+                                'text-sm truncate block font-medium',
+                                item.equipped ? rarityStyle.text : 'text-[var(--color-parchment)]'
+                              )}
+                            >
+                              {item.name}
+                            </span>
+                            <span
+                              className={cn(
+                                'text-[9px] font-bold px-1.5 py-0.2 rounded border',
+                                rarityStyle.badgeBg,
+                                rarityStyle.badgeText
+                              )}
+                            >
+                              {rarity}
+                            </span>
+                          </div>
+                        )}
+                        {item.description && (
+                          <span className="text-[10px] text-[var(--color-parchment-dim)] truncate block">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
                   {/* Quantity & Weight & Actions bar for mobile/desktop */}
                   <div className="flex items-center gap-3 shrink-0 text-xs font-[family-name:var(--font-mono)] ml-auto sm:ml-0">
@@ -438,12 +475,13 @@ export default function InventoryManager({
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 }
 
