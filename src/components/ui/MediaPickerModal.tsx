@@ -83,6 +83,8 @@ function compressImage(file: File, type: 'portraits' | 'backgrounds'): Promise<s
 }
 
 const PRESET_WALLPAPERS = [
+  { id: 'kastoriel-starlight', name: 'Celestial Starfield (Default Kastoriel)', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80', hero: 'kastoriel' },
+  { id: 'kastoriel-nebula', name: 'Golden Nebula Void (Kastoriel)', url: 'https://images.unsplash.com/photo-1538370965046-79c0d6907d47?auto=format&fit=crop&w=1200&q=80', hero: 'kastoriel' },
   { id: 'wynel-sigil', name: "Scarlet Feywild Sigil (Wyn'el)", url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
   { id: 'wynel-fey-grove', name: "Eldritch Archfey Grove (Wyn'el)", url: 'https://images.unsplash.com/photo-1511497584788-87676104235f?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
   { id: 'wynel-blood-moon', name: "Crimson Moon Keep (Wyn'el)", url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80', hero: 'wynel' },
@@ -98,7 +100,7 @@ const PRESET_WALLPAPERS = [
 export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portraits', targetCharacter }: MediaPickerModalProps) {
   const { customMedia, setCustomPortrait, setCustomBackground, resetMedia, getPortraitUrl, getBackgroundUrl, activeCharacterId } = useCharacter();
   const [activeTab, setActiveTab] = useState<'portraits' | 'backgrounds'>(defaultTab);
-  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'wynel' | 'menu'>('cyrus');
+  const [selectedCharacter, setSelectedCharacter] = useState<'vesper' | 'aria' | 'cyrus' | 'wynel' | 'kastoriel' | 'menu'>('cyrus');
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,7 +111,7 @@ export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portra
         setActiveTab(defaultTab);
       }
       const target = targetCharacter || activeCharacterId;
-      if (target && ['vesper', 'aria', 'cyrus', 'wynel', 'menu'].includes(target)) {
+      if (target && ['vesper', 'aria', 'cyrus', 'wynel', 'kastoriel', 'menu'].includes(target)) {
         setSelectedCharacter(target as any);
       }
     }
@@ -212,7 +214,7 @@ export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portra
           <span className="text-[10px] font-mono text-[#b89d5e] uppercase shrink-0 mr-1 font-bold">
             Target Hero:
           </span>
-          {(['cyrus', 'aria', 'vesper', 'wynel', 'menu'] as const).map((hero) => {
+          {(['cyrus', 'aria', 'vesper', 'wynel', 'kastoriel', 'menu'] as const).map((hero) => {
             const isMenu = hero === 'menu';
             if (activeTab === 'portraits' && isMenu) return null; // No portrait for menu
             const label =
@@ -224,6 +226,8 @@ export default function MediaPickerModal({ isOpen, onClose, defaultTab = 'portra
                 ? '🗡️ Vesper'
                 : hero === 'wynel'
                 ? "👑 Wyn'el"
+                : hero === 'kastoriel'
+                ? '⭐ Kastoriel'
                 : '📜 Guildhall Menu';
             const isSelected = selectedCharacter === hero;
             return (

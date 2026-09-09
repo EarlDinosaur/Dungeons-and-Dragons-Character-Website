@@ -18,10 +18,11 @@ export interface CharacterTabItem {
 }
 
 export function useCharacterTabs() {
-  const { character, aria, cyrus, wynel, activeCharacterId, customCharacters, customThemes } = useCharacter();
+  const { character, aria, cyrus, wynel, kastoriel, activeCharacterId, customCharacters, customThemes } = useCharacter();
   const isVesper = activeCharacterId === 'vesper';
   const isCyrus = activeCharacterId === 'cyrus';
   const isWynel = activeCharacterId === 'wynel';
+  const isKastoriel = activeCharacterId === 'kastoriel';
   const isAria = activeCharacterId === 'aria';
   const customChar = customCharacters?.[activeCharacterId];
   const customTheme = customThemes?.[activeCharacterId];
@@ -32,6 +33,8 @@ export function useCharacterTabs() {
     ? (cyrus?.classes && cyrus.classes.length > 0 ? cyrus.classes : [{ className: cyrus?.characterClass || 'Oracle', subclass: cyrus?.subclass || 'Solar Mystery' }])
     : isWynel
     ? (wynel?.classes && wynel.classes.length > 0 ? wynel.classes : [{ className: wynel?.characterClass || 'Warlock', subclass: wynel?.subclass || 'The Archfey' }])
+    : isKastoriel
+    ? (kastoriel?.classes && kastoriel.classes.length > 0 ? kastoriel.classes : [{ className: kastoriel?.characterClass || 'Druid', subclass: kastoriel?.subclass || 'Circle of the Stars' }])
     : isAria
     ? (aria?.classes && aria.classes.length > 0 ? aria.classes : [{ className: aria?.characterClass || 'Lunar Sorcerer', subclass: aria?.subclass || 'Lunar Sorcery' }])
     : (customChar?.classes && customChar.classes.length > 0 ? customChar.classes : [{ className: customChar?.class || 'Fighter', subclass: customChar?.subclass || '' }]);
@@ -41,6 +44,7 @@ export function useCharacterTabs() {
     isAria ||
     isCyrus ||
     isWynel ||
+    isKastoriel ||
     canCastSpells ||
     (character?.spellcasting?.spells && character.spellcasting.spells.length > 0) ||
     (customChar?.spellcasting?.spells && customChar.spellcasting.spells.length > 0) ||
@@ -88,6 +92,16 @@ export function useCharacterTabs() {
     { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
   ];
 
+  const kastorielTabs: CharacterTabItem[] = [
+    { id: 'character', label: 'Starry Druid', icon: Shield },
+    { id: 'combat', label: 'Combat', icon: Swords },
+    { id: 'spells', label: 'Star Spells', icon: Wand2 },
+    { id: 'artifact', label: 'Starry Forms', icon: Sparkles },
+    { id: 'progression', label: 'Feats', icon: Sparkles },
+    { id: 'inventory', label: 'Pendulum & Gear', icon: Package },
+    { id: 'dossier', label: 'Starlight Lore', icon: BookOpen },
+  ];
+
   const customTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Stats', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
@@ -98,26 +112,38 @@ export function useCharacterTabs() {
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
   ];
 
-  const tabs = isVesper ? vesperTabs : isCyrus ? cyrusTabs : isWynel ? wynelTabs : isAria ? ariaTabs : customTabs;
+  const tabs = isVesper
+    ? vesperTabs
+    : isCyrus
+    ? cyrusTabs
+    : isWynel
+    ? wynelTabs
+    : isKastoriel
+    ? kastorielTabs
+    : isAria
+    ? ariaTabs
+    : customTabs;
 
   return {
     tabs,
     isVesper,
     isCyrus,
     isWynel,
+    isKastoriel,
     isAria,
     activeCharacterId,
     character,
     aria,
     cyrus,
     wynel,
+    kastoriel,
     customChar,
     customTheme,
   };
 }
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
-  const { tabs, isVesper, isCyrus, isWynel, isAria } = useCharacterTabs();
+  const { tabs, isVesper, isCyrus, isWynel, isKastoriel, isAria } = useCharacterTabs();
 
   return (
     <nav className="sticky top-[41px] z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-2 hidden md:block">
@@ -133,6 +159,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
             if (isVesper) return 'text-[var(--color-gold-400)] bg-[var(--color-surface-raised)] border border-[rgba(255,215,0,0.2)] shadow-[0_0_15px_rgba(255,215,0,0.15)]';
             if (isCyrus) return 'text-amber-300 bg-[#261d10] border border-[#f59e0b]/40 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
             if (isWynel) return 'text-rose-200 bg-[#2b080f] border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.35)]';
+            if (isKastoriel) return 'text-amber-200 bg-[#161208] border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.35)]';
             if (isAria) return 'text-[#a992e8] bg-[#1d2249] border border-[#a992e8]/40 shadow-[0_0_15px_rgba(169,146,232,0.25)]';
             return 'text-amber-200 bg-zinc-900 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]';
           };
@@ -141,6 +168,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
             if (isVesper) return 'text-[var(--color-gold-400)]';
             if (isCyrus) return 'text-amber-400';
             if (isWynel) return 'text-red-400';
+            if (isKastoriel) return 'text-amber-400';
             if (isAria) return 'text-[#a992e8]';
             return 'text-amber-400';
           };
@@ -149,6 +177,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
             if (isVesper) return 'bg-[var(--color-gold-bright)]';
             if (isCyrus) return 'bg-amber-400';
             if (isWynel) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
+            if (isKastoriel) return 'bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
             if (isAria) return 'bg-[#a992e8]';
             return 'bg-amber-400';
           };

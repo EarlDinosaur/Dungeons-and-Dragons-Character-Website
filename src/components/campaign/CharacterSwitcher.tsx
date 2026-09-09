@@ -44,6 +44,8 @@ export default function CharacterSwitcher() {
                       ? 'bg-[rgba(218,165,32,0.18)] border-amber-500 shadow-[0_0_15px_rgba(218,165,32,0.35)] text-white scale-[1.02]'
                       : char.id === 'wynel'
                       ? 'bg-[rgba(239,68,68,0.18)] border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.35)] text-white scale-[1.02]'
+                      : char.id === 'kastoriel'
+                      ? 'bg-[rgba(245,158,11,0.18)] border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.35)] text-white scale-[1.02]'
                       : 'bg-[rgba(169,146,232,0.18)] border-[#a992e8] shadow-[0_0_15px_rgba(169,146,232,0.35)] text-white scale-[1.02]'
                     : 'bg-black/40 border-[rgba(255,255,255,0.08)] hover:border-white/20 text-[var(--color-parchment-muted)] hover:text-white'
                 }`}
@@ -61,6 +63,8 @@ export default function CharacterSwitcher() {
                           ? 'border-amber-400'
                           : char.id === 'wynel'
                           ? 'border-red-400'
+                          : char.id === 'kastoriel'
+                          ? 'border-amber-400'
                           : 'border-[#a992e8]'
                         : 'border-white/10'
                     }`}
@@ -90,6 +94,8 @@ export default function CharacterSwitcher() {
                         ? 'bg-amber-400'
                         : char.id === 'wynel'
                         ? 'bg-red-500'
+                        : char.id === 'kastoriel'
+                        ? 'bg-amber-400'
                         : 'bg-[#a992e8]'
                     }`}
                   />

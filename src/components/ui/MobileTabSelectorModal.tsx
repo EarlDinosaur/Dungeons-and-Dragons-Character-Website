@@ -19,7 +19,7 @@ export default function MobileTabSelectorModal({
   onTabChange,
   onClose,
 }: MobileTabSelectorModalProps) {
-  const { tabs, character, aria, cyrus, wynel, isVesper, isAria, isCyrus, isWynel } = useCharacterTabs();
+  const { tabs, character, aria, cyrus, wynel, kastoriel, isVesper, isAria, isCyrus, isWynel, isKastoriel } = useCharacterTabs();
   const { navigateToMenu, navigateToDM } = useCharacter();
 
   useEffect(() => {
@@ -41,6 +41,8 @@ export default function MobileTabSelectorModal({
     ? (cyrus?.name || 'Cyrus')
     : isWynel
     ? (wynel?.name || 'Wynel')
+    : isKastoriel
+    ? (kastoriel?.name || 'Kastoriel')
     : (character?.name || 'Hero');
 
   const charLevel = isVesper
@@ -51,6 +53,8 @@ export default function MobileTabSelectorModal({
     ? cyrus?.level || 1
     : isWynel
     ? wynel?.level || 1
+    : isKastoriel
+    ? kastoriel?.level || 1
     : character?.level || 1;
 
   const charClass = isVesper
@@ -61,6 +65,8 @@ export default function MobileTabSelectorModal({
     ? cyrus?.characterClass || 'Oracle'
     : isWynel
     ? wynel?.characterClass || 'Warlock'
+    : isKastoriel
+    ? kastoriel?.characterClass || 'Druid'
     : character?.class || 'Adventurer';
 
   const handleSelect = (tabId: TabId) => {

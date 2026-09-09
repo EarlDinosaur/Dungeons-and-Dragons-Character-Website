@@ -3,6 +3,7 @@ import { createDefaultCharacterState } from './persistence';
 import { createDefaultAriaState } from './aria-engine';
 import { createDefaultCyrusState } from './cyrus-engine';
 import { createDefaultWynelState } from './wynel-engine';
+import { createDefaultKastorielState } from './kastoriel-engine';
 
 const isVercel = process.env.VERCEL === '1';
 const defaultFile = isVercel ? 'file:/tmp/dnd.db' : 'file:dnd.db';
@@ -82,6 +83,13 @@ export async function initDb(): Promise<void> {
         sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
         args: ['wynel', JSON.stringify(defaultWynel), now],
       });
+
+      // Seed Kastoriel
+      const defaultKastoriel = createDefaultKastorielState();
+      await db.execute({
+        sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
+        args: ['kastoriel', JSON.stringify(defaultKastoriel), now],
+      });
     } else {
       // Ensure Wyn'el exists even if database was initialized before Wyn'el was added
       const wynelRow = await db.execute("SELECT id FROM characters WHERE id = 'wynel'");
@@ -90,6 +98,16 @@ export async function initDb(): Promise<void> {
         await db.execute({
           sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
           args: ['wynel', JSON.stringify(defaultWynel), Date.now()],
+        });
+      }
+
+      // Ensure Kastoriel exists even if database was initialized before Kastoriel was added
+      const kastorielRow = await db.execute("SELECT id FROM characters WHERE id = 'kastoriel'");
+      if (kastorielRow.rows.length === 0) {
+        const defaultKastoriel = createDefaultKastorielState();
+        await db.execute({
+          sql: 'INSERT INTO characters (id, data, updated_at) VALUES (?, ?, ?)',
+          args: ['kastoriel', JSON.stringify(defaultKastoriel), Date.now()],
         });
       }
     }

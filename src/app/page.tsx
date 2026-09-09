@@ -11,6 +11,7 @@ import VesperShadowRealm from '@/components/ui/backgrounds/VesperShadowRealm';
 import AriaNightSky from '@/components/ui/backgrounds/AriaNightSky';
 import CyrusSolarSanctuary from '@/components/ui/backgrounds/CyrusSolarSanctuary';
 import WynelScarletSigil from '@/components/ui/backgrounds/WynelScarletSigil';
+import KastorielStarryNight from '@/components/ui/backgrounds/KastorielStarryNight';
 
 // Shared UI & Campaign components
 import TabNavigation from '@/components/ui/TabNavigation';
@@ -26,10 +27,12 @@ import SoulHarvester from '@/components/characters/vesper/SoulHarvester';
 import LunarPhaseEngine from '@/components/characters/aria/LunarPhaseEngine';
 import CyrusOracleEngine from '@/components/characters/cyrus/CyrusOracleEngine';
 import CrimsonTattooEngine from '@/components/characters/wynel/CrimsonTattooEngine';
+import StarryFormEngine from '@/components/characters/kastoriel/StarryFormEngine';
 
 import type { AriaState } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';
 import type { WynelState } from '@/lib/wynel-engine';
+import type { KastorielState } from '@/lib/kastoriel-engine';
 import type { CharacterState, AbilityName } from '@/lib/types';
 import { getModifier } from '@/lib/character-engine';
 import { recalculateForLevel } from '@/lib/persistence';
@@ -135,6 +138,28 @@ export default function Home() {
     setWynelNotes,
     setWynelJournal,
     setWynelMysteries,
+    // Kastoriel state
+    kastoriel,
+    setKastorielLevel,
+    setKastorielHP,
+    setKastorielTempHP,
+    useKastorielSpellSlot,
+    restoreKastorielSpellSlot,
+    setKastorielSpellSlotMax,
+    useKastorielWildShape,
+    restoreKastorielWildShape,
+    setKastorielStarryForm,
+    rollKastorielCosmicOmen,
+    useKastorielCosmicOmen,
+    useKastorielGuidingBolt,
+    restoreKastorielGuidingBolt,
+    kastorielShortRest,
+    kastorielLongRest,
+    setKastorielInventory,
+    setKastorielCurrency,
+    setKastorielNotes,
+    setKastorielJournal,
+    setKastorielMysteries,
     // Multiclass & Levels
     setClasses,
     // Custom Characters
@@ -156,7 +181,8 @@ export default function Home() {
   const isCyrus = activeCharacterId === 'cyrus';
   const isWynel = activeCharacterId === 'wynel';
   const isAria = activeCharacterId === 'aria';
-  const isCustom = !isVesper && !isCyrus && !isWynel && !isAria;
+  const isKastoriel = activeCharacterId === 'kastoriel';
+  const isCustom = !isVesper && !isCyrus && !isWynel && !isAria && !isKastoriel;
 
   // Map AriaState to CharacterState
   const mapAriaToCharacterState = (ariaState: AriaState): CharacterState => {
@@ -595,6 +621,116 @@ export default function Home() {
     };
   };
 
+  // Map KastorielState to CharacterState
+  const mapKastorielToCharacterState = (kastorielState: KastorielState): CharacterState => {
+    const prof = Math.floor((kastorielState.level - 1) / 4) + 2;
+    const makeScore = (name: AbilityName, base: number) => {
+      const mod = getModifier(base);
+      const isProf = kastorielState.savingThrowProficiencies.includes(name);
+      return {
+        name,
+        label: name,
+        base,
+        modifier: mod,
+        total: base,
+        saveProficient: isProf,
+        saveBonus: mod + (isProf ? prof : 0),
+      };
+    };
+
+    return {
+      name: kastorielState.name,
+      alias: kastorielState.subline || kastorielState.title || 'The Grounded Star',
+      race: kastorielState.race,
+      class: kastorielState.characterClass,
+      subclass: kastorielState.subclass,
+      level: kastorielState.level,
+      background: kastorielState.background,
+      alignment: kastorielState.alignment,
+      experience: 64000,
+      classes: kastorielState.classes && kastorielState.classes.length > 0
+        ? kastorielState.classes
+        : [{ className: kastorielState.characterClass, subclass: kastorielState.subclass, level: kastorielState.level, hitDice: 'd8' }],
+      attacks: kastorielState.attacks || [],
+      spellcasting: {
+        spellSaveDC: kastorielState.spellcasting.spellSaveDC,
+        spellAttackBonus: kastorielState.spellcasting.spellAttackBonus,
+        slots: kastorielState.spellcasting.slots,
+        spells: kastorielState.spellcasting.spells.map((s) => ({
+          ...s,
+          prepared: true,
+        })),
+      },
+      feats: [
+        ...kastorielState.features.map((f) => ({
+          id: `feat-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+          title: f.name,
+          source: f.source,
+          description: f.description,
+          level: 1,
+        })),
+        ...(kastorielState.feats || []),
+      ],
+      proficiencies: kastorielState.proficiencies || {
+        armor: ['Light Armor', 'Medium Armor', 'Shields'],
+        weapons: ['Clubs', 'Daggers', 'Darts', 'Javelins', 'Maces', 'Quarterstaffs', 'Scimitars', 'Sickles', 'Slings', 'Spears', 'Shortswords'],
+        tools: ['Herbalism Kit', "Navigator's Tools"],
+        languages: ['Common', 'Elvish', 'Druidic', 'Celestial'],
+      },
+      overrides: kastorielState.overrides,
+      proficiencyBonus: prof,
+      abilityScores: {
+        STR: makeScore('STR', kastorielState.abilityScores.STR),
+        DEX: makeScore('DEX', kastorielState.abilityScores.DEX),
+        CON: makeScore('CON', kastorielState.abilityScores.CON),
+        INT: makeScore('INT', kastorielState.abilityScores.INT),
+        WIS: makeScore('WIS', kastorielState.abilityScores.WIS),
+        CHA: makeScore('CHA', kastorielState.abilityScores.CHA),
+      },
+      skills: ALL_SKILLS_LIST.map((def) => {
+        const proficient = kastorielState.skillProficiencies.includes(def.name);
+        const abilityMod = getModifier(kastorielState.abilityScores[def.ability]);
+        let bonus = abilityMod + (proficient ? prof : 0);
+        return { name: def.name, ability: def.ability, proficient, expertise: false, bonus };
+      }),
+      ac: kastorielState.overrides?.ac ?? kastorielState.combat.ac,
+      initiative: kastorielState.overrides?.initiative ?? kastorielState.combat.initiative,
+      speed: kastorielState.overrides?.speed ?? kastorielState.combat.speed,
+      passivePerception: 10 + getModifier(kastorielState.abilityScores.WIS) + (kastorielState.skillProficiencies.includes('Perception') ? prof : 0),
+      combat: {
+        currentHP: kastorielState.combat.currentHP,
+        maxHP: kastorielState.combat.maxHP,
+        tempHP: kastorielState.combat.tempHP,
+        hitDice: { total: kastorielState.level, used: kastorielState.combat.hitDice.used, diceType: 'd8' },
+        deathSaves: kastorielState.combat.deathSaves,
+        conditions: kastorielState.combat?.conditions || [],
+      },
+      sneakAttackDice: 0,
+      inventory: kastorielState.inventory,
+      currency: kastorielState.currency,
+      orphansTithe: {
+        currentSouls: 0,
+        vestigeStage: 'dormant',
+        phantomMurmursActive: false,
+        altarTraumaActive: false,
+      },
+      dossier: {
+        backstory: {
+          orphanageMassacre: kastorielState.notes,
+          fatherMalachi: 'Starlight Coven High Priest',
+          apprenticeApothecary: "The Starlight Coven & Ritual N'elestel",
+          guildScoutVincent: 'Allied party member',
+          bossDexter: 'Neutral',
+        },
+        mysteries: kastorielState.mysteries,
+        journal: kastorielState.journal,
+        playerNotes: kastorielState.notes,
+      },
+      version: 1,
+      lastSaved: new Date().toISOString(),
+    };
+  };
+
   // Resolve Active Character State & Anchored Theme
   const activeCharState: CharacterState = isVesper
     ? character
@@ -604,6 +740,8 @@ export default function Home() {
     ? mapWynelToCharacterState(wynel)
     : isAria
     ? mapAriaToCharacterState(aria)
+    : isKastoriel
+    ? mapKastorielToCharacterState(kastoriel)
     : (customCharacters[activeCharacterId] || character);
 
   const activeTheme = isVesper
@@ -614,6 +752,8 @@ export default function Home() {
     ? { primary: '#eab308', accent: '#fbbf24', portraitUrl: getPortraitUrl('cyrus') }
     : isWynel
     ? { primary: '#ef4444', accent: '#f43f5e', portraitUrl: getPortraitUrl('wynel') }
+    : isKastoriel
+    ? { primary: '#f59e0b', accent: '#fb923c', portraitUrl: getPortraitUrl('kastoriel') }
     : (customThemes[activeCharacterId] || { primary: '#3b82f6', accent: '#38bdf8', portraitUrl: '/vesper-portrait.png' });
 
   // Resolve Anchored Signature Tab Component
@@ -676,6 +816,24 @@ export default function Home() {
           />
         ),
       }
+    : isKastoriel
+    ? {
+        id: 'artifact',
+        label: "Starry Form",
+        component: (
+          <StarryFormEngine
+            kastoriel={kastoriel}
+            onConstellationChange={setKastorielStarryForm}
+            onUseWildShape={useKastorielWildShape}
+            onRestoreWildShape={restoreKastorielWildShape}
+            onRollCosmicOmen={rollKastorielCosmicOmen}
+            onUseCosmicOmen={useKastorielCosmicOmen}
+            onUseGuidingBoltFree={useKastorielGuidingBolt}
+            onRestoreGuidingBoltFree={restoreKastorielGuidingBolt}
+            onLongRest={kastorielLongRest}
+          />
+        ),
+      }
     : undefined;
 
   // Unified Callback Handlers
@@ -684,6 +842,7 @@ export default function Home() {
     else if (isAria) setAriaLevel(lvl);
     else if (isCyrus) setCyrusLevel(lvl);
     else if (isWynel) setWynelLevel(lvl);
+    else if (isKastoriel) setKastorielLevel(lvl);
     else updateCustomCharacter(activeCharacterId, (prev) => recalculateForLevel(prev, lvl));
   };
 
@@ -692,6 +851,7 @@ export default function Home() {
     else if (isAria) setAriaHP(hp);
     else if (isCyrus) setCyrusHP(hp);
     else if (isWynel) setWynelHP(hp);
+    else if (isKastoriel) setKastorielHP(hp);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, combat: { ...prev.combat, currentHP: hp } }));
   };
 
@@ -700,11 +860,13 @@ export default function Home() {
     else if (isAria) setAriaTempHP(thp);
     else if (isCyrus) setCyrusTempHP(thp);
     else if (isWynel) setWynelTempHP(thp);
+    else if (isKastoriel) setKastorielTempHP(thp);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, combat: { ...prev.combat, tempHP: thp } }));
   };
 
   const handleShortRest = () => {
     if (isWynel) wynelShortRest();
+    else if (isKastoriel) kastorielShortRest();
     else if (isVesper) {
       setCurrentHP(Math.min(character.combat.maxHP, character.combat.currentHP + 10));
     } else if (isCustom) {
@@ -720,6 +882,7 @@ export default function Home() {
     else if (isAria) ariaLongRest();
     else if (isCyrus) cyrusLongRest();
     else if (isWynel) wynelLongRest();
+    else if (isKastoriel) kastorielLongRest();
     else {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -733,6 +896,7 @@ export default function Home() {
     else if (isAria) setAriaInventory(inv);
     else if (isCyrus) setCyrusInventory(inv);
     else if (isWynel) setWynelInventory(inv);
+    else if (isKastoriel) setKastorielInventory(inv);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, inventory: inv }));
   };
 
@@ -741,6 +905,7 @@ export default function Home() {
     else if (isAria) setAriaCurrency(curr);
     else if (isCyrus) setCyrusCurrency(curr);
     else if (isWynel) setWynelCurrency(curr);
+    else if (isKastoriel) setKastorielCurrency(curr);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, currency: curr }));
   };
 
@@ -749,6 +914,7 @@ export default function Home() {
     else if (isAria) setAriaNotes(notes);
     else if (isCyrus) setCyrusNotes(notes);
     else if (isWynel) setWynelNotes(notes);
+    else if (isKastoriel) setKastorielNotes(notes);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, dossier: { ...prev.dossier, playerNotes: notes } }));
   };
 
@@ -757,6 +923,7 @@ export default function Home() {
     else if (isAria) useAriaSpellSlot(lvl);
     else if (isCyrus) useCyrusSpellSlot(lvl);
     else if (isWynel) useWynelPactSlot();
+    else if (isKastoriel) useKastorielSpellSlot(lvl);
     else {
       updateCustomCharacter(activeCharacterId, (prev) => {
         const slot = prev.spellcasting.slots[lvl];
@@ -780,6 +947,7 @@ export default function Home() {
     else if (isAria) restoreAriaSpellSlot(lvl);
     else if (isCyrus) restoreCyrusSpellSlot(lvl);
     else if (isWynel) restoreWynelPactSlot();
+    else if (isKastoriel) restoreKastorielSpellSlot(lvl);
     else {
       updateCustomCharacter(activeCharacterId, (prev) => {
         const slot = prev.spellcasting.slots[lvl];
@@ -812,6 +980,9 @@ export default function Home() {
     } else if (charId === 'wynel') {
       setWynelHP(currentHP);
       if (tempHP !== undefined) setWynelTempHP(tempHP);
+    } else if (charId === 'kastoriel') {
+      setKastorielHP(currentHP);
+      if (tempHP !== undefined) setKastorielTempHP(tempHP);
     } else {
       updateCustomCharacter(charId, (prev) => ({
         ...prev,
@@ -842,11 +1013,13 @@ export default function Home() {
       else if (charId === 'aria') ariaLongRest();
       else if (charId === 'cyrus') cyrusLongRest();
       else if (charId === 'wynel') wynelLongRest();
+      else if (charId === 'kastoriel') kastorielLongRest();
       else handleLongRest();
       showToastNotification('Long Rest', `Completed for ${charId}`, 'rest');
     } else {
       if (charId === 'vesper') handleShortRest();
       else if (charId === 'wynel') wynelShortRest();
+      else if (charId === 'kastoriel') kastorielShortRest();
       else handleShortRest();
       showToastNotification('Short Rest', `Completed for ${charId}`, 'rest');
     }
@@ -858,10 +1031,12 @@ export default function Home() {
       ariaLongRest();
       cyrusLongRest();
       wynelLongRest();
+      kastorielLongRest();
       showToastNotification('Party Long Rest', 'All party members completed a Long Rest', 'rest');
     } else {
       handleShortRest();
       wynelShortRest();
+      kastorielShortRest();
       showToastNotification('Party Short Rest', 'All party members completed a Short Rest', 'rest');
     }
   };
@@ -992,7 +1167,39 @@ export default function Home() {
       hitDice: { total: wynel?.level || 10, used: 0, diceType: 'd8' },
     };
 
-    // 5. Custom Characters
+    // 5. Kastoriel
+    const kastorielProf = Math.floor(((kastoriel?.level || 10) - 1) / 4) + 2;
+    const kastorielWisMod = Math.floor(((kastoriel?.abilityScores?.WIS || 18) - 10) / 2);
+    const kastorielDexMod = Math.floor(((kastoriel?.abilityScores?.DEX || 14) - 10) / 2);
+    const kastorielIntMod = Math.floor(((kastoriel?.abilityScores?.INT || 12) - 10) / 2);
+
+    const kastorielHUD: PartyMemberHUDState = {
+      id: 'kastoriel',
+      name: kastoriel?.name || 'Kastoriel',
+      characterClass: kastoriel?.characterClass || 'Druid',
+      subclass: kastoriel?.subclass || 'Circle of the Stars',
+      level: kastoriel?.level || 10,
+      portraitUrl: getPortraitUrl('kastoriel'),
+      primaryColor: '#f59e0b',
+      accentColor: '#fb923c',
+      currentHP: kastoriel?.combat?.currentHP || 73,
+      maxHP: kastoriel?.combat?.maxHP || 73,
+      tempHP: kastoriel?.combat?.tempHP || 0,
+      ac: kastoriel?.combat?.ac || 16,
+      spellSaveDC: 8 + kastorielProf + kastorielWisMod,
+      spellAttackBonus: kastorielProf + kastorielWisMod,
+      passivePerception: 10 + kastorielWisMod + kastorielProf,
+      passiveInsight: 10 + kastorielWisMod + kastorielProf,
+      passiveInvestigation: 10 + kastorielIntMod,
+      initiativeBonus: kastorielDexMod,
+      conditions: kastoriel?.combat?.conditions || [],
+      inspiration: !!partyInspiration['kastoriel'],
+      deathSaves: { successes: 0, failures: 0 },
+      slots: kastoriel?.spellcasting?.slots || {},
+      hitDice: { total: kastoriel?.level || 10, used: 0, diceType: 'd8' },
+    };
+
+    // 6. Custom Characters
     const customHUDs: PartyMemberHUDState[] = Object.values(customCharacters || {}).map((c: CharacterState) => {
       const theme = customThemes[c.name] || { primary: '#6366f1', accent: '#818cf8', portraitUrl: '' };
       return {
@@ -1022,12 +1229,13 @@ export default function Home() {
       };
     });
 
-    return [vesperHUD, ariaHUD, cyrusHUD, wynelHUD, ...customHUDs];
+    return [vesperHUD, ariaHUD, cyrusHUD, wynelHUD, kastorielHUD, ...customHUDs];
   }, [
     character,
     aria,
     cyrus,
     wynel,
+    kastoriel,
     customCharacters,
     customThemes,
     getPortraitUrl,
@@ -1064,6 +1272,11 @@ export default function Home() {
         <WynelScarletSigil chaosAuraActive={wynel.pactEngine.chaosAuraActive} />
       ) : isAria ? (
         <AriaNightSky currentPhase={aria.lunarEngine.currentPhase} />
+      ) : isKastoriel ? (
+        <KastorielStarryNight
+          starryActive={kastoriel.starryEngine.activeConstellation !== 'none'}
+          activeConstellation={kastoriel.starryEngine.activeConstellation}
+        />
       ) : (
         <TavernBackground />
       )}
@@ -1164,8 +1377,8 @@ export default function Home() {
               onInventoryChange={handleInventoryChange}
               onCurrencyChange={handleCurrencyChange}
               onNotesChange={handleNotesChange}
-              onJournalChange={isVesper ? setJournal : isWynel ? setWynelJournal : undefined}
-              onMysteriesChange={isVesper ? setMysteries : isWynel ? setWynelMysteries : undefined}
+              onJournalChange={isVesper ? setJournal : isWynel ? setWynelJournal : isKastoriel ? setKastorielJournal : undefined}
+              onMysteriesChange={isVesper ? setMysteries : isWynel ? setWynelMysteries : isKastoriel ? setKastorielMysteries : undefined}
               onAbilityBaseScoreChange={updateAbilityBaseScore}
               onToggleSkillProficiency={toggleSkillProficiency}
               onUseSpellSlot={handleUseSpellSlot}

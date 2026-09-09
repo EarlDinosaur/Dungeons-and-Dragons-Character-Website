@@ -22,6 +22,8 @@ export default function CampaignNavBar() {
             ? 'via-amber-400'
             : activeCharacterId === 'wynel'
             ? 'via-rose-500'
+            : activeCharacterId === 'kastoriel'
+            ? 'via-amber-400'
             : 'via-[#a992e8]'
         } to-transparent opacity-75`}
       />
@@ -62,6 +64,8 @@ export default function CampaignNavBar() {
                 ? 'bg-[rgba(45,30,10,0.5)] border-amber-500/60 text-amber-100'
                 : activeCharacterId === 'wynel'
                 ? 'bg-[rgba(55,12,18,0.5)] border-red-500/60 text-rose-100'
+                : activeCharacterId === 'kastoriel'
+                ? 'bg-[rgba(20,16,10,0.6)] border-amber-500/70 text-amber-200'
                 : 'bg-[rgba(29,34,73,0.5)] border-[#343a72] text-[#e8e6ff]'
             }`}
           >
@@ -79,6 +83,8 @@ export default function CampaignNavBar() {
                 <span className="text-amber-400 text-xs">☀️</span>
               ) : activeCharacterId === 'wynel' ? (
                 <span className="text-rose-400 text-xs">👑</span>
+              ) : activeCharacterId === 'kastoriel' ? (
+                <span className="text-amber-400 text-xs">⭐</span>
               ) : (
                 <Sparkles size={12} className="text-[#a992e8]" />
               )}

@@ -10,6 +10,8 @@ import type { CyrusState } from '@/lib/cyrus-engine';
 import { createDefaultCyrusState, calculateCyrusStats } from '@/lib/cyrus-engine';
 import type { WynelState } from '@/lib/wynel-engine';
 import { createDefaultWynelState, calculateWynelStats } from '@/lib/wynel-engine';
+import type { KastorielState, StarryConstellation, CosmicOmen } from '@/lib/kastoriel-engine';
+import { createDefaultKastorielState, calculateKastorielStats } from '@/lib/kastoriel-engine';
 import { ToastProvider, useToast, type ToastType } from '@/components/ui/ToastNotification';
 import { computeInjectedFeatures, mergeInjectedWithManual } from '@/lib/feature-injection';
 import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
@@ -20,6 +22,7 @@ import MediaPickerModal from '@/components/ui/MediaPickerModal';
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
 const WYNEL_STORAGE_KEY = 'dnd_char_wynel';
+const KASTORIEL_STORAGE_KEY = 'dnd_char_kastoriel';
 const ACTIVE_CHAR_KEY = 'dnd_active_character_id';
 const ACTIVE_VIEW_KEY = 'dnd_active_view';
 const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
@@ -35,12 +38,14 @@ export interface CustomMedia {
     aria?: string;
     cyrus?: string;
     wynel?: string;
+    kastoriel?: string;
   };
   backgrounds: {
     vesper?: string;
     aria?: string;
     cyrus?: string;
     wynel?: string;
+    kastoriel?: string;
     menu?: string;
   };
 }
@@ -50,6 +55,7 @@ const DEFAULT_PORTRAITS: Record<string, string> = {
   aria: '/aria-portrait.png',
   cyrus: '/cyrus-portrait.png',
   wynel: '/wynel-portrait.png',
+  kastoriel: '/kastoriel-portrait.png',
 };
 
 const DEFAULT_BACKGROUNDS: Record<string, string> = {
@@ -57,6 +63,7 @@ const DEFAULT_BACKGROUNDS: Record<string, string> = {
   aria: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80',
   cyrus: '/images/cyrus-bg.jpg',
   wynel: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+  kastoriel: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80',
   menu: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1200&q=80',
 };
 
@@ -171,6 +178,29 @@ interface CharacterContextType {
   setWynelJournal: (entries: JournalEntry[]) => void;
   setWynelMysteries: (mysteries: CampaignMystery[]) => void;
 
+  // Kastoriel's state & actions
+  kastoriel: KastorielState;
+  setKastorielLevel: (level: number) => void;
+  setKastorielHP: (hp: number) => void;
+  setKastorielTempHP: (hp: number) => void;
+  useKastorielSpellSlot: (level: number) => void;
+  restoreKastorielSpellSlot: (level: number) => void;
+  setKastorielSpellSlotMax: (level: number, max: number) => void;
+  useKastorielWildShape: () => void;
+  restoreKastorielWildShape: () => void;
+  setKastorielStarryForm: (form: StarryConstellation) => void;
+  rollKastorielCosmicOmen: (dieRoll?: number) => void;
+  useKastorielCosmicOmen: () => void;
+  useKastorielGuidingBolt: () => void;
+  restoreKastorielGuidingBolt: () => void;
+  kastorielShortRest: () => void;
+  kastorielLongRest: () => void;
+  setKastorielInventory: (items: InventoryItem[]) => void;
+  setKastorielCurrency: (currency: Currency) => void;
+  setKastorielNotes: (notes: string) => void;
+  setKastorielJournal: (entries: JournalEntry[]) => void;
+  setKastorielMysteries: (mysteries: CampaignMystery[]) => void;
+
   // Custom Party Roster
   customMembers: CustomMember[];
   setCustomMembers: (members: CustomMember[]) => void;
@@ -208,6 +238,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [aria, setAria] = useState<AriaState>(createDefaultAriaState);
   const [cyrus, setCyrus] = useState<CyrusState>(createDefaultCyrusState);
   const [wynel, setWynel] = useState<WynelState>(createDefaultWynelState);
+  const [kastoriel, setKastoriel] = useState<KastorielState>(createDefaultKastorielState);
   const [activeTab, setActiveTab] = useState<TabId>('character');
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -223,6 +254,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const ariaModifiedRef = useRef<number>(0);
   const cyrusModifiedRef = useRef<number>(0);
   const wynelModifiedRef = useRef<number>(0);
+  const kastorielModifiedRef = useRef<number>(0);
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
   const customCharactersRef = useRef<Record<string, CharacterState>>({});
@@ -233,6 +265,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const ariaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cyrusSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wynelSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const kastorielSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rosterSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -310,8 +343,29 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           } catch {}
         }
 
+        // Kastoriel
+        const kastorielRemote = res.characters.kastoriel;
+        if (kastorielRemote && kastorielRemote.updatedAt > kastorielModifiedRef.current) {
+          const defaultState = createDefaultKastorielState();
+          const existingIds = new Set((kastorielRemote.data?.spellcasting?.spells || []).map((s: any) => s.id));
+          const missingDefaults = defaultState.spellcasting.spells.filter((s) => !existingIds.has(s.id));
+          const mergedData = missingDefaults.length > 0
+            ? {
+                ...kastorielRemote.data,
+                spellcasting: {
+                  ...kastorielRemote.data.spellcasting,
+                  spells: [...(kastorielRemote.data.spellcasting?.spells || []), ...missingDefaults],
+                },
+              }
+            : kastorielRemote.data;
+          setKastoriel(mergedData);
+          try {
+            localStorage.setItem(KASTORIEL_STORAGE_KEY, JSON.stringify(mergedData));
+          } catch {}
+        }
+
         // Custom Characters from SQLite
-        const knownKeys = new Set(['vesper', 'aria', 'cyrus', 'wynel']);
+        const knownKeys = new Set(['vesper', 'aria', 'cyrus', 'wynel', 'kastoriel']);
         const remoteCustoms: Record<string, CharacterState> = {};
         for (const [id, val] of Object.entries(res.characters)) {
           if (!knownKeys.has(id) && val?.data) {
@@ -409,6 +463,25 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           setWynel(calculateWynelStats(parsed));
         } catch {
           setWynel(createDefaultWynelState());
+        }
+      }
+
+      const savedKastorielRaw = localStorage.getItem(KASTORIEL_STORAGE_KEY);
+      if (savedKastorielRaw) {
+        try {
+          const parsed = JSON.parse(savedKastorielRaw);
+          const defaultState = createDefaultKastorielState();
+          const existingIds = new Set((parsed.spellcasting?.spells || []).map((s: any) => s.id));
+          const missingDefaults = defaultState.spellcasting.spells.filter((s) => !existingIds.has(s.id));
+          if (missingDefaults.length > 0) {
+            parsed.spellcasting = {
+              ...parsed.spellcasting,
+              spells: [...(parsed.spellcasting?.spells || []), ...missingDefaults],
+            };
+          }
+          setKastoriel(calculateKastorielStats(parsed));
+        } catch {
+          setKastoriel(createDefaultKastorielState());
         }
       }
 
@@ -809,6 +882,36 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     });
   }, [scheduleWynelSave]);
 
+  // Kastoriel's Auto-save with debounce & SQLite push
+  const scheduleKastorielSave = useCallback((state: KastorielState) => {
+    kastorielModifiedRef.current = Date.now();
+    setSyncStatus('syncing');
+    if (kastorielSaveTimerRef.current) clearTimeout(kastorielSaveTimerRef.current);
+    kastorielSaveTimerRef.current = setTimeout(async () => {
+      try {
+        localStorage.setItem(KASTORIEL_STORAGE_KEY, JSON.stringify(state));
+      } catch {}
+      try {
+        const res = await pushCharacterSync('kastoriel', state, kastorielModifiedRef.current);
+        if (res?.success) {
+          lastServerTimestampRef.current = Math.max(lastServerTimestampRef.current, res.timestamp);
+          setSyncStatus('synced');
+          setLastSyncedAt(Date.now());
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 400);
+  }, []);
+
+  const updateKastoriel = useCallback((updater: (prev: KastorielState) => KastorielState) => {
+    setKastoriel((prev) => {
+      const next = updater(prev);
+      scheduleKastorielSave(next);
+      return next;
+    });
+  }, [scheduleKastorielSave]);
+
   const toggleCharacterCondition = useCallback((charId: string, condition: string) => {
     if (charId === 'vesper') {
       updateCharacter((prev) => {
@@ -866,6 +969,20 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           },
         };
       });
+    } else if (charId === 'kastoriel') {
+      updateKastoriel((prev) => {
+        const list = prev.combat?.conditions || [];
+        const updated = list.includes(condition)
+          ? list.filter((c) => c !== condition)
+          : [...list, condition];
+        return {
+          ...prev,
+          combat: {
+            ...prev.combat,
+            conditions: updated,
+          },
+        };
+      });
     } else {
       updateCustomCharacter(charId, (prev) => {
         const list = prev.combat?.conditions || [];
@@ -881,7 +998,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         };
       });
     }
-  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateCustomCharacter]);
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
 
   // Earl Actions
   const setLevel = useCallback((level: number) => {
@@ -979,6 +1096,12 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return calculateWynelStats({ ...prev, abilityScores: nextScores });
       });
       showToast('Ability Score Updated', `Wyn'el's ${ability} set to ${newBase}`, 'level');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => {
+        const nextScores = { ...prev.abilityScores, [ability]: newBase };
+        return calculateKastorielStats({ ...prev, abilityScores: nextScores });
+      });
+      showToast('Ability Score Updated', `Kastoriel's ${ability} set to ${newBase}`, 'level');
     } else {
       updateCharacter((prev) => {
         const updatedScores = { ...prev.abilityScores };
@@ -1015,7 +1138,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Ability Score Updated', `${ability} updated to ${newBase}`, 'level');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, showToast]);
 
   const toggleSkillProficiency = useCallback((skillName: import('@/lib/types').SkillName) => {
     const all18Skills: Array<{ name: import('@/lib/types').SkillName; ability: import('@/lib/types').AbilityName }> = [
@@ -1101,6 +1224,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           : [...prev.skillProficiencies, skillName];
         return { ...prev, skillProficiencies: nextSkills };
       });
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => {
+        const has = prev.skillProficiencies.includes(skillName);
+        const nextSkills = has
+          ? prev.skillProficiencies.filter((s) => s !== skillName)
+          : [...prev.skillProficiencies, skillName];
+        return calculateKastorielStats({ ...prev, skillProficiencies: nextSkills });
+      });
     } else {
       updateCharacter((prev) => {
         const updatedSkills = prev.skills.map((s) => {
@@ -1129,7 +1260,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return { ...prev, skills: updatedSkills };
       });
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel]);
 
   const setCombatOverrides = useCallback((overrides: Partial<import('@/lib/types').CombatOverrides>) => {
     if (activeCharacterId === 'aria') {
@@ -1168,6 +1299,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Stats Updated', "Wyn'el's combat stats updated", 'info');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        overrides: { ...(prev.overrides || {}), ...overrides },
+        combat: {
+          ...prev.combat,
+          ac: overrides.ac ?? prev.combat.ac,
+          initiative: overrides.initiative ?? prev.combat.initiative,
+          speed: overrides.speed ?? prev.combat.speed,
+        },
+      }));
+      showToast('Stats Updated', "Kastoriel's combat stats updated", 'info');
     } else {
       updateCharacter((prev) => {
         const nextOverrides = { ...(prev.overrides || {}), ...overrides };
@@ -1187,7 +1330,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Stats Updated', 'Combat stats updated', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, showToast]);
 
   const setClasses = useCallback((classes: import('@/lib/types').ClassLevel[]) => {
     const totalLevel = classes.reduce((sum, c) => sum + c.level, 0);
@@ -1242,6 +1385,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         return base;
       });
       showToast('Classes Updated', `Wyn'el's Multiclass saved (Total Lv ${totalLevel}).`, 'level');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => {
+        const base = calculateKastorielStats({
+          ...prev,
+          level: totalLevel,
+          characterClass: primary?.className || prev.characterClass,
+          subclass: primary?.subclass || prev.subclass,
+          classes,
+        });
+        return base;
+      });
+      showToast('Classes Updated', `Kastoriel's Multiclass saved (Total Lv ${totalLevel}).`, 'level');
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => {
         const title = classes.map((c) => `${c.className} ${c.level}${c.subclass ? ` (${c.subclass})` : ''}`).join(' / ');
@@ -1301,7 +1456,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       });
       showToast('Classes Updated', 'Multiclass saved. Features & proficiencies auto-injected!', 'level');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const addAttack = useCallback((attack: Omit<import('@/lib/types').AttackOption, 'id'>) => {
     const newAttack = { ...attack, id: (attack as any).id || `attack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -1311,13 +1466,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } else {
       updateCharacter((prev) => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     }
     showToast('Attack Added', `${attack.name} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const editAttack = useCallback((attack: import('@/lib/types').AttackOption) => {
     if (activeCharacterId === 'aria') {
@@ -1326,6 +1483,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, attacks: (prev.attacks || []).map((a) => (a.id === attack.id ? attack : a)) }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1338,7 +1497,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Updated', `${attack.name} updated`, 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteAttack = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1347,6 +1506,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, attacks: (prev.attacks || []).filter((a) => a.id !== id) }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1359,7 +1520,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Attack Removed', 'Attack option deleted', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const addSpell = useCallback((spell: Omit<import('@/lib/types').CharacterSpellItem, 'id'>) => {
     const newSpell = { ...spell, id: (spell as any).id || `spell-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
@@ -1390,6 +1551,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Added', `${spell.name} added to Wyn'el's grimoire`, 'power');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: [...(prev.spellcasting?.spells || []), newSpell as any],
+        },
+      }));
+      showToast('Spell Added', `${spell.name} prepared for Kastoriel`, 'power');
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1409,7 +1579,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Added', `${spell.name} added to spellbook`, 'power');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const editSpell = useCallback((spell: import('@/lib/types').CharacterSpellItem) => {
     if (activeCharacterId === 'aria') {
@@ -1439,6 +1609,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Updated', `${spell.name} updated`, 'info');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).map((s) => (s.id === spell.id ? ({ ...s, ...spell } as any) : s)),
+        },
+      }));
+      showToast('Spell Updated', `${spell.name} updated`, 'info');
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1458,7 +1637,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Updated', `${spell.name} updated`, 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteSpell = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1488,6 +1667,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          spells: (prev.spellcasting?.spells || []).filter((s) => s.id !== id),
+        },
+      }));
+      showToast('Spell Removed', 'Spell deleted', 'info');
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1507,7 +1695,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Removed', 'Spell deleted', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const useVesperSpellSlot = useCallback((level: number) => {
     updateCharacter((prev) => {
@@ -1575,13 +1763,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     } else {
       updateCharacter((prev) => ({ ...prev, feats: [...(prev.feats || []), newFeat] }));
     }
     showToast('Feat/Trait Added', `${feat.title} added`, 'power');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const deleteFeat = useCallback((id: string) => {
     if (activeCharacterId === 'aria') {
@@ -1590,6 +1780,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       updateCyrus((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
     } else if (activeCharacterId === 'wynel') {
       updateWynel((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, feats: (prev.feats || []).filter((f) => f.id !== id) }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1602,7 +1794,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
     }
     showToast('Feat Removed', 'Feat/trait removed', 'info');
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const updateProficiencies = useCallback((category: keyof import('@/lib/types').NonStatProficiencies, tags: string[]) => {
     if (activeCharacterId === 'aria') {
@@ -1629,6 +1821,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           [category]: tags,
         },
       }));
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        proficiencies: {
+          ...(prev.proficiencies || { armor: [], weapons: [], tools: [], languages: [] }),
+          [category]: tags,
+        },
+      }));
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -1646,7 +1846,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       }));
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, customCharacters, updateCustomCharacter]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, customCharacters, updateCustomCharacter]);
 
 
   // Aria Actions
@@ -2076,6 +2276,229 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     updateWynel((prev) => ({ ...prev, mysteries }));
   }, [updateWynel]);
 
+  // Kastoriel Actions
+  const setKastorielLevel = useCallback((level: number) => {
+    updateKastoriel((prev) => calculateKastorielStats({ ...prev, level }));
+    showToast('Level Updated', `Kastoriel is now Level ${level}! Starry form and spell slots updated.`, 'level');
+  }, [updateKastoriel, showToast]);
+
+  const setKastorielHP = useCallback((hp: number) => {
+    updateKastoriel((prev) => ({ ...prev, combat: { ...prev.combat, currentHP: Math.max(0, Math.min(prev.combat.maxHP, hp)) } }));
+  }, [updateKastoriel]);
+
+  const setKastorielTempHP = useCallback((hp: number) => {
+    updateKastoriel((prev) => ({ ...prev, combat: { ...prev.combat, tempHP: Math.max(0, hp) } }));
+  }, [updateKastoriel]);
+
+  const useKastorielSpellSlot = useCallback((level: number) => {
+    updateKastoriel((prev) => {
+      const currentSlots = prev.spellcasting.slots[level];
+      if (!currentSlots || currentSlots.used >= currentSlots.max) return prev;
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...currentSlots, used: currentSlots.used + 1 },
+          },
+        },
+      };
+    });
+  }, [updateKastoriel]);
+
+  const restoreKastorielSpellSlot = useCallback((level: number) => {
+    updateKastoriel((prev) => {
+      const currentSlots = prev.spellcasting.slots[level];
+      if (!currentSlots || currentSlots.used <= 0) return prev;
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...currentSlots, used: currentSlots.used - 1 },
+          },
+        },
+      };
+    });
+  }, [updateKastoriel]);
+
+  const setKastorielSpellSlotMax = useCallback((level: number, max: number) => {
+    updateKastoriel((prev) => {
+      const currentSlots = prev.spellcasting.slots[level] || { max: 0, used: 0 };
+      const newMax = Math.max(0, Math.floor(max));
+      return {
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: {
+            ...prev.spellcasting.slots,
+            [level]: { ...currentSlots, max: newMax, used: Math.min(currentSlots.used, newMax) },
+          },
+        },
+      };
+    });
+  }, [updateKastoriel]);
+
+  const useKastorielWildShape = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        wildShapeUsed: Math.min(prev.starryEngine.wildShapeMax, prev.starryEngine.wildShapeUsed + 1),
+      },
+    }));
+  }, [updateKastoriel]);
+
+  const restoreKastorielWildShape = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        wildShapeUsed: Math.max(0, prev.starryEngine.wildShapeUsed - 1),
+      },
+    }));
+  }, [updateKastoriel]);
+
+  const setKastorielStarryForm = useCallback((form: StarryConstellation) => {
+    updateKastoriel((prev) => {
+      const willBeActive = form !== 'none';
+      let wildShapeUsed = prev.starryEngine.wildShapeUsed;
+      if (willBeActive && prev.starryEngine.activeConstellation === 'none') {
+        wildShapeUsed = Math.min(prev.starryEngine.wildShapeMax, wildShapeUsed + 1);
+      }
+      return calculateKastorielStats({
+        ...prev,
+        starryEngine: {
+          ...prev.starryEngine,
+          activeConstellation: form,
+          starryFormActive: willBeActive,
+          wildShapeUsed,
+        },
+      });
+    });
+    if (form !== 'none') {
+      showToast('Starry Form Activated', `Kastoriel assumed the constellation of the ${form.toUpperCase()}!`, 'power');
+    }
+  }, [updateKastoriel, showToast]);
+
+  const rollKastorielCosmicOmen = useCallback((dieRoll?: number) => {
+    const roll = dieRoll !== undefined ? dieRoll : Math.floor(Math.random() * 6) + 1;
+    const omen: CosmicOmen = roll % 2 === 0 ? 'weal' : 'woe';
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        cosmicOmen: omen,
+        cosmicOmenRoll: roll,
+        cosmicOmenUsesUsed: 0,
+      },
+    }));
+    showToast('Cosmic Omen Rolled', `Rolled a ${roll}: ${omen.toUpperCase()}! (${omen === 'weal' ? 'Add 1d6 to a friend roll' : 'Subtract 1d6 from enemy roll'})`, 'info');
+  }, [updateKastoriel, showToast]);
+
+  const useKastorielCosmicOmen = useCallback(() => {
+    updateKastoriel((prev) => {
+      if (prev.starryEngine.cosmicOmenUsesUsed >= prev.starryEngine.cosmicOmenUsesMax) return prev;
+      return {
+        ...prev,
+        starryEngine: {
+          ...prev.starryEngine,
+          cosmicOmenUsesUsed: prev.starryEngine.cosmicOmenUsesUsed + 1,
+        },
+      };
+    });
+  }, [updateKastoriel]);
+
+  const useKastorielGuidingBolt = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        freeGuidingBoltUsed: Math.min(prev.starryEngine.freeGuidingBoltMax, prev.starryEngine.freeGuidingBoltUsed + 1),
+      },
+    }));
+  }, [updateKastoriel]);
+
+  const restoreKastorielGuidingBolt = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        freeGuidingBoltUsed: Math.max(0, prev.starryEngine.freeGuidingBoltUsed - 1),
+      },
+    }));
+  }, [updateKastoriel]);
+
+  const kastorielShortRest = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        wildShapeUsed: 0,
+        starryFormActive: false,
+        activeConstellation: 'none',
+      },
+    }));
+    showToast('Short Rest Finished', 'Kastoriel recovered both Wild Shape / Starry Form charges.', 'rest');
+  }, [updateKastoriel, showToast]);
+
+  const kastorielLongRest = useCallback(() => {
+    updateKastoriel((prev) => {
+      const resetSlots = { ...prev.spellcasting.slots };
+      for (const k in resetSlots) {
+        const key = Number(k);
+        resetSlots[key] = { ...resetSlots[key], used: 0 };
+      }
+      return {
+        ...prev,
+        combat: {
+          ...prev.combat,
+          currentHP: prev.combat.maxHP,
+          tempHP: 0,
+          hitDice: { ...prev.combat.hitDice, used: Math.max(0, prev.combat.hitDice.used - Math.floor(prev.combat.hitDice.total / 2)) },
+          deathSaves: { successes: 0, failures: 0 },
+        },
+        starryEngine: {
+          ...prev.starryEngine,
+          wildShapeUsed: 0,
+          starryFormActive: false,
+          activeConstellation: 'none',
+          freeGuidingBoltsUsed: 0,
+          cosmicOmen: null,
+          cosmicOmenUsed: 0,
+          cosmicOmenDieRoll: null,
+        },
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: resetSlots,
+        },
+      };
+    });
+    showToast('Long Rest Completed', 'Kastoriel restored HP to max. Spell slots, Wild Shapes, and Free Guiding Bolts recovered.', 'rest');
+  }, [updateKastoriel, showToast]);
+
+  const setKastorielInventory = useCallback((items: InventoryItem[]) => {
+    updateKastoriel((prev) => ({ ...prev, inventory: items }));
+  }, [updateKastoriel]);
+
+  const setKastorielCurrency = useCallback((currency: Currency) => {
+    updateKastoriel((prev) => ({ ...prev, currency }));
+  }, [updateKastoriel]);
+
+  const setKastorielNotes = useCallback((notes: string) => {
+    updateKastoriel((prev) => ({ ...prev, notes }));
+  }, [updateKastoriel]);
+
+  const setKastorielJournal = useCallback((journal: JournalEntry[]) => {
+    updateKastoriel((prev) => ({ ...prev, journal }));
+  }, [updateKastoriel]);
+
+  const setKastorielMysteries = useCallback((mysteries: CampaignMystery[]) => {
+    updateKastoriel((prev) => ({ ...prev, mysteries }));
+  }, [updateKastoriel]);
+
   const setSpellSlots = useCallback((slots: Record<number, { max: number; used: number }>) => {
     if (activeCharacterId === 'aria') {
       updateAria((prev) => ({
@@ -2101,6 +2524,15 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       const newSlotsMax = matchingSlot ? matchingSlot.max : wynel.pactEngine.slotsMax;
       setWynelPactSlotMax(newSlotsMax);
       showToast('Pact Slots Updated', "Wyn'el's pact slots updated", 'info');
+    } else if (activeCharacterId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        spellcasting: {
+          ...prev.spellcasting,
+          slots: { ...prev.spellcasting.slots, ...slots } as any,
+        },
+      }));
+      showToast('Spell Slots Updated', "Kastoriel's spell slots updated", 'info');
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
@@ -2120,7 +2552,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       }));
       showToast('Spell Slots Updated', 'Spell slots updated', 'info');
     }
-  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, wynel, setWynelPactSlotMax, customCharacters, updateCustomCharacter, showToast]);
+  }, [activeCharacterId, updateCharacter, updateAria, updateCyrus, wynel, setWynelPactSlotMax, updateKastoriel, customCharacters, updateCustomCharacter, showToast]);
 
   const setSpellSlotMax = useCallback((level: number, max: number) => {
     const validMax = Math.max(0, Math.floor(max));
@@ -2130,6 +2562,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       setCyrusSpellSlotMax(level, validMax);
     } else if (activeCharacterId === 'wynel') {
       setWynelPactSlotMax(validMax);
+    } else if (activeCharacterId === 'kastoriel') {
+      setKastorielSpellSlotMax(level, validMax);
     } else if (customCharacters[activeCharacterId]) {
       updateCustomCharacter(activeCharacterId, (prev) => {
         const current = prev.spellcasting?.slots?.[level] || { max: 0, used: 0 };
@@ -2148,7 +2582,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     } else {
       setVesperSpellSlotMax(level, validMax);
     }
-  }, [activeCharacterId, setAriaSpellSlotMax, setCyrusSpellSlotMax, setWynelPactSlotMax, customCharacters, updateCustomCharacter, setVesperSpellSlotMax, showToast]);
+  }, [activeCharacterId, setAriaSpellSlotMax, setCyrusSpellSlotMax, setWynelPactSlotMax, setKastorielSpellSlotMax, customCharacters, updateCustomCharacter, setVesperSpellSlotMax, showToast]);
 
   return (
     <CharacterContext.Provider
@@ -2247,6 +2681,27 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setWynelNotes,
         setWynelJournal,
         setWynelMysteries,
+        kastoriel,
+        setKastorielLevel,
+        setKastorielHP,
+        setKastorielTempHP,
+        useKastorielSpellSlot,
+        restoreKastorielSpellSlot,
+        setKastorielSpellSlotMax,
+        useKastorielWildShape,
+        restoreKastorielWildShape,
+        setKastorielStarryForm,
+        rollKastorielCosmicOmen,
+        useKastorielCosmicOmen,
+        useKastorielGuidingBolt,
+        restoreKastorielGuidingBolt,
+        kastorielShortRest,
+        kastorielLongRest,
+        setKastorielInventory,
+        setKastorielCurrency,
+        setKastorielNotes,
+        setKastorielJournal,
+        setKastorielMysteries,
         customMembers,
         setCustomMembers,
         customCharacters,

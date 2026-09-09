@@ -54,6 +54,7 @@ export default function CampaignMainMenu() {
     aria,
     cyrus,
     wynel,
+    kastoriel,
     navigateToCharacter,
     navigateToDM,
     setMysteries,
@@ -190,15 +191,15 @@ export default function CampaignMainMenu() {
   };
 
   // Total party size calculation
-  const totalMembersCount = 4 + customMembers.length; // Earl + Aria + Cyrus + Wyn'el + Custom
+  const totalMembersCount = 5 + customMembers.length; // Earl + Aria + Cyrus + Wyn'el + Kastoriel + Custom
 
   // Total treasury
-  const partyGold = character.currency.gp + aria.currency.gp + (cyrus?.currency?.gp || 0) + (wynel?.currency?.gp || 0);
-  const partyPlatinum = character.currency.pp + aria.currency.pp + (cyrus?.currency?.pp || 0) + (wynel?.currency?.pp || 0);
+  const partyGold = character.currency.gp + aria.currency.gp + (cyrus?.currency?.gp || 0) + (wynel?.currency?.gp || 0) + (kastoriel?.currency?.gp || 0);
+  const partyPlatinum = character.currency.pp + aria.currency.pp + (cyrus?.currency?.pp || 0) + (wynel?.currency?.pp || 0) + (kastoriel?.currency?.pp || 0);
 
   // We want to render 6 core slots + 1 guest slot = total 7 slots on the tavern board
-  // Slots 0, 1, 2, 3 are Earl, Aria, Cyrus & Wyn'el. Slots 4..6 are custom or unassigned wooden pegs.
-  const emptySlotsCount = Math.max(0, 3 - customMembers.length); // 3 available slots to reach 7 total party members
+  // Slots 0, 1, 2, 3, 4 are Earl, Aria, Cyrus, Wyn'el & Kastoriel. Slots 5..6 are custom or unassigned wooden pegs.
+  const emptySlotsCount = Math.max(0, 2 - customMembers.length); // 2 available slots to reach 7 total party members
 
   return (
     <div className="space-y-10 animate-fade-in-up py-2 max-w-6xl mx-auto font-['Spectral',serif]">
@@ -636,6 +637,97 @@ export default function CampaignMainMenu() {
 
             <button
               onClick={() => navigateToCharacter('wynel')}
+              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+            >
+              <span>📜 Inspect Hero Sheet</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+
+          {/* ================================================================
+             ROSTER CARD 5: KASTORIEL, THE GROUNDED STAR
+             ================================================================ */}
+          <div className="medieval-card p-6 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,158,11,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(16,18,30,0.98)_0%,rgba(8,10,18,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(245,158,11,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+            {/* Corner Filigree Glyphs */}
+            <span className="medieval-corner tl text-amber-400/70">❖</span>
+            <span className="medieval-corner tr text-amber-400/70">❖</span>
+            <span className="medieval-corner bl text-amber-400/70">❖</span>
+            <span className="medieval-corner br text-amber-400/70">❖</span>
+
+            {/* Inner Hairline Filigree Border */}
+            <div className="absolute inset-[5px] border border-amber-500/20 rounded-xl pointer-events-none group-hover:border-amber-400/40 transition-colors" />
+
+            {/* Heraldic Top Ribbon Banner */}
+            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(245,158,11,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between shadow-xs">
+              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-amber-300 flex items-center gap-1.5">
+                <span>⭐</span> Starlight Coven
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-300 font-semibold">
+                The Grounded Star
+              </span>
+            </div>
+
+            <div className="space-y-4 relative z-10">
+              {/* Header & Portrait Block */}
+              <div className="flex items-start gap-4">
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
+                    <img
+                      src={getPortraitUrl('kastoriel')}
+                      alt="Kastoriel, The Grounded Star"
+                      className="w-full h-full object-cover object-[center_20%] transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  {/* Embossed Wax Seal Stamp */}
+                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-xs text-amber-100">
+                    ⭐
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                      Kastoriel
+                    </h3>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 uppercase tracking-wider shrink-0 shadow-inner">
+                      Lv {kastoriel.level}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-mono text-amber-300 font-semibold flex items-center gap-1">
+                    <Sparkles size={12} className="text-amber-400" /> Half-Elf &bull; Stars Druid
+                  </p>
+
+                  <p className="text-xs text-amber-200/90 italic font-serif">
+                    &ldquo;The Grounded Star&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              {/* Aged Parchment Lore Fragment */}
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic">
+                &ldquo;Exiled star druid bound to the blade Pendulum, guiding celestial constellations to track and protect his twin Poluxien.&rdquo;
+              </div>
+
+              {/* Clean 3-Col Medieval Stat Plaque */}
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono text-xs">
+                <div>
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-amber-400 text-sm">{kastoriel.combat.currentHP}/{kastoriel.combat.maxHP}</span>
+                </div>
+                <div className="border-x border-amber-500/20">
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-sm">{kastoriel.combat.ac}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-amber-300 text-sm">{kastoriel.spellcasting.spellSaveDC}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigateToCharacter('kastoriel')}
               className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>

@@ -70,4 +70,19 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
     primaryColor: '#ef4444', // Scarlet
     accentColor: '#f43f5e',
   },
+  {
+    id: 'kastoriel',
+    name: 'Kastoriel',
+    title: 'The Grounded Star',
+    race: 'Half-Elf',
+    characterClass: 'Druid',
+    subclass: 'Circle of the Stars',
+    level: 10,
+    player: 'Friend',
+    isUser: false,
+    portraitUrl: '/kastoriel-portrait.png',
+    primaryColor: '#f59e0b', // Amber Starlight Gold
+    accentColor: '#fb923c',  // Orange Starlight
+  },
 ];
+
