@@ -36,6 +36,7 @@ import type { KastorielState } from '@/lib/kastoriel-engine';
 import type { CharacterState, AbilityName } from '@/lib/types';
 import { getModifier } from '@/lib/character-engine';
 import { recalculateForLevel } from '@/lib/persistence';
+import { getCharacterStory } from '@/lib/character-stories';
 
 const ALL_SKILLS_LIST: Array<{ name: import('@/lib/types').SkillName; ability: AbilityName }> = [
   { name: 'Acrobatics', ability: 'DEX' },
@@ -107,6 +108,8 @@ export default function Home() {
     setAriaInventory,
     setAriaCurrency,
     setAriaNotes,
+    setAriaJournal,
+    setAriaMysteries,
     // Cyrus state
     cyrus,
     setCyrusLevel,
@@ -121,6 +124,8 @@ export default function Home() {
     setCyrusInventory,
     setCyrusCurrency,
     setCyrusNotes,
+    setCyrusJournal,
+    setCyrusMysteries,
     // Wyn'el state
     wynel,
     setWynelLevel,
@@ -305,18 +310,25 @@ export default function Home() {
         phantomMurmursActive: false,
         altarTraumaActive: false,
       },
-      dossier: {
-        backstory: {
-          orphanageMassacre: ariaState.notes,
-          fatherMalachi: 'Bonds of Celestial Weaving: Connected to the Silver Moon council.',
-          apprenticeApothecary: 'Mastery over herbal and astral rearguard alchemy.',
-          guildScoutVincent: "Allied with Vesper Ashwood during the Baldur's Gate infiltration.",
-          bossDexter: 'Neutral status with the Shadow Guilds.',
-        },
-        mysteries: ariaState.mysteries,
-        journal: ariaState.journal,
-        playerNotes: ariaState.notes,
-      },
+      dossier: (() => {
+        const ariaStory = getCharacterStory('aria');
+        return {
+          title: ariaStory.title,
+          subtitle: ariaStory.subtitle,
+          chapters: ariaStory.chapters,
+          npcs: ariaStory.npcs,
+          backstory: {
+            orphanageMassacre: ariaState.notes,
+            fatherMalachi: 'Bonds of Celestial Weaving: Connected to the Silver Moon council.',
+            apprenticeApothecary: 'Mastery over herbal and astral rearguard alchemy.',
+            guildScoutVincent: "Allied with Vesper Ashwood during the Baldur's Gate infiltration.",
+            bossDexter: 'Neutral status with the Shadow Guilds.',
+          },
+          mysteries: ariaState.mysteries,
+          journal: ariaState.journal,
+          playerNotes: ariaState.notes,
+        };
+      })(),
       version: 1,
       lastSaved: new Date().toISOString(),
     };
@@ -445,18 +457,25 @@ export default function Home() {
         phantomMurmursActive: false,
         altarTraumaActive: false,
       },
-      dossier: {
-        backstory: {
-          orphanageMassacre: cyrusState.notes,
-          fatherMalachi: 'Oracle Temple Priest of Apollo',
-          apprenticeApothecary: 'Greek Divination & Solar Herbcraft',
-          guildScoutVincent: 'Allied with Vesper & Aria',
-          bossDexter: 'Neutral',
-        },
-        mysteries: [],
-        journal: [],
-        playerNotes: cyrusState.notes,
-      },
+      dossier: (() => {
+        const cyrusStory = getCharacterStory('cyrus');
+        return {
+          title: cyrusStory.title,
+          subtitle: cyrusStory.subtitle,
+          chapters: cyrusStory.chapters,
+          npcs: cyrusStory.npcs,
+          backstory: {
+            orphanageMassacre: cyrusState.notes,
+            fatherMalachi: 'Oracle Temple Priest of Apollo',
+            apprenticeApothecary: 'Greek Divination & Solar Herbcraft',
+            guildScoutVincent: 'Allied with Vesper & Aria',
+            bossDexter: 'Neutral',
+          },
+          mysteries: cyrusState.mysteries,
+          journal: cyrusState.journal,
+          playerNotes: cyrusState.notes,
+        };
+      })(),
       version: 1,
       lastSaved: new Date().toISOString(),
     };
@@ -604,18 +623,25 @@ export default function Home() {
         phantomMurmursActive: false,
         altarTraumaActive: false,
       },
-      dossier: {
-        backstory: {
-          orphanageMassacre: wynelState.notes,
-          fatherMalachi: 'House Aeluin Noble Archives',
-          apprenticeApothecary: "Mother's fused grimoire",
-          guildScoutVincent: 'Allied party member',
-          bossDexter: 'Neutral',
-        },
-        mysteries: wynelState.mysteries,
-        journal: wynelState.journal,
-        playerNotes: wynelState.notes,
-      },
+      dossier: (() => {
+        const wynelStory = getCharacterStory('wynel');
+        return {
+          title: wynelStory.title,
+          subtitle: wynelStory.subtitle,
+          chapters: wynelStory.chapters,
+          npcs: wynelStory.npcs,
+          backstory: {
+            orphanageMassacre: wynelState.notes,
+            fatherMalachi: 'House Aeluin Noble Archives',
+            apprenticeApothecary: "Mother's fused grimoire",
+            guildScoutVincent: 'Allied party member',
+            bossDexter: 'Neutral',
+          },
+          mysteries: wynelState.mysteries,
+          journal: wynelState.journal,
+          playerNotes: wynelState.notes,
+        };
+      })(),
       version: 1,
       lastSaved: new Date().toISOString(),
     };
@@ -714,18 +740,25 @@ export default function Home() {
         phantomMurmursActive: false,
         altarTraumaActive: false,
       },
-      dossier: {
-        backstory: {
-          orphanageMassacre: kastorielState.notes,
-          fatherMalachi: 'Starlight Coven High Priest',
-          apprenticeApothecary: "The Starlight Coven & Ritual N'elestel",
-          guildScoutVincent: 'Allied party member',
-          bossDexter: 'Neutral',
-        },
-        mysteries: kastorielState.mysteries,
-        journal: kastorielState.journal,
-        playerNotes: kastorielState.notes,
-      },
+      dossier: (() => {
+        const kastorielStory = getCharacterStory('kastoriel');
+        return {
+          title: kastorielStory.title,
+          subtitle: kastorielStory.subtitle,
+          chapters: kastorielStory.chapters,
+          npcs: kastorielStory.npcs,
+          backstory: {
+            orphanageMassacre: kastorielState.notes,
+            fatherMalachi: 'Starlight Coven High Priest',
+            apprenticeApothecary: "The Starlight Coven & Ritual N'elestel",
+            guildScoutVincent: 'Allied party member',
+            bossDexter: 'Neutral',
+          },
+          mysteries: kastorielState.mysteries,
+          journal: kastorielState.journal,
+          playerNotes: kastorielState.notes,
+        };
+      })(),
       version: 1,
       lastSaved: new Date().toISOString(),
     };
@@ -733,16 +766,16 @@ export default function Home() {
 
   // Resolve Active Character State & Anchored Theme
   const activeCharState: CharacterState = isVesper
-    ? character
+    ? { ...character, id: 'vesper' }
     : isCyrus
-    ? mapCyrusToCharacterState(cyrus)
+    ? { ...mapCyrusToCharacterState(cyrus), id: 'cyrus' }
     : isWynel
-    ? mapWynelToCharacterState(wynel)
+    ? { ...mapWynelToCharacterState(wynel), id: 'wynel' }
     : isAria
-    ? mapAriaToCharacterState(aria)
+    ? { ...mapAriaToCharacterState(aria), id: 'aria' }
     : isKastoriel
-    ? mapKastorielToCharacterState(kastoriel)
-    : (customCharacters[activeCharacterId] || character);
+    ? { ...mapKastorielToCharacterState(kastoriel), id: 'kastoriel' }
+    : (customCharacters[activeCharacterId] ? { ...customCharacters[activeCharacterId], id: activeCharacterId } : { ...character, id: 'vesper' });
 
   const activeTheme = isVesper
     ? { primary: '#dc2626', accent: '#ffd700', portraitUrl: getPortraitUrl('vesper') }
@@ -916,6 +949,24 @@ export default function Home() {
     else if (isWynel) setWynelNotes(notes);
     else if (isKastoriel) setKastorielNotes(notes);
     else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, dossier: { ...prev.dossier, playerNotes: notes } }));
+  };
+
+  const handleJournalChange = (journal: import('@/lib/types').JournalEntry[]) => {
+    if (isVesper) setJournal(journal);
+    else if (isAria) setAriaJournal(journal);
+    else if (isCyrus) setCyrusJournal(journal);
+    else if (isWynel) setWynelJournal(journal);
+    else if (isKastoriel) setKastorielJournal(journal);
+    else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, dossier: { ...prev.dossier, journal } }));
+  };
+
+  const handleMysteriesChange = (mysteries: import('@/lib/types').CampaignMystery[]) => {
+    if (isVesper) setMysteries(mysteries);
+    else if (isAria) setAriaMysteries(mysteries);
+    else if (isCyrus) setCyrusMysteries(mysteries);
+    else if (isWynel) setWynelMysteries(mysteries);
+    else if (isKastoriel) setKastorielMysteries(mysteries);
+    else updateCustomCharacter(activeCharacterId, (prev) => ({ ...prev, dossier: { ...prev.dossier, mysteries } }));
   };
 
   const handleUseSpellSlot = (lvl: number) => {
@@ -1281,67 +1332,36 @@ export default function Home() {
         <TavernBackground />
       )}
 
-      {/* Global Real-Time Sync & Navigation Top Bar (Desktop / Tablet Only) */}
-      <header className="sticky top-0 z-40 bg-[#08090d]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-1.5 hidden md:block">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            {activeView === 'character' || activeView === 'dm' ? (
-              <button
-                onClick={navigateToMenu}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
-              >
-                <span>&larr;</span>
-                <span>Guildhall</span>
-              </button>
-            ) : (
+      {/* Top Bar when in Guildhall Menu */}
+      {activeView === 'menu' && (
+        <header className="sticky top-0 z-40 bg-[#08090d]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-6 py-2.5 hidden md:block shadow-md">
+          <div className="max-w-[1720px] mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-200/90 font-serif">
                 <span>🏰</span>
                 <span>The Ashen Pact</span>
               </div>
-            )}
-            <span className="text-zinc-600 text-xs hidden sm:inline">&bull;</span>
-            <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">
-              {activeView === 'menu'
-                ? 'Campaign Hub'
-                : activeView === 'dm'
-                ? 'Dungeon Master Tactical Command'
-                : activeCharState.name}
-            </span>
-          </div>
+              <span className="text-zinc-600 text-xs">&bull;</span>
+              <span className="text-[11px] font-mono text-zinc-400">
+                Campaign Hub &amp; Hero Vault
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2">
-            {activeView !== 'dm' ? (
-              <button
-                onClick={navigateToDM}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs"
-                title="Launch DM Tactical Console"
-              >
-                <Swords size={13} className="text-amber-400" />
-                <span>DM</span>
-                <span className="hidden sm:inline"> Console</span>
-              </button>
-            ) : (
-              <button
-                onClick={navigateToMenu}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer"
-              >
-                <span>Exit DM</span>
-              </button>
-            )}
-            <SyncStatusBadge />
+            <div className="flex items-center gap-2">
+              <SyncStatusBadge />
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
+      {/* Single Unified Header when in Character Sheet */}
       {activeView === 'character' && (
-        <div className="hidden md:block">
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
+        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       )}
 
       {/* Main View Area */}
       {activeView === 'menu' ? (
-        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 flex-1">
+        <main className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 flex-1">
           <CampaignMainMenu />
         </main>
       ) : activeView === 'dm' ? (
@@ -1358,7 +1378,7 @@ export default function Home() {
           />
         </div>
       ) : (
-        <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 pb-28 md:pb-6 flex-1">
+        <main className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 pb-28 md:pb-6 flex-1">
           <div className="animate-fade-in-up">
             <UnifiedCharacterSheet
               character={activeCharState}
@@ -1377,8 +1397,8 @@ export default function Home() {
               onInventoryChange={handleInventoryChange}
               onCurrencyChange={handleCurrencyChange}
               onNotesChange={handleNotesChange}
-              onJournalChange={isVesper ? setJournal : isWynel ? setWynelJournal : isKastoriel ? setKastorielJournal : undefined}
-              onMysteriesChange={isVesper ? setMysteries : isWynel ? setWynelMysteries : isKastoriel ? setKastorielMysteries : undefined}
+              onJournalChange={handleJournalChange}
+              onMysteriesChange={handleMysteriesChange}
               onAbilityBaseScoreChange={updateAbilityBaseScore}
               onToggleSkillProficiency={toggleSkillProficiency}
               onUseSpellSlot={handleUseSpellSlot}
@@ -1428,6 +1448,16 @@ export default function Home() {
           <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-parchment-dim)] font-[family-name:var(--font-heading)]">
             The Ashen Pact &bull; D&amp;D 5e Interactive Campaign Hub
           </p>
+          <div className="mt-2">
+            <a
+              href="/dm"
+              className="text-[10px] font-mono text-zinc-600 hover:text-amber-400/80 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              title="Dungeon Master Sanctum (Restricted Access)"
+            >
+              <span>⚔️</span>
+              <span>DM Sanctum Portal</span>
+            </a>
+          </div>
         </footer>
       )}
     </>

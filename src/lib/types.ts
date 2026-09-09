@@ -124,13 +124,35 @@ export interface JournalEntry {
   category: 'quest' | 'target' | 'note' | 'session';
 }
 
+export interface BackstoryChapter {
+  id: string;
+  title: string;
+  subtitle?: string;
+  content: string;
+  icon?: string;
+}
+
+export interface CharacterNPC {
+  name: string;
+  role: string;
+  relationship?: string;
+  description: string;
+  status?: string;
+  icon?: string;
+}
+
 export interface DossierData {
+  title?: string;
+  subtitle?: string;
+  chapters?: BackstoryChapter[];
+  npcs?: CharacterNPC[];
   backstory: {
     orphanageMassacre: string;
     fatherMalachi: string;
     apprenticeApothecary: string;
     guildScoutVincent: string;
     bossDexter: string;
+    [key: string]: string | undefined;
   };
   mysteries: CampaignMystery[];
   journal: JournalEntry[];
@@ -202,6 +224,7 @@ export interface CombatState {
 
 export interface CharacterState {
   // Core
+  id?: string;
   name: string;
   alias: string;
   race: string;
@@ -255,5 +278,5 @@ export interface CharacterState {
   lastSaved: string;
 }
 
-export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier' | 'spells' | 'progression';
+export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier' | 'spells' | 'progression' | 'chronicle';
 

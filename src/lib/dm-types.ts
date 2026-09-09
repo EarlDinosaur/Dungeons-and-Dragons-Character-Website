@@ -75,6 +75,7 @@ export interface Combatant {
   name: string;
   isPlayer: boolean;
   characterId?: string;
+  avatarUrl?: string;
   initiative: number;
   initiativeModifier: number;
   ac: number;
@@ -82,10 +83,11 @@ export interface Combatant {
   maxHP: number;
   tempHP: number;
   conditions: Array<{ name: string; durationRounds?: number; source?: string }>;
-  isConcentrating: boolean;
+  isConcentrating?: boolean;
   concentrationSpell?: string;
-  hasUsedReaction: boolean;
+  hasUsedReaction?: boolean;
   notes?: string;
+  crOrLevel?: string;
 }
 
 /**
@@ -98,12 +100,47 @@ export interface EncounterState {
   round: number;
   currentTurnIndex: number;
   combatants: Combatant[];
-  history: Array<{
+  history?: Array<{
     round: number;
     turn: string;
     action: string;
     timestamp: number;
   }>;
+}
+
+/**
+ * Multi-Note Campaign Chronicle System
+ * Notes can be private (DM Eyes Only) or shared to specific character sheets.
+ */
+export type DMNoteCategory = 'quest' | 'secret' | 'lore' | 'handout' | 'clue' | 'combat';
+
+export interface DMNote {
+  id: string;
+  title: string;
+  content: string; // Markdown / rich text
+  category: DMNoteCategory;
+  targetCharacterId: string; // 'all' for party-wide, or 'vesper', 'aria', 'cyrus', 'wynel', 'kastoriel', custom ID
+  isPlayerVisible: boolean; // if true, appears on the player's sheet!
+  pinned?: boolean;
+  tags: string[];
+  author?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Atmosphere & Session Environmental State
+ */
+export type TimeOfDay = 'Dawn' | 'Morning' | 'Noon' | 'Afternoon' | 'Dusk' | 'Night' | 'Midnight';
+export type WeatherCondition = 'Clear Skies' | 'Overcast' | 'Dense Fog' | 'Gentle Rain' | 'Thunderstorm' | 'Blood Mist' | 'Howling Blizzard';
+
+export interface AtmosphereState {
+  sessionNumber: number;
+  inGameDay: number;
+  timeOfDay: TimeOfDay;
+  weather: WeatherCondition;
+  locationName: string;
+  ambianceNote?: string;
 }
 
 /**
@@ -126,3 +163,4 @@ export interface ScratchpadNote {
   roundTimestamp?: number;
   updatedAt: number;
 }
+

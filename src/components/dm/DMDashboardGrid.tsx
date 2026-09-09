@@ -1,59 +1,31 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
-  LayoutGrid,
-  Maximize2,
-  Minimize2,
-  Plus,
-  X,
-  Sparkles,
-  Shield,
-  Heart,
+  Users,
   Swords,
+  Scroll,
   BookOpen,
-  Search,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Move,
-  Tag,
-  RotateCcw,
+  CloudSun,
+  Dices,
+  ChevronDown,
+  Sparkles,
   Sliders,
-  FileText,
-  Activity,
+  Shield,
+  X,
+  ExternalLink,
+  ChevronRight,
+  Info,
 } from 'lucide-react';
-import type {
-  GridWidgetConfig,
-  LayoutPresetId,
-  PartyMemberHUDState,
-  ScratchpadNote,
-} from '@/lib/dm-types';
-import DMPartyHUDCard from './DMPartyHUDCard';
+import type { PartyMemberHUDState, AtmosphereState } from '@/lib/dm-types';
+import { useCharacter } from '@/app/providers';
+import DMPartyRosterView from './DMPartyRosterView';
+import DMCombatEngine from './DMCombatEngine';
+import DMCampaignChronicle from './DMCampaignChronicle';
+import DMRulesReference from './DMRulesReference';
+import DMAtmosphereBar from './DMAtmosphereBar';
 
-const DEFAULT_PRESETS: Record<LayoutPresetId, GridWidgetConfig[]> = {
-  combat: [
-    { id: 'w-party', type: 'party_hud', title: 'Party Status HUD', colSpan: 3, rowSpan: 2, order: 0 },
-    { id: 'w-initiative', type: 'initiative_tracker', title: 'Combat Initiative & Turns', colSpan: 1, rowSpan: 2, order: 1 },
-    { id: 'w-combat', type: 'combat_actions', title: 'Quick Actions & Saves', colSpan: 2, rowSpan: 1, order: 2 },
-    { id: 'w-dice', type: 'dice_roller', title: 'DM Dice & Checks', colSpan: 2, rowSpan: 1, order: 3 },
-  ],
-  social: [
-    { id: 'w-party', type: 'party_hud', title: 'Party Passive Senses & Lore', colSpan: 2, rowSpan: 2, order: 0 },
-    { id: 'w-notes', type: 'scratchpad', title: 'Contextual Session Log', colSpan: 2, rowSpan: 2, order: 1 },
-    { id: 'w-compendium', type: 'rule_compendium', title: 'NPC & Location Compendium', colSpan: 4, rowSpan: 1, order: 2 },
-  ],
-  prep: [
-    { id: 'w-notes', type: 'scratchpad', title: 'DM Campaign Ledger', colSpan: 2, rowSpan: 2, order: 0 },
-    { id: 'w-compendium', type: 'rule_compendium', title: 'SRD Rules & Monster Vault', colSpan: 2, rowSpan: 2, order: 1 },
-    { id: 'w-progression', type: 'progression_overrides', title: 'XP & Milestone Engine', colSpan: 4, rowSpan: 1, order: 2 },
-  ],
-  custom: [
-    { id: 'w-party', type: 'party_hud', title: 'Party HUD', colSpan: 2, rowSpan: 2, order: 0 },
-    { id: 'w-initiative', type: 'initiative_tracker', title: 'Initiative', colSpan: 2, rowSpan: 1, order: 1 },
-    { id: 'w-notes', type: 'scratchpad', title: 'Scratchpad', colSpan: 2, rowSpan: 1, order: 2 },
-  ],
-};
+export type DMWorkspaceTab = 'roster' | 'combat' | 'chronicle' | 'rules';
 
 interface DMDashboardGridProps {
   partyMembers: PartyMemberHUDState[];
@@ -64,6 +36,7 @@ interface DMDashboardGridProps {
   onBulkRest?: (type: 'short' | 'long') => void;
   onInspectCharacter?: (charId: string) => void;
   onBackToMenu?: () => void;
+  customHeaderActions?: React.ReactNode;
 }
 
 export default function DMDashboardGrid({
@@ -75,462 +48,271 @@ export default function DMDashboardGrid({
   onBulkRest,
   onInspectCharacter,
   onBackToMenu,
+  customHeaderActions,
 }: DMDashboardGridProps) {
-  // Preset & Widget State
-  const [activePreset, setActivePreset] = useState<LayoutPresetId>('combat');
-  const [widgets, setWidgets] = useState<GridWidgetConfig[]>(DEFAULT_PRESETS.combat);
+  const { dmNotes, addDMNote, updateDMNote, deleteDMNote, toggleNoteVisibility } = useCharacter();
 
-  // Side Drawer State
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [drawerTab, setDrawerTab] = useState<'notes' | 'compendium' | 'logs'>('notes');
+  // Active Workspace Tab (Default to Party Roster)
+  const [activeTab, setActiveTab] = useState<DMWorkspaceTab>('roster');
 
-  // Scratchpad Note State with [[Entity]] and #tag tracking
-  const [scratchText, setScratchText] = useState<string>(
-    '#clue The shadows around [[Vesper Ashwood]] pulse with necromantic resonance.\n@spell Misty Step was cast to evade the city watch.'
-  );
-  const [searchFilter, setSearchFilter] = useState('');
+  // Atmosphere & Secret Dice Drawer/Panel State
+  const [isToolsOpen, setIsToolsOpen] = useState<boolean>(false);
+  const [atmosphere, setAtmosphere] = useState<AtmosphereState>({
+    sessionNumber: 12,
+    inGameDay: 48,
+    timeOfDay: 'Dusk',
+    weather: 'Dense Fog',
+    locationName: 'The Sunken Crypts of Ashenford',
+  });
 
-  // Switch Presets
-  const handleSelectPreset = (preset: LayoutPresetId) => {
-    setActivePreset(preset);
-    setWidgets(DEFAULT_PRESETS[preset]);
-  };
+  // Bulk Rest Dropdown
+  const [isRestMenuOpen, setIsRestMenuOpen] = useState<boolean>(false);
 
-  // Reorder & Resize Helpers
-  const handleToggleColSpan = (widgetId: string) => {
-    setWidgets((prev) =>
-      prev.map((w) => {
-        if (w.id !== widgetId) return w;
-        const nextSpan = w.colSpan >= 4 ? 1 : w.colSpan + 1;
-        return { ...w, colSpan: nextSpan };
-      })
-    );
-  };
-
-  const handleToggleMinimize = (widgetId: string) => {
-    setWidgets((prev) =>
-      prev.map((w) => (w.id === widgetId ? { ...w, minimized: !w.minimized } : w))
-    );
-  };
-
-  const handleRemoveWidget = (widgetId: string) => {
-    setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
-  };
-
-  const handleAddWidget = (type: GridWidgetConfig['type']) => {
-    const newWidget: GridWidgetConfig = {
-      id: `w-${type}-${Date.now()}`,
-      type,
-      title: type.replace('_', ' ').toUpperCase(),
-      colSpan: 2,
-      rowSpan: 1,
-      order: widgets.length,
-    };
-    setWidgets((prev) => [...prev, newWidget]);
-  };
-
-  // Auto-linked Preview Generator for Scratchpad
-  const parsedEntitiesAndTags = useMemo(() => {
-    const entityMatches = Array.from(scratchText.matchAll(/\[\[(.*?)\]\]/g)).map((m) => m[1]);
-    const spellMatches = Array.from(scratchText.matchAll(/@([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
-    const tagMatches = Array.from(scratchText.matchAll(/#([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
-    return {
-      entities: Array.from(new Set(entityMatches)),
-      spells: Array.from(new Set(spellMatches)),
-      tags: Array.from(new Set(tagMatches)),
-    };
-  }, [scratchText]);
+  const TABS: Array<{
+    id: DMWorkspaceTab;
+    label: string;
+    icon: React.ElementType;
+    badge?: number | string;
+    badgeColor?: string;
+  }> = [
+    {
+      id: 'roster',
+      label: 'Party Roster',
+      icon: Users,
+      badge: partyMembers.length,
+      badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+    },
+    {
+      id: 'combat',
+      label: 'Combat Engine',
+      icon: Swords,
+    },
+    {
+      id: 'chronicle',
+      label: 'Chronicle & Notes',
+      icon: Scroll,
+      badge: dmNotes.length,
+      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800/80',
+    },
+    {
+      id: 'rules',
+      label: '5e Rules SRD',
+      icon: BookOpen,
+    },
+  ];
 
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] flex flex-col bg-[#07080b] text-zinc-200">
-      {/* 1. DM Control Bar & Preset Navigation */}
-      <header className="p-3 bg-[#0a0c12]/95 border-b border-zinc-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {onBackToMenu && (
-            <button
-              onClick={onBackToMenu}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
-            >
-              <span>&larr;</span>
-              <span>Guildhall</span>
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Sliders size={18} />
+    <div className="relative min-h-[calc(100vh-4rem)] flex flex-col bg-[#07080b] text-zinc-200">
+      {/* 1. Primary DM Command Header Bar */}
+      <header className="px-4 py-2.5 bg-[#08090d]/95 border-b border-amber-500/20 backdrop-blur-md sticky top-0 z-40 shadow-lg">
+        <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+          {/* Left: Brand & Navigation */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {onBackToMenu && (
+              <button
+                onClick={onBackToMenu}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs shrink-0"
+                title="Return to Hero Vault"
+              >
+                <span>&larr;</span>
+                <span className="hidden sm:inline">Guildhall</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-2 pr-2 border-r border-zinc-800/80 shrink-0">
+              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-xs">
+                <Shield size={15} />
+              </div>
+              <div>
+                <h1 className="text-xs font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider whitespace-nowrap">
+                  DM Sanctum
+                </h1>
+                <p className="text-[9px] text-zinc-400 font-mono hidden xl:block whitespace-nowrap">
+                  Session {atmosphere.sessionNumber} &bull; Day {atmosphere.inGameDay}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-sm font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider">
-                DM Tactical Command
-              </h1>
-              <p className="text-[10px] text-zinc-400 font-mono">Live Campaign Orchestrator</p>
-            </div>
+
+            {/* Focused Workspace Switcher Tabs */}
+            <nav className="flex items-center gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800/90 font-mono text-xs shadow-inner shrink-0">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/15 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.15)] font-bold'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/70 border border-transparent'
+                    }`}
+                  >
+                    <Icon size={13} className={isActive ? 'text-amber-400' : 'text-zinc-500'} />
+                    <span>{tab.label}</span>
+                    {tab.badge !== undefined && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                          isActive
+                            ? 'bg-amber-500/30 text-amber-200 border-amber-400/50 font-bold'
+                            : tab.badgeColor || 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                        }`}
+                      >
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Layout Preset Chips */}
-          <div className="flex items-center gap-1 bg-zinc-900/80 p-1 rounded-lg border border-zinc-800 text-xs font-mono overflow-x-auto">
-            {(['combat', 'social', 'prep', 'custom'] as const).map((preset) => (
-              <button
-                key={preset}
-                onClick={() => handleSelectPreset(preset)}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer capitalize font-medium ${
-                  activePreset === preset
-                    ? 'bg-amber-500 text-black font-bold shadow-xs'
-                    : 'text-zinc-400 hover:text-zinc-200'
+          {/* Right: Tools Toggle, Rest Actions & Injected Page Controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Atmosphere & Secret Dice Drawer Toggle */}
+            <button
+              onClick={() => setIsToolsOpen(!isToolsOpen)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                isToolsOpen
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.15)] font-bold'
+                  : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+              }`}
+              title="Toggle Environment Atmosphere & Quick Secret Dice Roller"
+            >
+              <Dices size={13} className="text-amber-400" />
+              <span className="font-bold">Tools</span>
+              <span className="hidden 2xl:inline text-zinc-400 text-[10px]">
+                {atmosphere.timeOfDay} &bull; {atmosphere.weather}
+              </span>
+              <span
+                className={`text-[9px] px-1 py-0.2 rounded bg-zinc-800/80 border border-zinc-700/80 text-zinc-400 transition-transform ${
+                  isToolsOpen ? 'rotate-180' : ''
                 }`}
               >
-                {preset}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Global DM Action Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {onBulkRest && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => onBulkRest('short')}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-xs font-mono text-zinc-300 hover:text-amber-300 transition-colors cursor-pointer"
-                title="Trigger Short Rest for all party members"
-              >
-                Party SR
-              </button>
-              <button
-                onClick={() => onBulkRest('long')}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-xs font-mono text-zinc-300 hover:text-amber-300 transition-colors cursor-pointer"
-                title="Trigger Long Rest for all party members"
-              >
-                Party LR
-              </button>
-            </div>
-          )}
-
-          {/* Add Widget Dropdown */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-200 cursor-pointer">
-              <Plus size={13} />
-              <span>Add Widget</span>
+                &darr;
+              </span>
             </button>
-            <div className="absolute right-0 top-full mt-1 w-44 bg-[#0e1017] border border-zinc-800 rounded-lg shadow-xl p-1 hidden group-hover:block z-30 text-xs font-mono">
+
+            {/* Quick Bulk Rest Trigger */}
+            {onBulkRest && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsRestMenuOpen(!isRestMenuOpen)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer"
+                  title="Trigger Party Rest"
+                >
+                  <Sparkles size={13} className="text-amber-400" />
+                  <span>Rest</span>
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform text-zinc-500 ${isRestMenuOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {isRestMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-20"
+                      onClick={() => setIsRestMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#0d0f17] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-30 font-mono text-xs space-y-1">
+                      <button
+                        onClick={() => {
+                          onBulkRest('short');
+                          setIsRestMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 cursor-pointer transition-colors text-left"
+                      >
+                        <span className="font-bold">Party Short Rest</span>
+                        <span className="text-[10px] text-zinc-500">1 Hr</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onBulkRest('long');
+                          setIsRestMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-amber-500/10 text-zinc-300 hover:text-amber-400 cursor-pointer transition-colors text-left"
+                      >
+                        <span className="font-bold">Party Long Rest</span>
+                        <span className="text-[10px] text-zinc-500">8 Hr</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Injected Actions (Sync Status, Change Passcode, Lock Sanctum) */}
+            {customHeaderActions}
+          </div>
+        </div>
+
+        {/* Collapsible Atmosphere & Quick Secret Dice Drawer */}
+        {isToolsOpen && (
+          <div className="w-full max-w-[1720px] mx-auto mt-2.5 pt-2.5 border-t border-zinc-800/80 animate-fade-in">
+            <div className="relative">
+              <DMAtmosphereBar
+                atmosphere={atmosphere}
+                onUpdateAtmosphere={(updates) => setAtmosphere((prev) => ({ ...prev, ...updates }))}
+              />
               <button
-                onClick={() => handleAddWidget('party_hud')}
-                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 cursor-pointer"
+                onClick={() => setIsToolsOpen(false)}
+                className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+                title="Collapse Tools"
               >
-                Party HUD
-              </button>
-              <button
-                onClick={() => handleAddWidget('initiative_tracker')}
-                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 cursor-pointer"
-              >
-                Initiative Tracker
-              </button>
-              <button
-                onClick={() => handleAddWidget('scratchpad')}
-                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 cursor-pointer"
-              >
-                Scratchpad
+                <X size={14} />
               </button>
             </div>
           </div>
-
-          {/* Toggle Collapsible Drawer */}
-          <button
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
-              isDrawerOpen
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/60'
-                : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800'
-            }`}
-          >
-            <FileText size={13} />
-            <span>Notes</span>
-            {isDrawerOpen ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-          </button>
-        </div>
+        )}
       </header>
 
-      {/* 2. Main Workspace Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Modular Grid Area */}
-        <main className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-max">
-            {widgets.map((widget) => {
-              const colClass =
-                widget.colSpan === 4
-                  ? 'md:col-span-2 lg:col-span-4'
-                  : widget.colSpan === 3
-                  ? 'md:col-span-2 lg:col-span-3'
-                  : widget.colSpan === 2
-                  ? 'md:col-span-2'
-                  : 'col-span-1';
-
-              return (
-                <section
-                  key={widget.id}
-                  className={`${colClass} flex flex-col rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md transition-all`}
-                >
-                  {/* Panel Title Bar */}
-                  <div className="p-3 bg-[#0d0f17] border-b border-zinc-800/80 rounded-t-2xl flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Move size={13} className="text-zinc-600 cursor-grab" />
-                      <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">
-                        {widget.title}
-                      </h2>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-zinc-500">
-                      {/* Resize Width */}
-                      <button
-                        onClick={() => handleToggleColSpan(widget.id)}
-                        className="p-1 hover:text-amber-400 transition-colors cursor-pointer"
-                        title={`Current span: ${widget.colSpan}/4 columns. Click to expand.`}
-                      >
-                        <Maximize2 size={12} />
-                      </button>
-
-                      {/* Minimize Content */}
-                      <button
-                        onClick={() => handleToggleMinimize(widget.id)}
-                        className="p-1 hover:text-zinc-300 transition-colors cursor-pointer"
-                        title={widget.minimized ? 'Expand panel' : 'Minimize panel'}
-                      >
-                        <Minimize2 size={12} />
-                      </button>
-
-                      {/* Close Widget */}
-                      <button
-                        onClick={() => handleRemoveWidget(widget.id)}
-                        className="p-1 hover:text-red-400 transition-colors cursor-pointer"
-                        title="Remove widget"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Panel Body Content */}
-                  {!widget.minimized && (
-                    <div className="p-3 flex-1">
-                      {/* WIDGET 1: PARTY STATUS HUD */}
-                      {widget.type === 'party_hud' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {partyMembers.map((member) => (
-                            <DMPartyHUDCard
-                              key={member.id}
-                              member={member}
-                              onUpdateHP={onUpdatePartyHP}
-                              onToggleCondition={onTogglePartyCondition}
-                              onToggleInspiration={onToggleInspiration}
-                              onTriggerRest={onTriggerRest}
-                              onInspectSheet={onInspectCharacter}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {/* WIDGET 2: INITIATIVE TRACKER */}
-                      {widget.type === 'initiative_tracker' && (
-                        <div className="space-y-2 font-mono text-xs">
-                          <div className="flex items-center justify-between text-zinc-500 text-[10px] uppercase pb-1 border-b border-zinc-800">
-                            <span>Combatant</span>
-                            <span>Init &bull; HP</span>
-                          </div>
-                          {partyMembers.map((pm) => (
-                            <div
-                              key={pm.id}
-                              className="flex items-center justify-between p-2 rounded-lg bg-zinc-950/60 border border-zinc-800/80 hover:border-amber-500/40 transition-colors"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pm.primaryColor }} />
-                                <span className="font-bold text-zinc-200">{pm.name}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-amber-300 font-bold">
-                                  {pm.initiativeBonus >= 0 ? `+${pm.initiativeBonus}` : pm.initiativeBonus}
-                                </span>
-                                <span className="text-zinc-400">
-                                  {pm.currentHP}/{pm.maxHP}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* WIDGET 3: CONTEXTUAL SCRATCHPAD */}
-                      {widget.type === 'scratchpad' && (
-                        <div className="space-y-2 font-mono text-xs">
-                          <textarea
-                            value={scratchText}
-                            onChange={(e) => setScratchText(e.target.value)}
-                            rows={6}
-                            placeholder="Write live session notes with [[Character]] and #tags..."
-                            className="w-full p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 leading-relaxed resize-y"
-                          />
-                        </div>
-                      )}
-
-                      {/* WIDGET 4: GENERIC / COMPENDIUM PLACEHOLDER */}
-                      {widget.type === 'rule_compendium' && (
-                        <div className="p-3 text-center text-zinc-500 font-mono text-xs">
-                          <Search size={18} className="mx-auto mb-1 text-zinc-600" />
-                          <p>SRD 5.1 Compendium &amp; Monster Search active in side drawer.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        </main>
-
-        {/* 3. Collapsible Side Drawer (Slide-in on mobile, fixed-width on desktop) */}
-        {isDrawerOpen && (
-          <>
-            {/* Mobile backdrop */}
-            <div
-              onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden animate-fade-in"
-            />
-
-            <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-80 md:w-96 md:relative md:inset-auto md:z-30 bg-[#0a0c12] border-l border-zinc-800/80 flex flex-col shadow-2xl animate-fade-in">
-              {/* Drawer Top Bar with Mobile Close */}
-              <div className="flex items-center justify-between border-b border-zinc-800 text-xs font-mono">
-                <div className="flex items-center flex-1">
-                  <button
-                    onClick={() => setDrawerTab('notes')}
-                    className={`flex-1 py-2.5 text-center font-bold border-b-2 cursor-pointer transition-colors ${
-                      drawerTab === 'notes'
-                        ? 'border-amber-400 text-amber-300 bg-amber-500/5'
-                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    Scratchpad
-                  </button>
-                  <button
-                    onClick={() => setDrawerTab('compendium')}
-                    className={`flex-1 py-2.5 text-center font-bold border-b-2 cursor-pointer transition-colors ${
-                      drawerTab === 'compendium'
-                        ? 'border-amber-400 text-amber-300 bg-amber-500/5'
-                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    SRD Ref
-                  </button>
-                  <button
-                    onClick={() => setDrawerTab('logs')}
-                    className={`flex-1 py-2.5 text-center font-bold border-b-2 cursor-pointer transition-colors ${
-                      drawerTab === 'logs'
-                        ? 'border-amber-400 text-amber-300 bg-amber-500/5'
-                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    Sync Logs
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="md:hidden p-2 text-zinc-400 hover:text-white cursor-pointer"
-                  title="Close Drawer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Drawer Body Content */}
-              <div className="p-3 flex-1 overflow-y-auto space-y-3">
-                {drawerTab === 'notes' && (
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold block">
-                        Active Session Markdown
-                      </span>
-                      <textarea
-                        value={scratchText}
-                        onChange={(e) => setScratchText(e.target.value)}
-                        rows={8}
-                        className="w-full p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-200 resize-none focus:border-amber-400"
-                      />
-                    </div>
-
-                    {/* Auto-Discovered Entity Cards */}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold block">
-                        Auto-Linked Entities ([[Name]], @Spell, #Tags)
-                      </span>
-
-                      <div className="flex flex-wrap gap-1.5">
-                        {parsedEntitiesAndTags.entities.map((ent) => (
-                          <span
-                            key={ent}
-                            className="px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-800/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1"
-                          >
-                            <BookOpen size={10} /> {ent}
-                          </span>
-                        ))}
-
-                        {parsedEntitiesAndTags.spells.map((sp) => (
-                          <span
-                            key={sp}
-                            className="px-2 py-0.5 rounded-md bg-sky-950/60 border border-sky-800/60 text-sky-300 text-[10px] font-mono font-bold flex items-center gap-1"
-                          >
-                            <Sparkles size={10} /> @{sp}
-                          </span>
-                        ))}
-
-                        {parsedEntitiesAndTags.tags.map((tg) => (
-                          <span
-                            key={tg}
-                            className="px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-800/60 text-amber-300 text-[10px] font-mono font-bold flex items-center gap-1"
-                          >
-                            <Tag size={10} /> #{tg}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {drawerTab === 'compendium' && (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                      <input
-                        type="text"
-                        value={searchFilter}
-                        onChange={(e) => setSearchFilter(e.target.value)}
-                        placeholder="Search SRD spells, monsters, rules..."
-                        className="w-full pl-8 pr-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-white focus:border-amber-400"
-                      />
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-400">
-                      <strong className="text-zinc-200 block mb-1">Misty Step</strong>
-                      <p className="text-[11px] text-zinc-500">2nd-level Conjuration &bull; Bonus Action &bull; Self (30 ft)</p>
-                    </div>
-                  </div>
-                )}
-
-                {drawerTab === 'logs' && (
-                  <div className="space-y-2 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-zinc-400">
-                      <span className="text-zinc-500">[17:42:01]</span>{' '}
-                      <span className="text-amber-400">DM Override:</span> Applied 12 Damage to Cyrus
-                    </div>
-                    <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-zinc-400">
-                      <span className="text-zinc-500">[17:43:15]</span>{' '}
-                      <span className="text-purple-400">Player Cast:</span> Aria cast Misty Step
-                    </div>
-                  </div>
-                )}
-              </div>
-            </aside>
-          </>
+      {/* 2. Main Workspace: Render Only the Active Tab for Neat, Spacious Layout */}
+      <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 flex flex-col min-h-0">
+        {/* WORKSPACE 1: PARTY ROSTER (Matrix Table & Sleek Cards) */}
+        {activeTab === 'roster' && (
+          <DMPartyRosterView
+            partyMembers={partyMembers}
+            onUpdatePartyHP={onUpdatePartyHP}
+            onTogglePartyCondition={onTogglePartyCondition}
+            onToggleInspiration={onToggleInspiration}
+            onTriggerRest={onTriggerRest}
+            onInspectCharacter={onInspectCharacter}
+          />
         )}
-      </div>
+
+        {/* WORKSPACE 2: TACTICAL COMBAT ENGINE */}
+        {activeTab === 'combat' && (
+          <div className="flex-1 rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md p-4 sm:p-5 flex flex-col min-h-0">
+            <DMCombatEngine
+              partyMembers={partyMembers}
+              onUpdatePartyHP={onUpdatePartyHP}
+              onTogglePartyCondition={onTogglePartyCondition}
+            />
+          </div>
+        )}
+
+        {/* WORKSPACE 3: CAMPAIGN CHRONICLE & LINKED CHARACTER DISPATCHES */}
+        {activeTab === 'chronicle' && (
+          <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
+            <DMCampaignChronicle
+              notes={dmNotes}
+              partyMembers={partyMembers}
+              onAddNote={addDMNote}
+              onUpdateNote={updateDMNote}
+              onDeleteNote={deleteDMNote}
+              onToggleVisibility={toggleNoteVisibility}
+            />
+          </div>
+        )}
+
+        {/* WORKSPACE 4: 5E RULES & CONDITIONS REFERENCE */}
+        {activeTab === 'rules' && (
+          <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
+            <DMRulesReference />
+          </div>
+        )}
+      </main>
     </div>
   );
 }

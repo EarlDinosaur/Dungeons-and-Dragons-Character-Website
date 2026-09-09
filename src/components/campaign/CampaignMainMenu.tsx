@@ -23,7 +23,6 @@ import {
   HelpCircle,
   Clock,
   Camera,
-  Swords,
 } from 'lucide-react';
 import SpotlightCard from '../ui/SpotlightCard';
 import GlowButton from '../ui/GlowButton';
@@ -56,7 +55,6 @@ export default function CampaignMainMenu() {
     wynel,
     kastoriel,
     navigateToCharacter,
-    navigateToDM,
     setMysteries,
     showToastNotification,
     getPortraitUrl,
@@ -202,7 +200,7 @@ export default function CampaignMainMenu() {
   const emptySlotsCount = Math.max(0, 2 - customMembers.length); // 2 available slots to reach 7 total party members
 
   return (
-    <div className="space-y-10 animate-fade-in-up py-2 max-w-6xl mx-auto font-['Spectral',serif]">
+    <div className="space-y-10 animate-fade-in-up py-2 w-full max-w-[1720px] mx-auto font-['Spectral',serif]">
       {/* ====================================================================
          1. FANTASY TAVERN GUILDHALL BANNER & NOTICE BOARD HEADER
          ==================================================================== */}
@@ -211,8 +209,8 @@ export default function CampaignMainMenu() {
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#8b5a2b] via-[#d9b872] to-[#8b5a2b] shadow-md" />
 
         {/* Tavern Wax Seal Stamp */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="text-center sm:text-left space-y-2">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+          <div className="text-center lg:text-left space-y-2 max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(217,184,114,0.12)] border border-[#d9b872]/40 text-[#d9b872] text-xs font-mono font-bold uppercase tracking-widest shadow-inner">
               <Scroll size={14} className="text-[#d9b872]" /> 🍺 Fantasy Tavern Guildhall &bull; Campaign Hub
             </div>
@@ -221,25 +219,41 @@ export default function CampaignMainMenu() {
               The Ashen Pact
             </h1>
 
-            <p className="text-sm sm:text-base text-[var(--color-parchment-muted)] italic max-w-2xl">
+            <p className="text-sm sm:text-base text-[var(--color-parchment-muted)] italic leading-relaxed">
               &ldquo;Where shadow and starlight converge. Six adventurers bound by fate, blood, and the celestial weave.&rdquo;
             </p>
           </div>
 
           {/* Quick Campaign Stats Badge Bar */}
-          <div className="flex flex-wrap sm:flex-col gap-2 shrink-0 text-xs font-mono">
-            <div className="bg-black/70 text-[var(--color-parchment)] px-4 py-2 rounded-xl border border-[#d9b872]/30 flex items-center gap-2 shadow-md">
-              <Users size={15} className="text-[#d9b872]" />
-              <span>
-                <strong className="text-amber-200 text-sm">{totalMembersCount}</strong> Guild Members (6 Core + Guest)
-              </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2.5 shrink-0 text-xs font-mono w-full lg:w-auto">
+            <div className="bg-black/70 text-[var(--color-parchment)] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
+              <Users size={16} className="text-[#d9b872] shrink-0" />
+              <div>
+                <span className="block text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Guild Roster</span>
+                <span>
+                  <strong className="text-amber-200 text-sm">{totalMembersCount}</strong> Members (6 Core + Guest)
+                </span>
+              </div>
             </div>
 
-            <div className="bg-black/70 text-[#d9b872] px-4 py-2 rounded-xl border border-[#d9b872]/30 flex items-center gap-2 shadow-md">
-              <Coins size={15} className="text-amber-400" />
-              <span>
-                Treasury: <strong className="text-amber-200">{partyGold} GP</strong> ({partyPlatinum} PP)
-              </span>
+            <div className="bg-black/70 text-[#d9b872] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
+              <Coins size={16} className="text-amber-400 shrink-0" />
+              <div>
+                <span className="block text-[9px] uppercase tracking-wider text-amber-300/60 font-bold">Tavern Treasury</span>
+                <span>
+                  <strong className="text-amber-200 text-sm">{partyGold} GP</strong> <span className="text-indigo-300 text-xs">({partyPlatinum} PP)</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-black/70 text-[var(--color-parchment)] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
+              <BookOpen size={16} className="text-amber-300 shrink-0" />
+              <div>
+                <span className="block text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Active Quests</span>
+                <span>
+                  <strong className="text-amber-200 text-sm">{mysteries.filter((m) => !m.resolved).length}</strong> Bounties Posted
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -262,7 +276,7 @@ export default function CampaignMainMenu() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => openMediaPicker()}
-              className="flex items-center gap-1.5 bg-[rgba(218,165,32,0.15)] hover:bg-[rgba(218,165,32,0.3)] text-amber-100 border border-[#d9b872]/60 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shadow-md hover:-translate-y-0.5 active:scale-95 min-h-[38px]"
+              className="flex items-center gap-1.5 bg-[rgba(218,165,32,0.15)] hover:bg-[rgba(218,165,32,0.3)] text-amber-100 border border-[#d9b872]/60 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shadow-md hover:-translate-y-0.5 active:scale-95 min-h-[38px] cursor-pointer"
             >
               <Camera size={14} className="text-amber-300" />
               Customize Wallpapers &amp; Portraits
@@ -270,7 +284,7 @@ export default function CampaignMainMenu() {
 
             <button
               onClick={() => handleOpenMemberModal()}
-              className="flex items-center gap-1.5 bg-[#8b5a2b]/80 hover:bg-[#8b5a2b] text-amber-100 border border-[#d9b872]/50 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shadow-md hover:-translate-y-0.5 min-h-[38px]"
+              className="flex items-center gap-1.5 bg-[#8b5a2b]/80 hover:bg-[#8b5a2b] text-amber-100 border border-[#d9b872]/50 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shadow-md hover:-translate-y-0.5 min-h-[38px] cursor-pointer"
             >
               <UserPlus size={14} className="text-amber-300" />
               Add Party Member Slot
@@ -278,12 +292,12 @@ export default function CampaignMainMenu() {
           </div>
         </div>
 
-        {/* 6-8 Player Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Responsive Hero Roster Grid: 1 col on mobile, 2 on tablet, 3 on laptop, 4 on desktop, 5 on wide monitors */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1700px]:grid-cols-5 gap-5 sm:gap-6">
           {/* ================================================================
              ROSTER CARD 1: EARL (VESPER ASHWOOD)
              ================================================================ */}
-          <div className="medieval-card p-6 border-2 border-[var(--color-crimson-500)]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(26,16,18,0.98)_0%,rgba(14,8,10,0.99)_100%)] relative group hover:border-[var(--color-crimson-400)] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(220,38,38,0.18)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-[var(--color-crimson-500)]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(26,16,18,0.98)_0%,rgba(14,8,10,0.99)_100%)] relative group hover:border-[var(--color-crimson-400)] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(220,38,38,0.18)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
             <span className="medieval-corner tl text-[var(--color-crimson-400)]/70">❖</span>
             <span className="medieval-corner tr text-[var(--color-crimson-400)]/70">❖</span>
@@ -294,20 +308,20 @@ export default function CampaignMainMenu() {
             <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/20 rounded-xl pointer-events-none group-hover:border-[var(--color-crimson-400)]/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(220,38,38,0.25)] to-red-950/90 border-b border-[var(--color-crimson-500)]/40 flex items-center justify-between shadow-xs">
-              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[var(--color-crimson-300)] flex items-center gap-1.5">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(220,38,38,0.25)] to-red-950/90 border-b border-[var(--color-crimson-500)]/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-[var(--color-crimson-300)] flex items-center gap-1.5 truncate">
                 <span>⚜</span> Shadow Guild Oath
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[var(--color-gold-400)] font-semibold">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-[var(--color-gold-400)] font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-amber-500/20">
                 Silent Blade
               </span>
             </div>
 
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-3.5 relative z-10">
               {/* Header & Portrait Block */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[var(--color-crimson-400)] transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[var(--color-crimson-400)] transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('vesper')}
                       alt="Earl (Vesper Ashwood)"
@@ -315,14 +329,14 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-red-700 via-red-800 to-red-950 border border-red-400 text-xs text-amber-200">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-red-700 via-red-800 to-red-950 border border-red-400 text-[11px] text-amber-200">
                     🗡️
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Earl
                     </h3>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-[var(--color-crimson-500)]/50 text-rose-200 uppercase tracking-wider shrink-0 shadow-inner">
@@ -330,41 +344,43 @@ export default function CampaignMainMenu() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-mono text-[var(--color-crimson-400)] font-semibold flex items-center gap-1">
-                    <Flame size={12} className="text-[var(--color-crimson-500)]" /> Human &bull; Rogue Assassin
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                    <span className="text-rose-300">Human</span>
+                    <span className="text-rose-500/50">&bull;</span>
+                    <span className="text-rose-200">Rogue Assassin</span>
+                  </div>
 
-                  <p className="text-xs text-[var(--color-gold-400)] italic font-serif">
+                  <p className="text-xs text-[var(--color-gold-400)] italic font-serif truncate" title="Vesper Ashwood">
                     &ldquo;Vesper Ashwood&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[var(--color-crimson-500)] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[var(--color-crimson-500)] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Deadly assassin of the Ashen Pact, wielding the soul-stealing vestige dagger Orphan&apos;s Tithe.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[var(--color-crimson-500)]/30 text-center font-mono text-xs">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-[var(--color-crimson-500)]/30 text-center font-mono">
                 <div>
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-rose-400 text-sm">{character.combat.currentHP}/{character.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-rose-400 text-xs sm:text-sm">{character.combat.currentHP}/{character.combat.maxHP}</span>
                 </div>
                 <div className="border-x border-[var(--color-crimson-500)]/20">
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-[var(--color-gold-400)] text-sm">{character.ac}</span>
+                  <span className="block text-[8.5px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-xs sm:text-sm">{character.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Sneak Atk</span>
-                  <span className="font-black text-amber-200 text-sm">5d6</span>
+                  <span className="block text-[8.5px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Sneak Atk</span>
+                  <span className="font-black text-amber-200 text-xs sm:text-sm">5d6</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('vesper')}
-              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
               <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -374,7 +390,7 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 2: ARIA SIL'AVETH
              ================================================================ */}
-          <div className="medieval-card p-6 border-2 border-[#a992e8]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(169,146,232,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(20,18,34,0.98)_0%,rgba(12,10,22,0.99)_100%)] relative group hover:border-[#a992e8] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(169,146,232,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-[#a992e8]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(169,146,232,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(20,18,34,0.98)_0%,rgba(12,10,22,0.99)_100%)] relative group hover:border-[#a992e8] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(169,146,232,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
             <span className="medieval-corner tl text-[#a992e8]/70">❖</span>
             <span className="medieval-corner tr text-[#a992e8]/70">❖</span>
@@ -385,20 +401,20 @@ export default function CampaignMainMenu() {
             <div className="absolute inset-[5px] border border-[#a992e8]/20 rounded-xl pointer-events-none group-hover:border-[#a992e8]/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-[#171b3f]/90 via-[rgba(169,146,232,0.25)] to-[#171b3f]/90 border-b border-[#a992e8]/40 flex items-center justify-between shadow-xs">
-              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[#c7c2e6] flex items-center gap-1.5">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-[#171b3f]/90 via-[rgba(169,146,232,0.25)] to-[#171b3f]/90 border-b border-[#a992e8]/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-[#c7c2e6] flex items-center gap-1.5 truncate">
                 <span>🌙</span> Silver Moon Conclave
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[#d9b872] font-semibold">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-[#d9b872] font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-purple-500/20">
                 Astral Weaver
               </span>
             </div>
 
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-3.5 relative z-10">
               {/* Header & Portrait Block */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-[#a992e8]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[#a992e8] transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-[#a992e8]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[#a992e8] transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('aria')}
                       alt="Aria Sil'aveth"
@@ -406,14 +422,14 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-indigo-800 via-purple-900 to-[#0d1026] border border-[#a992e8] text-xs text-[#d9b872]">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-indigo-800 via-purple-900 to-[#0d1026] border border-[#a992e8] text-[11px] text-[#d9b872]">
                     🌙
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Aria Sil&apos;aveth
                     </h3>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#171b3f]/80 border border-[#a992e8]/50 text-[#c7c2e6] uppercase tracking-wider shrink-0 shadow-inner">
@@ -421,41 +437,43 @@ export default function CampaignMainMenu() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-mono text-[#a992e8] font-semibold flex items-center gap-1">
-                    <Sparkles size={12} className="text-[#a992e8]" /> High Elf &bull; Sorcerer Lunar
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                    <span className="text-purple-300">High Elf</span>
+                    <span className="text-purple-500/50">&bull;</span>
+                    <span className="text-[#a992e8]">Sorcerer Lunar</span>
+                  </div>
 
-                  <p className="text-xs text-[#d9b872] italic font-serif">
+                  <p className="text-xs text-[#d9b872] italic font-serif truncate" title={aria.subline}>
                     &ldquo;{aria.subline}&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#a992e8] text-xs text-[#cfd4ee] leading-relaxed italic">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#a992e8] text-xs text-[#cfd4ee] leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;High elven lunar sorceress who channels cosmic starfire and moon tides to manipulate magic.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[#a992e8]/30 text-center font-mono text-xs">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-[#a992e8]/30 text-center font-mono">
                 <div>
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-[#c9707a] text-sm">{aria.combat.currentHP}/{aria.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-[#9aa1cc] uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-[#c9707a] text-xs sm:text-sm">{aria.combat.currentHP}/{aria.combat.maxHP}</span>
                 </div>
                 <div className="border-x border-[#a992e8]/20">
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-[#d9b872] text-sm">{aria.combat.ac}</span>
+                  <span className="block text-[8.5px] text-[#9aa1cc] uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[#d9b872] text-xs sm:text-sm">{aria.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-[#9aa1cc] uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-[#a992e8] text-sm">{aria.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-[#9aa1cc] uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-[#a992e8] text-xs sm:text-sm">{aria.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('aria')}
-              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
               <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -465,7 +483,7 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 3: CYRUS HYACINTHUS
              ================================================================ */}
-          <div className="medieval-card p-6 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(30,22,12,0.98)_0%,rgba(18,14,8,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(218,165,32,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(30,22,12,0.98)_0%,rgba(18,14,8,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(218,165,32,0.2)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
             <span className="medieval-corner tl text-amber-400/70">❖</span>
             <span className="medieval-corner tr text-amber-400/70">❖</span>
@@ -476,20 +494,20 @@ export default function CampaignMainMenu() {
             <div className="absolute inset-[5px] border border-amber-500/20 rounded-xl pointer-events-none group-hover:border-amber-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(218,165,32,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between shadow-xs">
-              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-amber-300 flex items-center gap-1.5">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(218,165,32,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-amber-300 flex items-center gap-1.5 truncate">
                 <span>☀️</span> Temple of Apollo
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[#d9b872] font-semibold">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-[#d9b872] font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-amber-500/20">
                 Solar Oracle
               </span>
             </div>
 
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-3.5 relative z-10">
               {/* Header & Portrait Block */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('cyrus')}
                       alt="Cyrus Hyacinthus"
@@ -497,14 +515,14 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-xs text-amber-100">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-[11px] text-amber-100">
                     ☀️
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Cyrus Hyacinthus
                     </h3>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 uppercase tracking-wider shrink-0 shadow-inner">
@@ -512,41 +530,43 @@ export default function CampaignMainMenu() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-mono text-amber-300 font-semibold flex items-center gap-1">
-                    <Sparkles size={12} className="text-amber-400" /> Aasimar &bull; Light Cleric
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                    <span className="text-amber-200">Aasimar</span>
+                    <span className="text-amber-500/50">&bull;</span>
+                    <span className="text-amber-300">Light Cleric</span>
+                  </div>
 
-                  <p className="text-xs text-amber-200/90 italic font-serif">
+                  <p className="text-xs text-amber-200/90 italic font-serif truncate" title={cyrus.subline}>
                     &ldquo;{cyrus.subline}&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Solar oracle of Apollo blessed with radiant wings, divine sunfire, and prophetic foresight.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono text-xs">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono">
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-amber-400 text-sm">{cyrus.combat.currentHP}/{cyrus.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-amber-400 text-xs sm:text-sm">{cyrus.combat.currentHP}/{cyrus.combat.maxHP}</span>
                 </div>
                 <div className="border-x border-amber-500/20">
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-[var(--color-gold-400)] text-sm">{cyrus.combat.ac}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-xs sm:text-sm">{cyrus.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-amber-300 text-sm">{cyrus.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-amber-300 text-xs sm:text-sm">{cyrus.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('cyrus')}
-              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
               <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -556,7 +576,7 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 4: WYN'EL AELUIN
              ================================================================ */}
-          <div className="medieval-card p-6 border-2 border-red-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(239,68,68,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(38,10,18,0.98)_0%,rgba(18,4,8,0.99)_100%)] relative group hover:border-red-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(239,68,68,0.25)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-red-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(239,68,68,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(38,10,18,0.98)_0%,rgba(18,4,8,0.99)_100%)] relative group hover:border-red-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(239,68,68,0.25)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
             <span className="medieval-corner tl text-red-400/70">❖</span>
             <span className="medieval-corner tr text-red-400/70">❖</span>
@@ -567,20 +587,20 @@ export default function CampaignMainMenu() {
             <div className="absolute inset-[5px] border border-red-500/20 rounded-xl pointer-events-none group-hover:border-red-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(239,68,68,0.25)] to-red-950/90 border-b border-red-500/40 flex items-center justify-between shadow-xs">
-              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-rose-300 flex items-center gap-1.5">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(239,68,68,0.25)] to-red-950/90 border-b border-red-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-rose-300 flex items-center gap-1.5 truncate">
                 <span>👑</span> House Aeluin Crown
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-300 font-semibold">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-amber-300 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-red-500/20">
                 Archfey Exile
               </span>
             </div>
 
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-3.5 relative z-10">
               {/* Header & Portrait Block */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-red-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-red-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('wynel')}
                       alt="Wyn'el Aeluin"
@@ -588,14 +608,14 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-rose-700 via-red-800 to-red-950 border border-red-400 text-xs text-amber-200">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-rose-700 via-red-800 to-red-950 border border-red-400 text-[11px] text-amber-200">
                     👑
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-black text-rose-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-rose-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Wyn’el Aeluin
                     </h3>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/50 text-rose-300 uppercase tracking-wider shrink-0 shadow-inner">
@@ -603,41 +623,43 @@ export default function CampaignMainMenu() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-mono text-red-300 font-semibold flex items-center gap-1">
-                    <Flame size={12} className="text-red-400" /> Half-Elf &bull; Archfey Warlock
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                    <span className="text-rose-200">Half-Elf</span>
+                    <span className="text-red-500/50">&bull;</span>
+                    <span className="text-rose-300">Archfey Warlock</span>
+                  </div>
 
-                  <p className="text-xs text-rose-300/80 italic font-serif">
+                  <p className="text-xs text-rose-300/80 italic font-serif truncate" title="Prince of House Aeluin">
                     &ldquo;Prince of House Aeluin&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-red-500 text-xs text-rose-100/90 leading-relaxed italic">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-red-500 text-xs text-rose-100/90 leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Exiled noble prince bound to the Crimson Heart-Tattoo, wielding scarlet chaos magic and eldritch secrets.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-red-500/30 text-center font-mono text-xs">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-red-500/30 text-center font-mono">
                 <div>
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-red-400 text-sm">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-rose-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-red-400 text-xs sm:text-sm">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
                 </div>
                 <div className="border-x border-red-500/20">
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-[var(--color-gold-400)] text-sm">{wynel.combat.ac}</span>
+                  <span className="block text-[8.5px] text-rose-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-xs sm:text-sm">{wynel.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-rose-200/60 uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-rose-300 text-sm">{wynel.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-rose-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-rose-300 text-xs sm:text-sm">{wynel.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('wynel')}
-              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
               <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -647,7 +669,7 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 5: KASTORIEL, THE GROUNDED STAR
              ================================================================ */}
-          <div className="medieval-card p-6 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,158,11,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(16,18,30,0.98)_0%,rgba(8,10,18,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(245,158,11,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-amber-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,158,11,0.16)_0%,transparent_70%),linear-gradient(145deg,rgba(16,18,30,0.98)_0%,rgba(8,10,18,0.99)_100%)] relative group hover:border-amber-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(245,158,11,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
             <span className="medieval-corner tl text-amber-400/70">❖</span>
             <span className="medieval-corner tr text-amber-400/70">❖</span>
@@ -658,20 +680,20 @@ export default function CampaignMainMenu() {
             <div className="absolute inset-[5px] border border-amber-500/20 rounded-xl pointer-events-none group-hover:border-amber-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(245,158,11,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between shadow-xs">
-              <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-amber-300 flex items-center gap-1.5">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-amber-950/90 via-[rgba(245,158,11,0.25)] to-amber-950/90 border-b border-amber-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-amber-300 flex items-center gap-1.5 truncate">
                 <span>⭐</span> Starlight Coven
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-300 font-semibold">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-amber-300 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-amber-500/20">
                 The Grounded Star
               </span>
             </div>
 
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-3.5 relative z-10">
               {/* Header & Portrait Block */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-amber-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-amber-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('kastoriel')}
                       alt="Kastoriel, The Grounded Star"
@@ -679,14 +701,14 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-xs text-amber-100">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 border border-amber-300 text-[11px] text-amber-100">
                     ⭐
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Kastoriel
                     </h3>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 uppercase tracking-wider shrink-0 shadow-inner">
@@ -694,41 +716,43 @@ export default function CampaignMainMenu() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-mono text-amber-300 font-semibold flex items-center gap-1">
-                    <Sparkles size={12} className="text-amber-400" /> Half-Elf &bull; Stars Druid
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                    <span className="text-amber-200">Half-Elf</span>
+                    <span className="text-amber-500/50">&bull;</span>
+                    <span className="text-amber-300">Stars Druid</span>
+                  </div>
 
-                  <p className="text-xs text-amber-200/90 italic font-serif">
+                  <p className="text-xs text-amber-200/90 italic font-serif truncate" title="The Grounded Star">
                     &ldquo;The Grounded Star&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-amber-500 text-xs text-amber-100/90 leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Exiled star druid bound to the blade Pendulum, guiding celestial constellations to track and protect his twin Poluxien.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono text-xs">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-amber-500/30 text-center font-mono">
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-amber-400 text-sm">{kastoriel.combat.currentHP}/{kastoriel.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-amber-400 text-xs sm:text-sm">{kastoriel.combat.currentHP}/{kastoriel.combat.maxHP}</span>
                 </div>
                 <div className="border-x border-amber-500/20">
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-[var(--color-gold-400)] text-sm">{kastoriel.combat.ac}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-[var(--color-gold-400)] text-xs sm:text-sm">{kastoriel.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-amber-300 text-sm">{kastoriel.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-amber-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-amber-300 text-xs sm:text-sm">{kastoriel.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('kastoriel')}
-              className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
               <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -741,7 +765,7 @@ export default function CampaignMainMenu() {
           {customMembers.map((member) => (
             <div
               key={member.id}
-              className="medieval-card p-6 border-2 border-[#d9b872]/40 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.1)_0%,transparent_70%),linear-gradient(145deg,rgba(24,20,16,0.98)_0%,rgba(14,11,8,0.99)_100%)] relative group hover:border-[#d9b872] shadow-[0_16px_45px_rgba(0,0,0,0.85)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden"
+              className="medieval-card p-5 border-2 border-[#d9b872]/40 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.1)_0%,transparent_70%),linear-gradient(145deg,rgba(24,20,16,0.98)_0%,rgba(14,11,8,0.99)_100%)] relative group hover:border-[#d9b872] shadow-[0_16px_45px_rgba(0,0,0,0.85)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden"
             >
               {/* Corner Filigree Glyphs */}
               <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
@@ -753,20 +777,20 @@ export default function CampaignMainMenu() {
               <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none group-hover:border-[#d9b872]/40 transition-colors" />
 
               {/* Heraldic Top Ribbon Banner */}
-              <div className="relative z-10 -mx-6 -mt-6 mb-4 px-6 py-1.5 bg-gradient-to-r from-[#2a1e12]/90 via-[rgba(218,165,32,0.2)] to-[#2a1e12]/90 border-b border-[#d9b872]/30 flex items-center justify-between shadow-xs">
-                <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-[#d9b872] flex items-center gap-1.5">
+              <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-[#2a1e12]/90 via-[rgba(218,165,32,0.2)] to-[#2a1e12]/90 border-b border-[#d9b872]/30 flex items-center justify-between gap-2 shadow-xs">
+                <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-[#d9b872] flex items-center gap-1.5 truncate">
                   <span>🛡️</span> Ashen Pact Companion
                 </span>
-                <span className="text-[9px] font-mono uppercase tracking-widest text-amber-200/80 font-semibold">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-amber-200/80 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-[#d9b872]/20">
                   {member.role || 'Guild Initiate'}
                 </span>
               </div>
 
-              <div className="space-y-4 relative z-10">
+              <div className="space-y-3.5 relative z-10">
                 {/* Header & Portrait Block */}
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3.5">
                   <div className="relative shrink-0">
-                    <div className="w-20 h-20 rounded-2xl bg-black/80 border-2 border-[#d9b872]/60 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
+                    <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-black/80 border-2 border-[#d9b872]/60 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
                       {member.avatar.startsWith('http') || member.avatar.startsWith('/') ? (
                         <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
                       ) : (
@@ -774,14 +798,14 @@ export default function CampaignMainMenu() {
                       )}
                     </div>
                     {/* Embossed Wax Seal Stamp */}
-                    <div className="medieval-wax-seal absolute -bottom-2 -right-2 w-7 h-7 bg-gradient-to-br from-amber-700 via-amber-800 to-[#1e150b] border border-[#d9b872] text-xs text-amber-100">
+                    <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-amber-700 via-amber-800 to-[#1e150b] border border-[#d9b872] text-[11px] text-amber-100">
                       🛡️
                     </div>
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate">
                         {member.name}
                       </h3>
                       <div className="flex items-center gap-1 shrink-0">
@@ -802,42 +826,44 @@ export default function CampaignMainMenu() {
                       </div>
                     </div>
 
-                    <p className="text-xs font-mono text-[#d9b872] font-semibold">
-                      {member.race} &bull; {member.characterClass}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
+                      <span className="text-amber-200">{member.race}</span>
+                      <span className="text-amber-500/50">&bull;</span>
+                      <span className="text-amber-300">{member.characterClass}</span>
+                    </div>
 
-                    <p className="text-xs text-[var(--color-parchment-muted)] italic font-serif">
+                    <p className="text-xs text-[var(--color-parchment-muted)] italic font-serif truncate">
                       Played by {member.playerName}
                     </p>
                   </div>
                 </div>
 
                 {member.notes && (
-                  <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#d9b872] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic line-clamp-2">
+                  <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[#d9b872] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic min-h-[62px] flex items-center line-clamp-2">
                     &ldquo;{member.notes}&rdquo;
                   </div>
                 )}
 
                 {/* Quick Stats Plaque */}
-                <div className="medieval-stat-plaque grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-[#d9b872]/20 text-center font-mono text-xs">
+                <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-[#d9b872]/20 text-center font-mono">
                   <div>
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Vitality</span>
-                    <span className="font-black text-emerald-400 text-sm">{member.currentHP}/{member.maxHP}</span>
+                    <span className="block text-[8.5px] text-gray-400 uppercase tracking-wider font-bold">Vitality</span>
+                    <span className="font-black text-emerald-400 text-xs sm:text-sm">{member.currentHP}/{member.maxHP}</span>
                   </div>
                   <div className="border-x border-[#d9b872]/20">
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Armor</span>
-                    <span className="font-black text-amber-300 text-sm">{member.ac}</span>
+                    <span className="block text-[8.5px] text-gray-400 uppercase tracking-wider font-bold">Armor</span>
+                    <span className="font-black text-amber-300 text-xs sm:text-sm">{member.ac}</span>
                   </div>
                   <div>
-                    <span className="block text-[9px] text-gray-400 uppercase tracking-wider font-bold">Rank</span>
-                    <span className="font-black text-amber-100 text-sm">Lv {member.level}</span>
+                    <span className="block text-[8.5px] text-gray-400 uppercase tracking-wider font-bold">Rank</span>
+                    <span className="font-black text-amber-100 text-xs sm:text-sm">Lv {member.level}</span>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => handleOpenMemberModal(member)}
-                className="medieval-writ-btn w-full mt-5 py-2.5 px-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+                className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
               >
                 <Edit3 size={13} /> Edit Companion Sheet
               </button>
@@ -855,7 +881,7 @@ export default function CampaignMainMenu() {
               <div
                 key={`empty-slot-${idx}`}
                 onClick={() => handleOpenMemberModal(undefined, idx)}
-                className="p-6 border-2 border-dashed border-[#d9b872]/30 hover:border-[#d9b872] bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.06)_0%,transparent_70%),linear-gradient(145deg,rgba(18,14,10,0.85)_0%,rgba(10,8,6,0.95)_100%)] hover:bg-[linear-gradient(145deg,rgba(28,22,16,0.95)_0%,rgba(16,12,8,0.98)_100%)] rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[260px] shadow-lg relative overflow-hidden"
+                className="p-5 border-2 border-dashed border-[#d9b872]/30 hover:border-[#d9b872] bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.06)_0%,transparent_70%),linear-gradient(145deg,rgba(18,14,10,0.85)_0%,rgba(10,8,6,0.95)_100%)] hover:bg-[linear-gradient(145deg,rgba(28,22,16,0.95)_0%,rgba(16,12,8,0.98)_100%)] rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[340px] shadow-lg relative overflow-hidden"
               >
                 {/* Corner Filigree Glyphs */}
                 <span className="medieval-corner tl text-[#d9b872]/40">❖</span>
@@ -884,41 +910,6 @@ export default function CampaignMainMenu() {
             );
           })}
         </div>
-      </div>
-
-      {/* ====================================================================
-         1.5 DUNGEON MASTER TACTICAL COMMAND & LIVE PARTY HUD BANNER
-         ==================================================================== */}
-      <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(217,119,6,0.18)_0%,transparent_70%),linear-gradient(135deg,rgba(26,18,14,0.96)_0%,rgba(14,10,10,0.98)_100%)] p-5 sm:p-6 shadow-[0_12px_45px_rgba(0,0,0,0.85)] flex flex-col md:flex-row items-center justify-between gap-5 group hover:border-amber-400/80 transition-all">
-        {/* Glow top edge */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-amber-400 to-red-600" />
-
-        <div className="flex items-center gap-4 text-center sm:text-left">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 group-hover:scale-105 transition-transform">
-            <Swords size={28} className="text-amber-300 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
-              <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider text-glow-gold">
-                Dungeon Master Tactical Console
-              </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                Live Party HUD &amp; Automation
-              </span>
-            </div>
-            <p className="text-xs text-[var(--color-parchment-muted)] italic max-w-xl">
-              Real-time party vitals (Passive Perception, AC, HP/THP), instant damage/heal overrides, 5e condition toggles, automated initiative tracker, and contextual scratchpad notes.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={navigateToDM}
-          className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2.5 shadow-[0_4px_20px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer shrink-0"
-        >
-          <span>Launch DM Sheet</span>
-          <ArrowRight size={16} />
-        </button>
       </div>
 
       {/* ====================================================================

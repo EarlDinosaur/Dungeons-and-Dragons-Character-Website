@@ -290,7 +290,7 @@ export default function InventoryManager({
         )}
 
         {/* Items List */}
-        <div className="space-y-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {filteredItems.map((item) => (
             <div
               key={item.id}

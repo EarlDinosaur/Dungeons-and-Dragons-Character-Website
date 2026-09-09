@@ -405,6 +405,31 @@ export function generateNewCharacter(input: CreateCharacterInput): CharacterStat
     },
 
     dossier: {
+      title: `The Story of ${input.name}`,
+      subtitle: `${input.race} ${input.className} • ${input.background || 'Hero'}`,
+      chapters: [
+        {
+          id: 'ch-origin',
+          title: 'Origins & Heritage',
+          subtitle: `Early life and background as a ${input.background || 'Hero'}`,
+          icon: 'Scroll',
+          content: `${input.name} began their journey across the realm driven by purpose and destiny. Raised in the traditions of their people, early experiences forged their character and resolve.`,
+        },
+        {
+          id: 'ch-training',
+          title: 'Discipline & Mastery',
+          subtitle: `Training and dedication as a ${input.className}`,
+          icon: 'Target',
+          content: `Through rigorous discipline and study, ${input.name} mastered the core capabilities of a ${input.className}. Every skirmish and trial sharpened their focus.`,
+        },
+        {
+          id: 'ch-pact',
+          title: 'The Road with The Ashen Pact',
+          subtitle: 'Companions bound by common peril',
+          icon: 'Shield',
+          content: `Drawn together with the heroes of The Ashen Pact, ${input.name} recognized kindred spirits who face supernatural perils and ancient threats across the realm.`,
+        },
+      ],
       backstory: {
         orphanageMassacre: `${input.name} began their journey across the realm driven by purpose and destiny.`,
         fatherMalachi: 'Mentors and allies encountered along the winding road.',

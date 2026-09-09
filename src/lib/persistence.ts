@@ -15,6 +15,7 @@ import {
 } from './character-engine';
 import { getVestigeStage } from './orphans-tithe';
 import { calculateMulticlassSpellcasterLevel, getMulticlassSpellSlots, getClassDefinition } from './class-database';
+import { getCharacterStory } from './character-stories';
 
 const STORAGE_KEY = 'vesper-ashwood-character-state';
 const SCHEMA_VERSION = 1;
@@ -23,7 +24,12 @@ const SCHEMA_VERSION = 1;
  * Get default dossier data with Earl's backstory.
  */
 function getDefaultDossier(): CharacterState['dossier'] {
+  const vesperStory = getCharacterStory('vesper');
   return {
+    title: vesperStory.title,
+    subtitle: vesperStory.subtitle,
+    chapters: vesperStory.chapters,
+    npcs: vesperStory.npcs,
     backstory: {
       orphanageMassacre: `The night the orphanage burned is the only memory that comes unbidden. Earl — then just another nameless child — watched from beneath a collapsed beam as Father Malachi's congregation performed their ritual. The iron manacles. The altar stone slick with something darker than wine. The screams that became whispers, then silence. He was seven years old. He was the only survivor, though "survivor" felt generous for what crawled out of the ashes.`,
 
@@ -87,6 +93,7 @@ export function createDefaultCharacterState(): CharacterState {
   const casterLevel = calculateMulticlassSpellcasterLevel(defaultClasses);
 
   return {
+    id: 'vesper',
     name: 'Earl',
     alias: 'Vesper Ashwood',
     race: 'Human',

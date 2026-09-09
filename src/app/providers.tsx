@@ -18,6 +18,7 @@ import type { SyncState, DbStatusInfo } from '@/lib/sync-engine';
 import { fetchSync, pushCharacterSync, pushCharacterDelete, pushCampaignSync, fetchDbStatus } from '@/lib/sync-engine';
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
+import type { DMNote } from '@/lib/dm-types';
 
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
@@ -29,6 +30,75 @@ const CUSTOM_MEDIA_STORAGE_KEY = 'dnd_custom_media';
 const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
 const CUSTOM_CHARACTERS_STORAGE_KEY = 'dnd_custom_characters';
 const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
+const DM_NOTES_STORAGE_KEY = 'dnd_ashen_pact_dm_notes';
+
+const DEFAULT_DM_NOTES: DMNote[] = [
+  {
+    id: 'note-starter-1',
+    title: 'The Starlight Conclave Directive',
+    content: 'Kastoriel, your pendulum vibrates with astral resonance when aligned with the zenith. A stellar rift approaches above the Sunken Spire. Seek the celestial coordinates before the blood moon rises.',
+    category: 'secret',
+    targetCharacterId: 'kastoriel',
+    isPlayerVisible: true,
+    pinned: true,
+    tags: ['#starry_coven', '#pendulum', '#vision'],
+    author: 'Dungeon Master',
+    createdAt: Date.now() - 3600000 * 24,
+    updatedAt: Date.now() - 3600000 * 24,
+  },
+  {
+    id: 'note-starter-2',
+    title: 'Bounty: The Ashen Inquisitors',
+    content: 'Public decree posted in the Guildhall tavern: A cell of rogue Inquisitors was spotted skulking near the lower catacombs. Beware shadowy ambushes. 500 GP reward upon delivery of their insignia.',
+    category: 'quest',
+    targetCharacterId: 'all',
+    isPlayerVisible: true,
+    pinned: true,
+    tags: ['#main_quest', '#bounty', '#catacombs'],
+    author: 'Dungeon Master',
+    createdAt: Date.now() - 3600000 * 12,
+    updatedAt: Date.now() - 3600000 * 12,
+  },
+  {
+    id: 'note-starter-3',
+    title: 'Lunar Anomaly at the Eclipse Sanctum',
+    content: 'Aria, the silver tides whisper of an ancient ritual that inverted the lunar weave. Your Lunar Sorcery will surge with wild potency when within 60 feet of the Obsidian Obelisk.',
+    category: 'secret',
+    targetCharacterId: 'aria',
+    isPlayerVisible: true,
+    pinned: false,
+    tags: ['#lunar_weave', '#obelisk'],
+    author: 'Dungeon Master',
+    createdAt: Date.now() - 3600000 * 6,
+    updatedAt: Date.now() - 3600000 * 6,
+  },
+  {
+    id: 'note-starter-4',
+    title: 'Shadow Guild Whisper: Contract on the Magistrate',
+    content: 'Vesper, the ravens brought a coded letter. The merchant guild is laundering counterfeit soul gems through the lower docks. A contact waits at midnight under the weeping gargoyle.',
+    category: 'secret',
+    targetCharacterId: 'vesper',
+    isPlayerVisible: true,
+    pinned: false,
+    tags: ['#thieves_guild', '#soul_gems', '#docks'],
+    author: 'Dungeon Master',
+    createdAt: Date.now() - 3600000 * 8,
+    updatedAt: Date.now() - 3600000 * 8,
+  },
+  {
+    id: 'note-starter-5',
+    title: 'DM Confidential: Crypt Trap Placements & Boss Tactics',
+    content: 'CONFIDENTIAL (DM EYES ONLY). The crypt bridge is rigged with a Glyph of Warding (DC 16 Investigation to detect; 5d8 Thunder). Inquisitor Malakor casts Shield and uses legendary action misty step.',
+    category: 'clue',
+    targetCharacterId: 'all',
+    isPlayerVisible: false,
+    pinned: true,
+    tags: ['#dm_secret', '#traps', '#boss_tactics'],
+    author: 'Dungeon Master',
+    createdAt: Date.now() - 3600000 * 2,
+    updatedAt: Date.now() - 3600000 * 2,
+  },
+];
 
 export type ViewMode = 'menu' | 'character' | 'dm';
 
@@ -142,6 +212,8 @@ interface CharacterContextType {
   setAriaInventory: (items: InventoryItem[]) => void;
   setAriaCurrency: (currency: Currency) => void;
   setAriaNotes: (notes: string) => void;
+  setAriaJournal: (entries: JournalEntry[]) => void;
+  setAriaMysteries: (mysteries: CampaignMystery[]) => void;
 
   // Cyrus's state & actions
   cyrus: CyrusState;
@@ -158,6 +230,8 @@ interface CharacterContextType {
   setCyrusInventory: (items: InventoryItem[]) => void;
   setCyrusCurrency: (currency: Currency) => void;
   setCyrusNotes: (notes: string) => void;
+  setCyrusJournal: (entries: JournalEntry[]) => void;
+  setCyrusMysteries: (mysteries: CampaignMystery[]) => void;
 
   // Wyn'el's state & actions
   wynel: WynelState;
@@ -218,6 +292,14 @@ interface CharacterContextType {
   lastSyncedAt: number | null;
   forceSync: () => Promise<void>;
 
+  // DM Multi-Note Campaign Chronicle System
+  dmNotes: DMNote[];
+  addDMNote: (note: Omit<DMNote, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateDMNote: (id: string, updates: Partial<DMNote>) => void;
+  deleteDMNote: (id: string) => void;
+  toggleNoteVisibility: (id: string) => void;
+  getNotesForCharacter: (characterId: string) => DMNote[];
+
   isLoaded: boolean;
 }
 
@@ -248,6 +330,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [customMembers, setCustomMembersState] = useState<CustomMember[]>([]);
   const [customCharacters, setCustomCharactersState] = useState<Record<string, CharacterState>>({});
   const [customThemes, setCustomThemesState] = useState<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
+  const [dmNotes, setDmNotesState] = useState<DMNote[]>(DEFAULT_DM_NOTES);
 
   const lastServerTimestampRef = useRef<number>(0);
   const vesperModifiedRef = useRef<number>(0);
@@ -257,6 +340,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const kastorielModifiedRef = useRef<number>(0);
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
+  const dmNotesModifiedRef = useRef<number>(0);
   const customCharactersRef = useRef<Record<string, CharacterState>>({});
   const customThemesRef = useRef<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const isPollingRef = useRef<boolean>(false);
@@ -403,6 +487,17 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
             localStorage.setItem(CUSTOM_ROSTER_KEY, JSON.stringify(rosterRemote.data));
           } catch {}
         }
+
+        // DM Campaign Notes
+        const dmNotesRemote = res.campaign.dm_notes;
+        if (dmNotesRemote && dmNotesRemote.updatedAt > dmNotesModifiedRef.current) {
+          if (Array.isArray(dmNotesRemote.data)) {
+            setDmNotesState(dmNotesRemote.data);
+            try {
+              localStorage.setItem(DM_NOTES_STORAGE_KEY, JSON.stringify(dmNotesRemote.data));
+            } catch {}
+          }
+        }
       }
 
       if (res.lastUpdated) {
@@ -510,6 +605,16 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           const parsed = JSON.parse(savedCustomThemesRaw);
           setCustomThemesState(parsed);
           customThemesRef.current = parsed;
+        } catch {}
+      }
+
+      const savedDMNotesRaw = localStorage.getItem(DM_NOTES_STORAGE_KEY);
+      if (savedDMNotesRaw) {
+        try {
+          const parsed = JSON.parse(savedDMNotesRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDmNotesState(parsed);
+          }
         } catch {}
       }
     } catch (err) {
@@ -1996,6 +2101,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     updateAria((prev) => ({ ...prev, notes }));
   }, [updateAria]);
 
+  const setAriaJournal = useCallback((journal: JournalEntry[]) => {
+    updateAria((prev) => ({ ...prev, journal }));
+  }, [updateAria]);
+
+  const setAriaMysteries = useCallback((mysteries: CampaignMystery[]) => {
+    updateAria((prev) => ({ ...prev, mysteries }));
+  }, [updateAria]);
+
   // Cyrus Actions
   const setCyrusLevel = useCallback((level: number) => {
     updateCyrus((prev) => calculateCyrusStats({ ...prev, level }));
@@ -2142,6 +2255,14 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
 
   const setCyrusNotes = useCallback((notes: string) => {
     updateCyrus((prev) => ({ ...prev, notes }));
+  }, [updateCyrus]);
+
+  const setCyrusJournal = useCallback((journal: JournalEntry[]) => {
+    updateCyrus((prev) => ({ ...prev, journal }));
+  }, [updateCyrus]);
+
+  const setCyrusMysteries = useCallback((mysteries: CampaignMystery[]) => {
+    updateCyrus((prev) => ({ ...prev, mysteries }));
   }, [updateCyrus]);
 
   // Wyn'el Actions
@@ -2584,6 +2705,77 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     }
   }, [activeCharacterId, setAriaSpellSlotMax, setCyrusSpellSlotMax, setWynelPactSlotMax, setKastorielSpellSlotMax, customCharacters, updateCustomCharacter, setVesperSpellSlotMax, showToast]);
 
+  // DM Multi-Note Campaign Chronicle Callbacks
+  const addDMNote = useCallback((noteData: Omit<DMNote, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newNote: DMNote = {
+      ...noteData,
+      id: `dm-note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    dmNotesModifiedRef.current = Date.now();
+    setDmNotesState((prev) => {
+      const next = [newNote, ...prev];
+      try {
+        localStorage.setItem(DM_NOTES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('dm_notes', next).catch(() => {});
+      return next;
+    });
+    showToast('Chronicle Entry Added', `Note "${newNote.title}" saved`, 'power');
+  }, [showToast]);
+
+  const updateDMNote = useCallback((id: string, updates: Partial<DMNote>) => {
+    dmNotesModifiedRef.current = Date.now();
+    setDmNotesState((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n));
+      try {
+        localStorage.setItem(DM_NOTES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('dm_notes', next).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const deleteDMNote = useCallback((id: string) => {
+    dmNotesModifiedRef.current = Date.now();
+    setDmNotesState((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      try {
+        localStorage.setItem(DM_NOTES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('dm_notes', next).catch(() => {});
+      return next;
+    });
+    showToast('Note Deleted', 'Chronicle note removed', 'info');
+  }, [showToast]);
+
+  const toggleNoteVisibility = useCallback((id: string) => {
+    dmNotesModifiedRef.current = Date.now();
+    setDmNotesState((prev) => {
+      const target = prev.find((n) => n.id === id);
+      const newVis = target ? !target.isPlayerVisible : false;
+      const next = prev.map((n) => (n.id === id ? { ...n, isPlayerVisible: newVis, updatedAt: Date.now() } : n));
+      try {
+        localStorage.setItem(DM_NOTES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('dm_notes', next).catch(() => {});
+      showToast(
+        newVis ? 'Shared to Player' : 'Concealed (DM Only)',
+        newVis ? 'Note is now visible on player sheets' : 'Note is hidden from players',
+        newVis ? 'power' : 'info'
+      );
+      return next;
+    });
+  }, [showToast]);
+
+  const getNotesForCharacter = useCallback((characterId: string) => {
+    const cleanTarget = characterId.toLowerCase();
+    return dmNotes.filter(
+      (n) => n.isPlayerVisible && (n.targetCharacterId === 'all' || n.targetCharacterId.toLowerCase() === cleanTarget)
+    );
+  }, [dmNotes]);
+
   return (
     <CharacterContext.Provider
       value={{
@@ -2650,6 +2842,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setAriaInventory,
         setAriaCurrency,
         setAriaNotes,
+        setAriaJournal,
+        setAriaMysteries,
         cyrus,
         setCyrusLevel,
         setCyrusHP,
@@ -2664,6 +2858,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setCyrusInventory,
         setCyrusCurrency,
         setCyrusNotes,
+        setCyrusJournal,
+        setCyrusMysteries,
         wynel,
         setWynelLevel,
         setWynelHP,
@@ -2713,6 +2909,12 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         dbInfo,
         lastSyncedAt,
         forceSync,
+        dmNotes,
+        addDMNote,
+        updateDMNote,
+        deleteDMNote,
+        toggleNoteVisibility,
+        getNotesForCharacter,
         isLoaded,
       }}
     >

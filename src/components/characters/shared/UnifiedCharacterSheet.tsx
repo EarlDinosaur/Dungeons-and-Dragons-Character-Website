@@ -73,6 +73,7 @@ import UnifiedDiceRollerModal, { type RollRequest } from '@/components/ui/Unifie
 import InventoryManager from '@/components/shared/InventoryManager';
 import ProgressionPanel from '@/components/characters/vesper/ProgressionPanel';
 import Dossier from '@/components/characters/vesper/Dossier';
+import PlayerChronicleView from './PlayerChronicleView';
 
 interface UnifiedCharacterSheetProps {
   character: CharacterState;
@@ -1118,7 +1119,7 @@ export default function UnifiedCharacterSheet({
             )}
 
             {/* Attack Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {(character.attacks || []).map((atk) => (
                 <div
                   key={atk.id}
@@ -1499,44 +1500,50 @@ export default function UnifiedCharacterSheet({
               })}
             </div>
 
-            {/* Skills Table */}
-            <div className="rounded-xl bg-[#0e1017]/90 border border-zinc-800 overflow-hidden">
-              <div className="p-3 border-b border-zinc-800 bg-zinc-950/60 flex items-center justify-between text-xs font-mono uppercase text-zinc-400 font-bold">
-                <span>Skill</span>
-                <span>Bonus &amp; Roll</span>
+            {/* Skills Grid */}
+            <div className="rounded-xl bg-[#0e1017]/90 border border-zinc-800 p-3 sm:p-4">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800/80 text-xs font-mono uppercase text-zinc-400 font-bold">
+                <span className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>Skills &amp; Proficiencies</span>
+                </span>
+                <span className="text-[11px] text-zinc-500 font-normal hidden sm:inline">
+                  Tap dot to toggle proficiency &bull; Tap bonus to roll
+                </span>
               </div>
 
-              <div className="divide-y divide-zinc-800/50">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {(character.skills || []).map((sk) => {
                   const breakdown = calculateSkillWithBreakdown(character, sk.name);
 
                   return (
                     <div
                       key={sk.name}
-                      className="p-2.5 flex items-center justify-between hover:bg-zinc-800/30 transition-colors text-xs"
+                      className="p-2.5 rounded-lg bg-black/40 border border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-900/40 transition-colors flex items-center justify-between gap-2 text-xs"
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <button
                           onClick={() => onToggleSkillProficiency?.(sk.name)}
-                          className="cursor-pointer"
+                          className="cursor-pointer shrink-0"
                           title="Toggle Proficiency"
                         >
                           <span
-                            className={`w-2.5 h-2.5 rounded-full inline-block ${sk.expertise
+                            className={`w-3 h-3 rounded-full inline-block ${
+                              sk.expertise
                                 ? 'bg-amber-400 ring-2 ring-amber-400/40'
                                 : sk.proficient
-                                  ? 'bg-amber-400'
-                                  : 'bg-zinc-700'
-                              }`}
+                                ? 'bg-amber-400'
+                                : 'bg-zinc-700'
+                            }`}
                           />
                         </button>
-                        <span className="font-medium text-zinc-200">{sk.name}</span>
-                        <span className="text-[10px] font-mono text-zinc-500 uppercase">
+                        <span className="font-medium text-zinc-200 truncate">{sk.name}</span>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase shrink-0">
                           ({sk.ability})
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => setActiveBreakdown(breakdown)}
                           className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
@@ -1557,7 +1564,7 @@ export default function UnifiedCharacterSheet({
                               conditionMods.checkDisadvantageReasons.join(', ')
                             )
                           }
-                          className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-amber-500 hover:text-black font-mono font-bold text-zinc-200 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-amber-500 hover:text-black font-mono font-bold text-zinc-200 transition-colors cursor-pointer text-xs"
                         >
                           {breakdown.displayValue}
                         </button>
@@ -1764,7 +1771,7 @@ export default function UnifiedCharacterSheet({
               }
 
               return (
-                <div className="space-y-2.5">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5 items-start">
                   {filtered.map((spell) => {
                     const isExpanded = !!expandedSpellIds[spell.id];
                     const hasAvailableSlot =
@@ -2005,6 +2012,15 @@ export default function UnifiedCharacterSheet({
             onNotesChange={onNotesChange || (() => { })}
             onJournalChange={onJournalChange || (() => { })}
             onMysteriesChange={onMysteriesChange || (() => { })}
+          />
+        )}
+
+        {/* TAB 8: DM CHRONICLE & NOTES */}
+        {activeTab === 'chronicle' && (
+          <PlayerChronicleView
+            characterId={character.id || character.name.toLowerCase()}
+            characterName={character.name}
+            primaryColor={primaryColor}
           />
         )}
       </div>
