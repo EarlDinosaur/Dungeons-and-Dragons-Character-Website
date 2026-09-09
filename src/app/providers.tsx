@@ -19,6 +19,11 @@ import { fetchSync, pushCharacterSync, pushCharacterDelete, pushCampaignSync, fe
 
 import MediaPickerModal from '@/components/ui/MediaPickerModal';
 import type { DMNote } from '@/lib/dm-types';
+import type { EquipmentSlotId } from '@/lib/types';
+import type { CustomNPC } from '@/lib/npc-types';
+import { DEFAULT_CAMPAIGN_NPCS } from '@/lib/npc-types';
+import type { CampaignShop, ShopItem } from '@/lib/shop-types';
+import { DEFAULT_CAMPAIGN_SHOPS } from '@/lib/shop-types';
 
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
@@ -31,6 +36,8 @@ const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
 const CUSTOM_CHARACTERS_STORAGE_KEY = 'dnd_custom_characters';
 const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
 const DM_NOTES_STORAGE_KEY = 'dnd_ashen_pact_dm_notes';
+const CUSTOM_NPCS_STORAGE_KEY = 'dnd_ashen_pact_custom_npcs';
+const CAMPAIGN_SHOPS_STORAGE_KEY = 'dnd_ashen_pact_campaign_shops';
 
 const DEFAULT_DM_NOTES: DMNote[] = [
   {
@@ -300,6 +307,27 @@ interface CharacterContextType {
   toggleNoteVisibility: (id: string) => void;
   getNotesForCharacter: (characterId: string) => DMNote[];
 
+  // Custom NPC System
+  customNPCs: CustomNPC[];
+  addCustomNPC: (npc: Omit<CustomNPC, 'id' | 'createdAt' | 'updatedAt'>) => CustomNPC;
+  updateCustomNPC: (id: string, updates: Partial<CustomNPC>) => void;
+  deleteCustomNPC: (id: string) => void;
+  toggleNPCPlayerVisibility: (id: string) => void;
+
+  // Campaign Shop System
+  campaignShops: CampaignShop[];
+  addShop: (shop: Omit<CampaignShop, 'id'>) => void;
+  updateShop: (id: string, updates: Partial<CampaignShop>) => void;
+  deleteShop: (id: string) => void;
+  addShopItem: (shopId: string, item: Omit<ShopItem, 'id'>) => void;
+  updateShopItem: (shopId: string, itemId: string, updates: Partial<ShopItem>) => void;
+  deleteShopItem: (shopId: string, itemId: string) => void;
+  purchaseShopItem: (characterId: string, shopId: string, itemId: string) => { success: boolean; message: string };
+
+  // Equipment Slot Management (BG3 Paperdoll)
+  equipInventoryItem: (charId: string, itemId: string, slot?: EquipmentSlotId) => void;
+  unequipInventoryItem: (charId: string, itemId: string) => void;
+
   isLoaded: boolean;
 }
 
@@ -331,6 +359,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [customCharacters, setCustomCharactersState] = useState<Record<string, CharacterState>>({});
   const [customThemes, setCustomThemesState] = useState<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const [dmNotes, setDmNotesState] = useState<DMNote[]>(DEFAULT_DM_NOTES);
+  const [customNPCs, setCustomNPCsState] = useState<CustomNPC[]>(DEFAULT_CAMPAIGN_NPCS);
+  const [campaignShops, setCampaignShopsState] = useState<CampaignShop[]>(DEFAULT_CAMPAIGN_SHOPS);
 
   const lastServerTimestampRef = useRef<number>(0);
   const vesperModifiedRef = useRef<number>(0);
@@ -341,6 +371,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const mediaModifiedRef = useRef<number>(0);
   const rosterModifiedRef = useRef<number>(0);
   const dmNotesModifiedRef = useRef<number>(0);
+  const customNPCsModifiedRef = useRef<number>(0);
+  const campaignShopsModifiedRef = useRef<number>(0);
   const customCharactersRef = useRef<Record<string, CharacterState>>({});
   const customThemesRef = useRef<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const isPollingRef = useRef<boolean>(false);
@@ -614,6 +646,26 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           const parsed = JSON.parse(savedDMNotesRaw);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setDmNotesState(parsed);
+          }
+        } catch {}
+      }
+
+      const savedNPCsRaw = localStorage.getItem(CUSTOM_NPCS_STORAGE_KEY);
+      if (savedNPCsRaw) {
+        try {
+          const parsed = JSON.parse(savedNPCsRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCustomNPCsState(parsed);
+          }
+        } catch {}
+      }
+
+      const savedShopsRaw = localStorage.getItem(CAMPAIGN_SHOPS_STORAGE_KEY);
+      if (savedShopsRaw) {
+        try {
+          const parsed = JSON.parse(savedShopsRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCampaignShopsState(parsed);
           }
         } catch {}
       }
@@ -2776,6 +2828,344 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     );
   }, [dmNotes]);
 
+  // ----------------------------------------------------
+  // Custom NPC Actions
+  // ----------------------------------------------------
+  const addCustomNPC = useCallback((npcData: Omit<CustomNPC, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newNPC: CustomNPC = {
+      ...npcData,
+      id: `npc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    customNPCsModifiedRef.current = Date.now();
+    setCustomNPCsState((prev) => {
+      const next = [newNPC, ...prev];
+      try {
+        localStorage.setItem(CUSTOM_NPCS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('custom_npcs', next).catch(() => {});
+      return next;
+    });
+    showToast('NPC Created', `${newNPC.name} added to Codex`, 'power');
+    return newNPC;
+  }, [showToast]);
+
+  const updateCustomNPC = useCallback((id: string, updates: Partial<CustomNPC>) => {
+    customNPCsModifiedRef.current = Date.now();
+    setCustomNPCsState((prev) => {
+      const next = prev.map((npc) => (npc.id === id ? { ...npc, ...updates, updatedAt: Date.now() } : npc));
+      try {
+        localStorage.setItem(CUSTOM_NPCS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('custom_npcs', next).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const deleteCustomNPC = useCallback((id: string) => {
+    customNPCsModifiedRef.current = Date.now();
+    setCustomNPCsState((prev) => {
+      const next = prev.filter((npc) => npc.id !== id);
+      try {
+        localStorage.setItem(CUSTOM_NPCS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('custom_npcs', next).catch(() => {});
+      return next;
+    });
+    showToast('NPC Removed', 'NPC deleted from Codex', 'info');
+  }, [showToast]);
+
+  const toggleNPCPlayerVisibility = useCallback((id: string) => {
+    customNPCsModifiedRef.current = Date.now();
+    setCustomNPCsState((prev) => {
+      const target = prev.find((n) => n.id === id);
+      const newVis = target ? !target.sharedWithPlayers : false;
+      const next = prev.map((n) => (n.id === id ? { ...n, sharedWithPlayers: newVis, updatedAt: Date.now() } : n));
+      try {
+        localStorage.setItem(CUSTOM_NPCS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('custom_npcs', next).catch(() => {});
+      showToast(
+        newVis ? 'NPC Shared' : 'NPC Hidden',
+        newVis ? 'NPC is now visible in player lore archive' : 'NPC is private to DM',
+        newVis ? 'power' : 'info'
+      );
+      return next;
+    });
+  }, [showToast]);
+
+  // ----------------------------------------------------
+  // Campaign Shop Actions
+  // ----------------------------------------------------
+  const addShop = useCallback((shopData: Omit<CampaignShop, 'id'>) => {
+    const newShop: CampaignShop = {
+      ...shopData,
+      id: `shop-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = [...prev, newShop];
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+    showToast('Shop Opened', `${newShop.name} established in town`, 'power');
+  }, [showToast]);
+
+  const updateShop = useCallback((id: string, updates: Partial<CampaignShop>) => {
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = prev.map((shop) => (shop.id === id ? { ...shop, ...updates } : shop));
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const deleteShop = useCallback((id: string) => {
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = prev.filter((shop) => shop.id !== id);
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+    showToast('Shop Closed', 'Shop removed from marketplace', 'info');
+  }, [showToast]);
+
+  const addShopItem = useCallback((shopId: string, itemData: Omit<ShopItem, 'id'>) => {
+    const newItem: ShopItem = {
+      ...itemData,
+      id: `shop-item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = prev.map((shop) => {
+        if (shop.id !== shopId) return shop;
+        return { ...shop, items: [...shop.items, newItem] };
+      });
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+    showToast('Item Stocked', `${newItem.name} added to catalog`, 'inventory');
+  }, [showToast]);
+
+  const updateShopItem = useCallback((shopId: string, itemId: string, updates: Partial<ShopItem>) => {
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = prev.map((shop) => {
+        if (shop.id !== shopId) return shop;
+        return {
+          ...shop,
+          items: shop.items.map((it) => (it.id === itemId ? { ...it, ...updates } : it)),
+        };
+      });
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const deleteShopItem = useCallback((shopId: string, itemId: string) => {
+    campaignShopsModifiedRef.current = Date.now();
+    setCampaignShopsState((prev) => {
+      const next = prev.map((shop) => {
+        if (shop.id !== shopId) return shop;
+        return { ...shop, items: shop.items.filter((it) => it.id !== itemId) };
+      });
+      try {
+        localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      pushCampaignSync('campaign_shops', next).catch(() => {});
+      return next;
+    });
+    showToast('Item Removed', 'Item removed from shop', 'info');
+  }, [showToast]);
+
+  // ----------------------------------------------------
+  // Equipment Slot Management (BG3 Paperdoll)
+  // ----------------------------------------------------
+  const equipInventoryItem = useCallback((charId: string, itemId: string, slot?: EquipmentSlotId) => {
+    const updateInv = (prevInv: InventoryItem[]) => {
+      const target = prevInv.find((i) => i.id === itemId);
+      if (!target) return prevInv;
+      const targetSlot = slot || target.slot;
+
+      return prevInv.map((i) => {
+        if (i.id === itemId) {
+          return { ...i, equipped: true, slot: targetSlot };
+        }
+        if (targetSlot && i.slot === targetSlot && i.equipped) {
+          return { ...i, equipped: false };
+        }
+        return i;
+      });
+    };
+
+    if (charId === 'vesper') {
+      updateCharacter((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'aria') {
+      updateAria((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else {
+      updateCustomCharacter(charId, (prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    }
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
+
+  const unequipInventoryItem = useCallback((charId: string, itemId: string) => {
+    const updateInv = (prevInv: InventoryItem[]) => {
+      return prevInv.map((i) => (i.id === itemId ? { ...i, equipped: false } : i));
+    };
+
+    if (charId === 'vesper') {
+      updateCharacter((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'aria') {
+      updateAria((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else if (charId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    } else {
+      updateCustomCharacter(charId, (prev) => ({ ...prev, inventory: updateInv(prev.inventory) }));
+    }
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
+
+  // ----------------------------------------------------
+  // Marketplace Purchasing
+  // ----------------------------------------------------
+  const purchaseShopItem = useCallback((characterId: string, shopId: string, itemId: string) => {
+    const shop = campaignShops.find((s) => s.id === shopId);
+    if (!shop) return { success: false, message: 'Shop not found' };
+    const item = shop.items.find((i) => i.id === itemId);
+    if (!item) return { success: false, message: 'Item not found in shop' };
+
+    if (item.stock === 0) {
+      showToast('Out of Stock', `${item.name} is currently sold out.`, 'info');
+      return { success: false, message: 'Item out of stock' };
+    }
+
+    const finalPrice = Math.max(1, Math.round(item.price * (1 - shop.discountPercent / 100)));
+
+    let currentCurrency: Currency;
+    let setCurrFn: (c: Currency) => void;
+    let addInvFn: (newItem: InventoryItem) => void;
+
+    if (characterId === 'vesper') {
+      currentCurrency = character.currency;
+      setCurrFn = setCurrency;
+      addInvFn = (ni) => updateCharacter((prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    } else if (characterId === 'aria') {
+      currentCurrency = aria.currency;
+      setCurrFn = setAriaCurrency;
+      addInvFn = (ni) => updateAria((prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    } else if (characterId === 'cyrus') {
+      currentCurrency = cyrus.currency;
+      setCurrFn = setCyrusCurrency;
+      addInvFn = (ni) => updateCyrus((prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    } else if (characterId === 'wynel') {
+      currentCurrency = wynel.currency;
+      setCurrFn = setWynelCurrency;
+      addInvFn = (ni) => updateWynel((prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    } else if (characterId === 'kastoriel') {
+      currentCurrency = kastoriel.currency;
+      setCurrFn = setKastorielCurrency;
+      addInvFn = (ni) => updateKastoriel((prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    } else {
+      const customChar = customCharacters[characterId];
+      if (!customChar) return { success: false, message: 'Character not found' };
+      currentCurrency = customChar.currency;
+      setCurrFn = (c) => updateCustomCharacter(characterId, (prev) => ({ ...prev, currency: c }));
+      addInvFn = (ni) => updateCustomCharacter(characterId, (prev) => ({ ...prev, inventory: [ni, ...prev.inventory] }));
+    }
+
+    const totalGP = (currentCurrency.pp || 0) * 10 + (currentCurrency.gp || 0) + (currentCurrency.ep || 0) * 0.5 + (currentCurrency.sp || 0) * 0.1 + (currentCurrency.cp || 0) * 0.01;
+
+    if (totalGP < finalPrice) {
+      showToast('Insufficient Funds', `You need ${finalPrice} GP, but only have ${totalGP.toFixed(1)} GP equivalent.`, 'info');
+      return { success: false, message: 'Insufficient funds' };
+    }
+
+    let rem = finalPrice;
+    let newGP = currentCurrency.gp || 0;
+    let newPP = currentCurrency.pp || 0;
+    let newSP = currentCurrency.sp || 0;
+    let newCP = currentCurrency.cp || 0;
+
+    if (newGP >= rem) {
+      newGP -= rem;
+      rem = 0;
+    } else {
+      rem -= newGP;
+      newGP = 0;
+      const ppNeeded = Math.ceil(rem / 10);
+      if (newPP >= ppNeeded) {
+        newPP -= ppNeeded;
+        const change = (ppNeeded * 10) - rem;
+        newGP += change;
+        rem = 0;
+      }
+    }
+
+    setCurrFn({
+      ...currentCurrency,
+      gp: newGP,
+      pp: newPP,
+      sp: newSP,
+      cp: newCP,
+    });
+
+    const newItem: InventoryItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      name: item.name,
+      quantity: 1,
+      weight: item.weight,
+      description: item.description + (item.effect ? ` (${item.effect})` : ''),
+      equipped: false,
+      category: item.category === 'potion' || item.category === 'scroll' ? 'consumable' : (item.category as any),
+      rarity: item.rarity,
+    };
+
+    addInvFn(newItem);
+
+    if (item.stock > 0) {
+      setCampaignShopsState((prev) => {
+        const next = prev.map((s) => {
+          if (s.id !== shopId) return s;
+          return {
+            ...s,
+            items: s.items.map((it) => (it.id === itemId ? { ...it, stock: it.stock - 1 } : it)),
+          };
+        });
+        try {
+          localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
+
+    showToast('Purchase Complete', `Purchased "${item.name}" for ${finalPrice} GP`, 'currency');
+    return { success: true, message: `Purchased ${item.name} for ${finalPrice} GP` };
+  }, [campaignShops, character, aria, cyrus, wynel, kastoriel, customCharacters, setCurrency, setAriaCurrency, setCyrusCurrency, setWynelCurrency, setKastorielCurrency, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter, showToast]);
+
   return (
     <CharacterContext.Provider
       value={{
@@ -2915,6 +3305,21 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         deleteDMNote,
         toggleNoteVisibility,
         getNotesForCharacter,
+        customNPCs,
+        addCustomNPC,
+        updateCustomNPC,
+        deleteCustomNPC,
+        toggleNPCPlayerVisibility,
+        campaignShops,
+        addShop,
+        updateShop,
+        deleteShop,
+        addShopItem,
+        updateShopItem,
+        deleteShopItem,
+        purchaseShopItem,
+        equipInventoryItem,
+        unequipInventoryItem,
         isLoaded,
       }}
     >

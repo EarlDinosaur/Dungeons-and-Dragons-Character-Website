@@ -74,6 +74,7 @@ import InventoryManager from '@/components/shared/InventoryManager';
 import ProgressionPanel from '@/components/characters/vesper/ProgressionPanel';
 import Dossier from '@/components/characters/vesper/Dossier';
 import PlayerChronicleView from './PlayerChronicleView';
+import PlayerMarketplaceView from './PlayerMarketplaceView';
 
 interface UnifiedCharacterSheetProps {
   character: CharacterState;
@@ -2021,6 +2022,13 @@ export default function UnifiedCharacterSheet({
             characterId={character.id || character.name.toLowerCase()}
             characterName={character.name}
             primaryColor={primaryColor}
+          />
+        )}
+
+        {/* TAB 9: MARKETPLACE & SHOPS */}
+        {activeTab === 'shop' && (
+          <PlayerMarketplaceView
+            characterId={character.id || character.name.toLowerCase()}
           />
         )}
       </div>

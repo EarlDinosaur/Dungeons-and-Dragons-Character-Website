@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Swords, Package, Gem, BookOpen, Moon, Wand2, Sparkles, Scroll, Flame, Heart, ArrowLeft, Camera } from 'lucide-react';
+import { Shield, Swords, Package, Gem, BookOpen, Moon, Wand2, Sparkles, Scroll, Flame, Heart, ArrowLeft, Camera, Store } from 'lucide-react';
 import type { TabId } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 
@@ -100,16 +100,18 @@ export function useCharacterTabs() {
     (character?.spellcasting?.spells && character.spellcasting.spells.length > 0) ||
     (customChar?.spellcasting?.spells && customChar.spellcasting.spells.length > 0) ||
     (Object.keys(character?.spellcasting?.slots || {}).length > 0) ||
-    (Object.keys(customChar?.spellcasting?.slots || {}).length > 0);
+    (Object.keys(customChar?.spellcasting?.slots || {}).length > 0) ||
+    (character?.classes?.some((c) => ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard', 'Warlock', 'Paladin', 'Ranger', 'Artificer'].includes(c.className)));
 
   // Character-specific tab definitions
   const vesperTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Stats', icon: Shield },
+    { id: 'character', label: 'Character', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
     { id: 'artifact', label: 'Soul Harvester', icon: Gem },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
@@ -121,6 +123,7 @@ export function useCharacterTabs() {
     { id: 'artifact', label: 'Lunar Tides', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Grimoire', icon: Scroll },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
@@ -132,6 +135,7 @@ export function useCharacterTabs() {
     { id: 'artifact', label: 'Solar Engine', icon: Flame },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Equipment', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Prophecies', icon: Scroll },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
@@ -143,6 +147,7 @@ export function useCharacterTabs() {
     { id: 'artifact', label: 'Crimson Tattoo', icon: Heart },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Treasury', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
@@ -154,6 +159,7 @@ export function useCharacterTabs() {
     { id: 'artifact', label: 'Starry Forms', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Pendulum & Gear', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Starlight Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
@@ -165,6 +171,7 @@ export function useCharacterTabs() {
     { id: 'artifact', label: 'Heroic Powers', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'shop', label: 'Marketplace', icon: Store },
     { id: 'dossier', label: 'Dossier', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];

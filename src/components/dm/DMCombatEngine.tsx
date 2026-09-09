@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Swords,
   Play,
@@ -28,6 +28,8 @@ interface DMCombatEngineProps {
   partyMembers: PartyMemberHUDState[];
   onUpdatePartyHP: (charId: string, currentHP: number, tempHP?: number) => void;
   onTogglePartyCondition: (charId: string, condition: string) => void;
+  externalCombatants?: Combatant[];
+  onClearExternalCombatants?: () => void;
 }
 
 const QUICK_MONSTER_TEMPLATES = [
@@ -45,6 +47,8 @@ export default function DMCombatEngine({
   partyMembers,
   onUpdatePartyHP,
   onTogglePartyCondition,
+  externalCombatants,
+  onClearExternalCombatants,
 }: DMCombatEngineProps) {
   // Combat State
   const [isCombatActive, setIsCombatActive] = useState<boolean>(false);
@@ -54,6 +58,14 @@ export default function DMCombatEngine({
   // Initialize combatants with party members
   const [monsters, setMonsters] = useState<Combatant[]>([]);
   const [hpInputs, setHpInputs] = useState<Record<string, string>>({});
+
+  // Sync incoming external combatants (e.g. sent from NPC Codex)
+  useEffect(() => {
+    if (externalCombatants && externalCombatants.length > 0) {
+      setMonsters((prev) => [...prev, ...externalCombatants]);
+      onClearExternalCombatants?.();
+    }
+  }, [externalCombatants, onClearExternalCombatants]);
 
   // Add Monster Form Modal
   const [isAddingMonster, setIsAddingMonster] = useState<boolean>(false);

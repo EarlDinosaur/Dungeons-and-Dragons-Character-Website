@@ -75,6 +75,22 @@ export interface AssassinFeature {
   mechanics: string;
 }
 
+export type EquipmentSlotId =
+  | 'head'
+  | 'cloak'
+  | 'armor'
+  | 'gloves'
+  | 'boots'
+  | 'clothes'
+  | 'amulet'
+  | 'ring1'
+  | 'ring2'
+  | 'trinket'
+  | 'melee_main'
+  | 'melee_off'
+  | 'ranged_main'
+  | 'ranged_off';
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -83,6 +99,12 @@ export interface InventoryItem {
   description: string;
   equipped: boolean;
   category: 'weapon' | 'armor' | 'gear' | 'consumable' | 'treasure' | 'tool';
+  slot?: EquipmentSlotId;
+  rarity?: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Legendary';
+  damage?: string;
+  attackBonus?: number;
+  acBonus?: number;
+  icon?: string;
 }
 
 export interface Currency {
@@ -278,5 +300,5 @@ export interface CharacterState {
   lastSaved: string;
 }
 
-export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier' | 'spells' | 'progression' | 'chronicle';
+export type TabId = 'character' | 'combat' | 'inventory' | 'artifact' | 'dossier' | 'spells' | 'progression' | 'chronicle' | 'shop';
 

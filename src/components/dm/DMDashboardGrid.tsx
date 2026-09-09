@@ -16,16 +16,21 @@ import {
   ExternalLink,
   ChevronRight,
   Info,
+  Skull,
+  Store,
 } from 'lucide-react';
-import type { PartyMemberHUDState, AtmosphereState } from '@/lib/dm-types';
+import type { PartyMemberHUDState, AtmosphereState, Combatant } from '@/lib/dm-types';
+import type { CustomNPC } from '@/lib/npc-types';
 import { useCharacter } from '@/app/providers';
 import DMPartyRosterView from './DMPartyRosterView';
 import DMCombatEngine from './DMCombatEngine';
 import DMCampaignChronicle from './DMCampaignChronicle';
 import DMRulesReference from './DMRulesReference';
 import DMAtmosphereBar from './DMAtmosphereBar';
+import DMNPCCodex from './DMNPCCodex';
+import DMShopManager from './DMShopManager';
 
-export type DMWorkspaceTab = 'roster' | 'combat' | 'chronicle' | 'rules';
+export type DMWorkspaceTab = 'roster' | 'combat' | 'npcs' | 'shops' | 'chronicle' | 'rules';
 
 interface DMDashboardGridProps {
   partyMembers: PartyMemberHUDState[];
@@ -50,10 +55,54 @@ export default function DMDashboardGrid({
   onBackToMenu,
   customHeaderActions,
 }: DMDashboardGridProps) {
-  const { dmNotes, addDMNote, updateDMNote, deleteDMNote, toggleNoteVisibility } = useCharacter();
+  const {
+    dmNotes,
+    addDMNote,
+    updateDMNote,
+    deleteDMNote,
+    toggleNoteVisibility,
+    customNPCs,
+    addCustomNPC,
+    updateCustomNPC,
+    deleteCustomNPC,
+    toggleNPCPlayerVisibility,
+    campaignShops,
+    addShop,
+    updateShop,
+    deleteShop,
+    addShopItem,
+    updateShopItem,
+    deleteShopItem,
+  } = useCharacter();
 
   // Active Workspace Tab (Default to Party Roster)
   const [activeTab, setActiveTab] = useState<DMWorkspaceTab>('roster');
+
+  // Combat queue for sending NPCs directly into encounter
+  const [queuedCombatants, setQueuedCombatants] = useState<Combatant[]>([]);
+
+  const handleSendNPCToCombat = (npc: CustomNPC) => {
+    const initBonus = npc.initiativeBonus ?? Math.floor((npc.stats.dex - 10) / 2);
+    const rolledInit = Math.floor(Math.random() * 20) + 1 + initBonus;
+    const newCombatant: Combatant = {
+      id: `npc-${npc.id}-${Date.now()}`,
+      name: npc.name,
+      isPlayer: false,
+      avatarUrl: npc.portraitUrl,
+      initiative: rolledInit,
+      initiativeModifier: initBonus,
+      ac: npc.ac,
+      currentHP: npc.hp,
+      maxHP: npc.maxHP,
+      tempHP: 0,
+      conditions: [],
+      crOrLevel: npc.cr ? `CR ${npc.cr}` : (npc.category === 'boss' ? 'Boss' : 'NPC'),
+      notes: `${npc.creatureType}${npc.alignment ? ` • ${npc.alignment}` : ''}`,
+    };
+
+    setQueuedCombatants((prev) => [...prev, newCombatant]);
+    setActiveTab('combat');
+  };
 
   // Atmosphere & Secret Dice Drawer/Panel State
   const [isToolsOpen, setIsToolsOpen] = useState<boolean>(false);
@@ -84,19 +133,33 @@ export default function DMDashboardGrid({
     },
     {
       id: 'combat',
-      label: 'Combat Engine',
+      label: 'Combat',
       icon: Swords,
     },
     {
+      id: 'npcs',
+      label: 'NPCs & Monsters',
+      icon: Skull,
+      badge: customNPCs.length,
+      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800/80',
+    },
+    {
+      id: 'shops',
+      label: 'Shops & Markets',
+      icon: Store,
+      badge: campaignShops.length,
+      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
+    },
+    {
       id: 'chronicle',
-      label: 'Chronicle & Notes',
+      label: 'Chronicle',
       icon: Scroll,
       badge: dmNotes.length,
       badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800/80',
     },
     {
       id: 'rules',
-      label: '5e Rules SRD',
+      label: 'Rules SRD',
       icon: BookOpen,
     },
   ];
@@ -288,11 +351,42 @@ export default function DMDashboardGrid({
               partyMembers={partyMembers}
               onUpdatePartyHP={onUpdatePartyHP}
               onTogglePartyCondition={onTogglePartyCondition}
+              externalCombatants={queuedCombatants}
+              onClearExternalCombatants={() => setQueuedCombatants([])}
             />
           </div>
         )}
 
-        {/* WORKSPACE 3: CAMPAIGN CHRONICLE & LINKED CHARACTER DISPATCHES */}
+        {/* WORKSPACE 3: NPC & MONSTER CODEX */}
+        {activeTab === 'npcs' && (
+          <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
+            <DMNPCCodex
+              npcs={customNPCs}
+              onAddNPC={addCustomNPC}
+              onUpdateNPC={updateCustomNPC}
+              onDeleteNPC={deleteCustomNPC}
+              onToggleVisibility={toggleNPCPlayerVisibility}
+              onSendToCombat={handleSendNPCToCombat}
+            />
+          </div>
+        )}
+
+        {/* WORKSPACE 4: CAMPAIGN SHOPS & MERCHANTS */}
+        {activeTab === 'shops' && (
+          <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
+            <DMShopManager
+              shops={campaignShops}
+              onAddShop={addShop}
+              onUpdateShop={updateShop}
+              onDeleteShop={deleteShop}
+              onAddItem={addShopItem}
+              onUpdateItem={updateShopItem}
+              onDeleteItem={deleteShopItem}
+            />
+          </div>
+        )}
+
+        {/* WORKSPACE 5: CAMPAIGN CHRONICLE & LINKED CHARACTER DISPATCHES */}
         {activeTab === 'chronicle' && (
           <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
             <DMCampaignChronicle
@@ -306,7 +400,7 @@ export default function DMDashboardGrid({
           </div>
         )}
 
-        {/* WORKSPACE 4: 5E RULES & CONDITIONS REFERENCE */}
+        {/* WORKSPACE 6: 5E RULES & CONDITIONS REFERENCE */}
         {activeTab === 'rules' && (
           <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
             <DMRulesReference />
