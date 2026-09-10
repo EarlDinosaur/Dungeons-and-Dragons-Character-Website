@@ -566,9 +566,9 @@ export default function BG3EquipmentPaperdoll({
   };
 
   return (
-    <div className="w-full flex flex-col items-center bg-[#07080b] text-zinc-200 font-mono select-none">
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-zinc-200 font-mono select-none animate-fade-in">
       {/* 1. Character Header: BG3 Name & Health Ribbon with comfortable spacing */}
-      <div className="w-full max-w-4xl flex items-center justify-between pt-2 pb-3 mb-5 border-b border-zinc-800/80">
+      <div className="w-full flex items-center justify-between pt-2 pb-3 mb-5 border-b border-zinc-800/80">
         <div className="flex items-center gap-2.5">
           <Crown size={18} className="text-amber-400" />
           <h2 className="text-sm sm:text-base font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider">
@@ -602,7 +602,7 @@ export default function BG3EquipmentPaperdoll({
       </div>
 
       {/* 2. BG3 Paperdoll Centerpiece with generous padding to prevent top overlap */}
-      <div className="w-full max-w-4xl flex flex-col items-center bg-gradient-to-b from-[#0b0d13] via-[#090b10] to-[#07080b] border border-zinc-800/80 rounded-2xl pt-8 pb-7 px-4 sm:px-8 shadow-2xl relative overflow-hidden">
+      <div className="w-full flex flex-col items-center bg-gradient-to-b from-[#0b0d13]/85 via-[#090b10]/80 to-[#07080b]/85 backdrop-blur-md border border-zinc-800/80 rounded-2xl pt-8 pb-7 px-4 sm:px-8 shadow-2xl relative overflow-hidden">
         {/* Ambient class rune behind paperdoll */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.06)_0%,transparent_70%)] pointer-events-none" />
 
@@ -697,7 +697,7 @@ export default function BG3EquipmentPaperdoll({
 
       {/* 4. Slot Selection & Swap Popover (Enforces Strict Slot-Type Matching) */}
       {selectedSlot && (
-        <div className="w-full max-w-4xl mt-4 p-4 rounded-xl bg-[#0c0e15] border border-amber-500/40 shadow-2xl animate-fade-in flex flex-col gap-3">
+        <div className="w-full mt-4 p-4 rounded-xl bg-[#0c0e15]/90 backdrop-blur-md border border-amber-500/40 shadow-2xl animate-fade-in flex flex-col gap-3">
           <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
             <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles size={14} /> Equipment Slot: {getSlotTypeName(selectedSlot)}
@@ -817,7 +817,7 @@ export default function BG3EquipmentPaperdoll({
       )}
 
       {/* 5. Baldur's Gate 3 Inventory Bag Grid with Rarity Coloring */}
-      <div className="w-full max-w-4xl mt-6 p-4 rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-xl flex flex-col gap-3">
+      <div className="w-full mt-6 p-4 rounded-2xl bg-[#090b10]/85 backdrop-blur-md border border-zinc-800/80 shadow-xl flex flex-col gap-3">
         {/* Category filter pills & search */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
           <div className="flex items-center gap-1 overflow-x-auto text-[11px]">
@@ -910,7 +910,7 @@ export default function BG3EquipmentPaperdoll({
 
         {/* 6. Item Details Tooltip / Card (When clicked) */}
         {inspectedItem && (
-          <div className="p-3 bg-[#0d0f17] border border-amber-500/40 rounded-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="p-3 bg-[#0d0f17]/90 backdrop-blur-md border border-amber-500/40 rounded-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
             {(() => {
               const itemRarity = getItemRarity(inspectedItem);
               const itemStyle = RARITY_COLORS[itemRarity] || RARITY_COLORS.Common;

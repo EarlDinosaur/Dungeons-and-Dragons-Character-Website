@@ -127,9 +127,9 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
   };
 
   return (
-    <div className="w-full flex flex-col items-center bg-[#07080b] text-zinc-200 font-mono select-none space-y-5">
+    <div className="w-full max-w-5xl mx-auto flex flex-col items-center text-zinc-200 font-mono select-none space-y-5 animate-fade-in">
       {/* 1. Character Purse Banner */}
-      <div className="w-full max-w-5xl rounded-2xl bg-gradient-to-r from-[#141209] via-[#0d0f17] to-[#0a0c12] border border-amber-500/40 p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+      <div className="w-full rounded-2xl bg-[#0d0f17]/90 backdrop-blur-md border border-amber-500/40 p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
             <Coins size={22} />
@@ -166,17 +166,17 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
       </div>
 
       {/* 2. Town Shops Navigation */}
-      <div className="w-full max-w-5xl flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="w-full flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {visibleShops.map((shop) => {
           const isSelected = (currentShop?.id || '') === shop.id;
           return (
             <button
               key={shop.id}
               onClick={() => setSelectedShopId(shop.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap border ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap border backdrop-blur-sm ${
                 isSelected
                   ? 'bg-amber-500 text-black border-amber-400 shadow-md scale-102'
-                  : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
               }`}
             >
               <Store size={14} />
@@ -193,9 +193,9 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
 
       {/* 3. Selected Shop Showcase */}
       {currentShop ? (
-        <div className="w-full max-w-5xl space-y-4">
+        <div className="w-full space-y-4">
           {/* Shopkeeper Banner */}
-          <div className="p-4 rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md flex flex-wrap items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-[#090b10]/90 backdrop-blur-md border border-zinc-800/80 shadow-md flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
@@ -221,7 +221,7 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
           </div>
 
           {/* Category Filter & Search Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950/80 border border-zinc-800/80">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
               {[
                 { id: 'all', label: 'All Items' },
@@ -237,7 +237,7 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
                   className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer whitespace-nowrap ${
                     activeCategory === cat.id
                       ? 'bg-amber-500 text-black shadow-xs'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                      : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
                   }`}
                 >
                   {cat.label}
@@ -252,7 +252,7 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search wares..."
-                className="w-full pl-8 pr-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
+                className="w-full pl-8 pr-2 py-1 bg-zinc-900/90 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
               />
             </div>
           </div>
@@ -271,9 +271,9 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
               return (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 ${
+                  className={`p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 backdrop-blur-md ${
                     rStyle.border
-                  } ${rStyle.bg} ${rStyle.glow} bg-[#0c0e15] gap-3`}
+                  } ${rStyle.bg} ${rStyle.glow} bg-[#0c0e15]/85 gap-3 hover:border-amber-400/60 shadow-lg`}
                 >
                   <div>
                     {/* Item Name & Rarity */}

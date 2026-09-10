@@ -544,6 +544,32 @@ export default function UnifiedCharacterSheet({
     setHpDelta('');
   };
 
+  const hitDiceTotal = character.combat?.hitDice?.total ?? character.level;
+  const hitDiceUsed = character.combat?.hitDice?.used ?? 0;
+  const hitDiceRemaining = Math.max(0, hitDiceTotal - hitDiceUsed);
+  const hitDiceDie = character.combat?.hitDice?.diceType || (character.classes?.[0]?.hitDice || 'd8');
+
+  const handleQuickDamage = (amount: number) => {
+    if (!onHPChange || amount <= 0) return;
+    if (tempHP > 0) {
+      if (amount <= tempHP) {
+        onTempHPChange?.(tempHP - amount);
+        return;
+      } else {
+        const remainder = amount - tempHP;
+        onTempHPChange?.(0);
+        onHPChange(Math.max(0, currentHP - remainder));
+        return;
+      }
+    }
+    onHPChange(Math.max(0, currentHP - amount));
+  };
+
+  const handleQuickHeal = (amount: number) => {
+    if (!onHPChange || amount <= 0) return;
+    onHPChange(Math.min(maxHP, currentHP + amount));
+  };
+
   const handleSaveScores = () => {
     if (onAbilityBaseScoreChange) {
       for (const [key, val] of Object.entries(draftScores) as [AbilityName, number][]) {
@@ -720,157 +746,166 @@ export default function UnifiedCharacterSheet({
         } as React.CSSProperties
       }
     >
-      {/* 1. MASTER UNIFIED HERO HEADER */}
-      <div className="rounded-2xl bg-[#0b0d14]/90 border border-[var(--char-primary,#dc2626)]/30 p-4 sm:p-6 shadow-xl backdrop-blur-md relative overflow-hidden">
-        {/* Ambient Top Glow */}
-        <div
-          className="absolute -top-16 -left-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-20"
-          style={{ backgroundColor: primaryColor }}
-        />
+      {/* 1. MASTER UNIFIED HERO HEADER (Displayed only in Stats tab) */}
+      {(activeTab === 'character' || (activeTab as string) === 'stats') && (
+        <div className="rounded-2xl bg-[#0b0d14]/90 border border-[var(--char-primary,#dc2626)]/30 p-4 sm:p-6 shadow-xl backdrop-blur-md relative overflow-hidden animate-fade-in">
+          {/* Ambient Top Glow */}
+          <div
+            className="absolute -top-16 -left-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-20"
+            style={{ backgroundColor: primaryColor }}
+          />
 
-        {onBackToMenu && (
-          <div className="md:hidden relative z-10 mb-3">
-            <button
-              onClick={onBackToMenu}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
-            >
-              <ArrowLeft size={13} />
-              <span>Guildhall</span>
-            </button>
-          </div>
-        )}
-
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
-          {/* Avatar & Hero Identity */}
-          <div className="flex items-center gap-4">
-            <div className="relative group shrink-0">
-              <img
-                src={portraitUrl || '/vesper-portrait.png'}
-                alt={character.name}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 shadow-lg transition-transform group-hover:scale-105"
-                style={{ borderColor: accentColor }}
-              />
-              {onOpenMediaPicker && (
-                <button
-                  onClick={onOpenMediaPicker}
-                  className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
-                  title="Change Portrait or Wallpaper"
-                >
-                  <Camera size={20} />
-                </button>
-              )}
+          {onBackToMenu && (
+            <div className="md:hidden relative z-10 mb-3">
+              <button
+                onClick={onBackToMenu}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/60 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
+              >
+                <ArrowLeft size={13} />
+                <span>Guildhall</span>
+              </button>
             </div>
+          )}
 
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <button
-                  onClick={openMulticlassModal}
-                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shadow-xs hover:brightness-125 transition-all cursor-pointer group"
-                  style={{
-                    backgroundColor: `${primaryColor}20`,
-                    borderColor: `${primaryColor}50`,
-                    color: accentColor,
-                  }}
-                  title="Click to manage Level & Multiclassing"
-                >
-                  <Layers size={12} className="group-hover:rotate-12 transition-transform text-amber-400" />
-                  <span>Level {character.level} {character.class}</span>
-                  {character.subclass && (
-                    <span className="font-serif italic font-normal text-zinc-300">
-                      ({character.subclass})
-                    </span>
-                  )}
-                  {character.classes && character.classes.length > 1 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[9px] font-bold">
-                      +{character.classes.length - 1} Multi
-                    </span>
-                  )}
-                  <Edit2 size={10} className="opacity-60 group-hover:opacity-100 ml-0.5" />
-                </button>
-
-                {onLevelChange && (!character.classes || character.classes.length <= 1) && (
-                  <div className="flex items-center gap-1 bg-zinc-900/80 border border-zinc-700/80 rounded-full px-1.5 py-0.5">
-                    <button
-                      onClick={() => onLevelChange(Math.max(1, character.level - 1))}
-                      disabled={character.level <= 1}
-                      className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                      title="Level Down (-1)"
-                    >
-                      -
-                    </button>
-                    <span className="text-[10px] font-mono text-zinc-300 font-bold px-0.5">
-                      Lv {character.level}
-                    </span>
-                    <button
-                      onClick={() => onLevelChange(Math.min(20, character.level + 1))}
-                      disabled={character.level >= 20}
-                      className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                      title="Level Up (+1)"
-                    >
-                      +
-                    </button>
-                  </div>
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 xl:gap-6 relative z-10">
+            {/* Avatar & Hero Identity */}
+            <div className="flex items-center gap-4 shrink-0 min-w-0 sm:min-w-[280px]">
+              <div className="relative group shrink-0">
+                <img
+                  src={portraitUrl || '/vesper-portrait.png'}
+                  alt={character.name}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 shadow-lg transition-transform group-hover:scale-105"
+                  style={{ borderColor: accentColor }}
+                />
+                {onOpenMediaPicker && (
+                  <button
+                    onClick={onOpenMediaPicker}
+                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
+                    title="Change Portrait or Wallpaper"
+                  >
+                    <Camera size={20} />
+                  </button>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-heading)] text-zinc-100 tracking-tight">
-                {character.name}
-              </h1>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <button
+                    onClick={openMulticlassModal}
+                    className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shadow-xs hover:brightness-125 transition-all cursor-pointer group"
+                    style={{
+                      backgroundColor: `${primaryColor}20`,
+                      borderColor: `${primaryColor}50`,
+                      color: accentColor,
+                    }}
+                    title="Click to manage Level & Multiclassing"
+                  >
+                    <Layers size={12} className="group-hover:rotate-12 transition-transform text-amber-400" />
+                    <span>Level {character.level} {character.class}</span>
+                    {character.subclass && (
+                      <span className="font-serif italic font-normal text-zinc-300">
+                        ({character.subclass})
+                      </span>
+                    )}
+                    {character.classes && character.classes.length > 1 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[9px] font-bold">
+                        +{character.classes.length - 1} Multi
+                      </span>
+                    )}
+                    <Edit2 size={10} className="opacity-60 group-hover:opacity-100 ml-0.5" />
+                  </button>
 
-              <p className="text-xs text-zinc-400 font-serif">
-                {character.race} &bull; {character.background || 'Adventurer'} &bull;{' '}
-                {character.alignment || 'Neutral'}
-              </p>
+                  {onLevelChange && (!character.classes || character.classes.length <= 1) && (
+                    <div className="flex items-center gap-1 bg-zinc-900/80 border border-zinc-700/80 rounded-full px-1.5 py-0.5">
+                      <button
+                        onClick={() => onLevelChange(Math.max(1, character.level - 1))}
+                        disabled={character.level <= 1}
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                        title="Level Down (-1)"
+                      >
+                        -
+                      </button>
+                      <span className="text-[10px] font-mono text-zinc-300 font-bold px-0.5">
+                        Lv {character.level}
+                      </span>
+                      <button
+                        onClick={() => onLevelChange(Math.min(20, character.level + 1))}
+                        disabled={character.level >= 20}
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                        title="Level Up (+1)"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <h1 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-heading)] text-zinc-100 tracking-tight truncate">
+                  {character.name}
+                </h1>
+
+                <p className="text-xs text-zinc-400 font-serif truncate">
+                  {character.race} &bull; {character.background || 'Adventurer'} &bull;{' '}
+                  {character.alignment || 'Neutral'}
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Quick Resting & HP Vitality Controls */}
-          <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
-            {/* Rest Buttons */}
-            <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end flex-wrap">
-              {onShortRest && (
-                <button
-                  onClick={onShortRest}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/80 text-xs font-mono font-semibold transition-all cursor-pointer shadow-xs"
-                  title="Short Rest: Spend hit dice and recharge short-rest abilities"
-                >
-                  <Moon size={14} />
-                  <span>Short Rest</span>
-                </button>
-              )}
+            {/* Expanded Hit Points & Vitality Console (Scales across available width) */}
+            <div className="flex-1 min-w-0 bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 rounded-2xl p-3.5 sm:p-4 transition-all shadow-inner backdrop-blur-sm">
+              {/* Top Row: Title, Health State & Numeric HP Readout */}
+              <div className="flex items-center justify-between gap-3 text-xs mb-1 font-mono flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">
+                    <Heart size={15} className="text-red-500 fill-red-500/20" />
+                    <span>Hit Points</span>
+                  </div>
 
-              {onLongRest && (
-                <button
-                  onClick={onLongRest}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-black font-mono font-bold text-xs transition-all cursor-pointer shadow-md hover:brightness-110"
-                  style={{ backgroundColor: accentColor }}
-                  title="Long Rest: Full HP recovery, spell slots restored, daily abilities recharged"
-                >
-                  <Sun size={14} />
-                  <span>Long Rest</span>
-                </button>
-              )}
-            </div>
+                  {currentHP === maxHP ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 shadow-xs">
+                      Full Health
+                    </span>
+                  ) : currentHP <= 0 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-950 text-red-300 border border-red-700 animate-pulse">
+                      0 HP (Unconscious)
+                    </span>
+                  ) : hpPercent <= 20 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-950/80 text-red-400 border border-red-800/60 animate-pulse">
+                      Critical ({hpPercent}%)
+                    </span>
+                  ) : hpPercent <= 50 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/60">
+                      Bloodied ({hpPercent}%)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/50 text-emerald-400 border border-emerald-900/50">
+                      Healthy ({hpPercent}%)
+                    </span>
+                  )}
 
-            {/* Quick HP Bar & Adjuster */}
-            <div className="w-full md:w-72 bg-zinc-950/70 border border-zinc-800/90 rounded-xl p-2.5">
-              <div className="flex items-center justify-between text-xs mb-1 font-mono">
-                <span className="text-zinc-400 flex items-center gap-1">
-                  <Heart size={13} className="text-red-500" />
-                  <span>Hit Points</span>
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-white text-sm">
-                    {currentHP} <span className="text-zinc-500 text-xs">/ {maxHP}</span>
-                  </span>
                   {tempHP > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800/60 font-bold">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-800/60 flex items-center gap-1">
+                      <Shield size={10} className="text-blue-400" />
                       +{tempHP} Temp
                     </span>
                   )}
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl sm:text-2xl font-black font-mono text-white tracking-tight">
+                      {currentHP}
+                    </span>
+                    <span className="text-zinc-500 font-mono text-xs sm:text-sm font-semibold">
+                      / {maxHP} HP
+                    </span>
+                    <span className="text-[11px] font-mono text-zinc-500 ml-1">
+                      ({hpPercent}%)
+                    </span>
+                  </div>
                   <button
                     onClick={() => setActiveBreakdown(hpBreakdown)}
-                    className="text-zinc-500 hover:text-zinc-300 transition-colors ml-1"
+                    className="text-zinc-500 hover:text-amber-300 transition-colors p-0.5 cursor-pointer"
                     title="Explain HP calculation"
                   >
                     <Info size={13} />
@@ -878,194 +913,275 @@ export default function UnifiedCharacterSheet({
                 </div>
               </div>
 
-              {/* Progress Bar */}
-              <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden mb-2 border border-zinc-800">
+              {/* Health Progress Bar */}
+              <div className="w-full h-3 sm:h-3.5 bg-zinc-900/90 rounded-full overflow-hidden my-2.5 border border-zinc-800/90 relative shadow-inner">
                 <div
-                  className={`h-full transition-all duration-500 ${hpPercent > 50
-                      ? 'bg-emerald-500'
-                      : hpPercent > 20
-                        ? 'bg-amber-500'
-                        : 'bg-red-600 animate-pulse'
+                  className={`h-full transition-all duration-500 rounded-full ${hpPercent > 50
+                    ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                    : hpPercent > 20
+                      ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.35)]'
+                      : 'bg-gradient-to-r from-red-700 via-red-600 to-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                     }`}
                   style={{ width: `${hpPercent}%` }}
                 />
               </div>
 
-              {/* Quick - / + Damage & Heal Buttons */}
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  placeholder="Amount"
-                  value={hpDelta}
-                  onChange={(e) => setHpDelta(e.target.value)}
-                  className="w-16 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-xs text-center font-mono text-white focus:outline-none focus:border-amber-400"
-                />
-                <button
-                  onClick={handleApplyDamage}
-                  className="px-2 py-0.5 rounded bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 text-xs font-mono font-bold transition-colors cursor-pointer"
-                  title="Apply Damage"
-                >
-                  - Dmg
-                </button>
-                <button
-                  onClick={handleApplyHeal}
-                  className="px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/60 text-xs font-mono font-bold transition-colors cursor-pointer"
-                  title="Apply Healing"
-                >
-                  + Heal
-                </button>
-                <button
-                  onClick={handleApplyTempHP}
-                  className="px-1.5 py-0.5 rounded bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-800/60 text-[10px] font-mono transition-colors cursor-pointer"
-                  title="Set Temp HP"
-                >
-                  Temp
-                </button>
+              {/* Interactive Adjuster & Quick Preset Chips */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
+                {/* Quick Preset Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mr-0.5 hidden min-[480px]:inline">
+                    Quick:
+                  </span>
+                  <button
+                    onClick={() => handleQuickDamage(5)}
+                    className="px-2 py-0.5 rounded-md bg-red-950/50 hover:bg-red-900/80 text-red-300 border border-red-800/40 text-[11px] font-mono font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                    title="Take 5 Damage"
+                  >
+                    -5
+                  </button>
+                  <button
+                    onClick={() => handleQuickDamage(1)}
+                    className="px-2 py-0.5 rounded-md bg-red-950/40 hover:bg-red-900/70 text-red-300 border border-red-800/30 text-[11px] font-mono font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                    title="Take 1 Damage"
+                  >
+                    -1
+                  </button>
+                  <button
+                    onClick={() => handleQuickHeal(1)}
+                    className="px-2 py-0.5 rounded-md bg-emerald-950/40 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-800/30 text-[11px] font-mono font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                    title="Heal 1 HP"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => handleQuickHeal(5)}
+                    className="px-2 py-0.5 rounded-md bg-emerald-950/50 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/40 text-[11px] font-mono font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                    title="Heal 5 HP"
+                  >
+                    +5
+                  </button>
+                  {currentHP < maxHP && (
+                    <button
+                      onClick={() => onHPChange?.(maxHP)}
+                      className="px-2 py-0.5 rounded-md bg-emerald-900/40 hover:bg-emerald-800/70 text-emerald-300 border border-emerald-700/50 text-[11px] font-mono font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                      title="Restore to Max HP"
+                    >
+                      Full
+                    </button>
+                  )}
+                </div>
+
+                {/* Custom Delta Inputs */}
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={hpDelta}
+                    onChange={(e) => setHpDelta(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleApplyDamage();
+                    }}
+                    className="w-18 sm:w-20 px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-700 text-xs text-center font-mono text-white focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    onClick={handleApplyDamage}
+                    className="px-2.5 py-0.5 rounded-md bg-red-950/90 hover:bg-red-900 text-red-200 border border-red-800/70 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Apply Damage"
+                  >
+                    - Dmg
+                  </button>
+                  <button
+                    onClick={handleApplyHeal}
+                    className="px-2.5 py-0.5 rounded-md bg-emerald-950/90 hover:bg-emerald-900 text-emerald-200 border border-emerald-800/70 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Apply Healing"
+                  >
+                    + Heal
+                  </button>
+                  <button
+                    onClick={handleApplyTempHP}
+                    className="px-2 py-0.5 rounded-md bg-blue-950/90 hover:bg-blue-900 text-blue-200 border border-blue-800/70 text-[10px] font-mono transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Set Temporary HP"
+                  >
+                    Temp
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Resting & Recovery Controls */}
+            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 shrink-0 bg-zinc-950/40 border border-zinc-800/70 rounded-2xl p-8">
+              <div className="flex items-center gap-2">
+                {onShortRest && (
+                  <button
+                    onClick={onShortRest}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/80 text-xs font-mono font-semibold transition-all cursor-pointer shadow-xs"
+                    title="Short Rest: Spend hit dice and recharge short-rest abilities"
+                  >
+                    <Moon size={14} className="text-indigo-400" />
+                    <span>Short Rest</span>
+                  </button>
+                )}
+
+                {onLongRest && (
+                  <button
+                    onClick={onLongRest}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-black font-mono font-bold text-xs transition-all cursor-pointer shadow-md hover:brightness-110"
+                    style={{ backgroundColor: accentColor }}
+                    title="Long Rest: Full HP recovery, spell slots restored, daily abilities recharged"
+                  >
+                    <Sun size={14} />
+                    <span>Long Rest</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400">
+                <span>Hit Dice:</span>
+                <span className="text-amber-300 font-bold">
+                  {hitDiceRemaining}/{hitDiceTotal} {hitDiceDie}
+                </span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 2. CORE VITALS RIBBON (WITH TRANSPARENT MATH INSPECTORS) */}
-        <div className="mt-5 pt-4 border-t border-zinc-800/80 grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-          {/* AC */}
-          <button
-            onClick={() => setActiveBreakdown(acBreakdown)}
-            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
-          >
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-              <span>Armor Class</span>
-              <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
-            </span>
-            <span className="text-xl font-black font-mono text-white tracking-tight">
-              {acBreakdown.total}
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              {acBreakdown.formula}
-            </span>
-          </button>
+          {/* 2. CORE VITALS RIBBON (WITH TRANSPARENT MATH INSPECTORS) */}
+          <div className="mt-5 pt-4 border-t border-zinc-800/80 grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+            {/* AC */}
+            <button
+              onClick={() => setActiveBreakdown(acBreakdown)}
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+            >
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                <span>Armor Class</span>
+                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+              </span>
+              <span className="text-xl font-black font-mono text-white tracking-tight">
+                {acBreakdown.total}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                {acBreakdown.formula}
+              </span>
+            </button>
 
-          {/* Initiative */}
-          <button
-            onClick={() => rollCheck('Initiative Roll', initBreakdown.total, 'd20 + Initiative')}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setActiveBreakdown(initBreakdown);
-            }}
-            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
-            title="Left-click to Roll, Right-click to Inspect Formula"
-          >
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-              <span>Initiative</span>
-              <Info
-                size={11}
-                className="text-zinc-500 group-hover:text-amber-400 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveBreakdown(initBreakdown);
-                }}
-              />
-            </span>
-            <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
-              {initBreakdown.displayValue}
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              Click to Roll
-            </span>
-          </button>
+            {/* Initiative */}
+            <button
+              onClick={() => rollCheck('Initiative Roll', initBreakdown.total, 'd20 + Initiative')}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setActiveBreakdown(initBreakdown);
+              }}
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+              title="Left-click to Roll, Right-click to Inspect Formula"
+            >
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                <span>Initiative</span>
+                <Info
+                  size={11}
+                  className="text-zinc-500 group-hover:text-amber-400 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveBreakdown(initBreakdown);
+                  }}
+                />
+              </span>
+              <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
+                {initBreakdown.displayValue}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                Click to Roll
+              </span>
+            </button>
 
-          {/* Speed */}
-          <button
-            onClick={() => setActiveBreakdown(speedBreakdown)}
-            className={`p-2 rounded-xl border flex flex-col items-center transition-all group cursor-pointer ${
-              conditionMods.isSpeedZero
+            {/* Speed */}
+            <button
+              onClick={() => setActiveBreakdown(speedBreakdown)}
+              className={`p-2 rounded-xl border flex flex-col items-center transition-all group cursor-pointer ${conditionMods.isSpeedZero
                 ? 'bg-red-950/60 border-red-800 text-red-300'
                 : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
-            }`}
-            title={
-              conditionMods.isSpeedZero
-                ? `Speed reduced to 0 ft due to: ${conditionMods.speedZeroReasons.join(', ')}. Click for breakdown.`
-                : 'Click to inspect speed calculation'
-            }
-          >
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-              <span>Speed</span>
-              <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
-            </span>
-            <span
-              className={`text-xl font-black font-mono tracking-tight ${
-                conditionMods.isSpeedZero ? 'text-red-400 animate-pulse' : 'text-white'
-              }`}
+                }`}
+              title={
+                conditionMods.isSpeedZero
+                  ? `Speed reduced to 0 ft due to: ${conditionMods.speedZeroReasons.join(', ')}. Click for breakdown.`
+                  : 'Click to inspect speed calculation'
+              }
             >
-              {conditionMods.isSpeedZero ? '0' : character.speed} ft
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              {conditionMods.isSpeedZero ? conditionMods.speedZeroReasons.join(', ') : 'Walking'}
-            </span>
-          </button>
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                <span>Speed</span>
+                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+              </span>
+              <span
+                className={`text-xl font-black font-mono tracking-tight ${conditionMods.isSpeedZero ? 'text-red-400 animate-pulse' : 'text-white'
+                  }`}
+              >
+                {conditionMods.isSpeedZero ? '0' : character.speed} ft
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                {conditionMods.isSpeedZero ? conditionMods.speedZeroReasons.join(', ') : 'Walking'}
+              </span>
+            </button>
 
-          {/* Proficiency Bonus */}
-          <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col items-center">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-              Prof. Bonus
-            </span>
-            <span className="text-xl font-black font-mono text-white tracking-tight">
-              +{character.proficiencyBonus}
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500">Lvl {character.level} Scale</span>
-          </div>
+            {/* Proficiency Bonus */}
+            <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col items-center">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
+                Prof. Bonus
+              </span>
+              <span className="text-xl font-black font-mono text-white tracking-tight">
+                +{character.proficiencyBonus}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500">Lvl {character.level} Scale</span>
+            </div>
 
-          {/* Passive Perception */}
-          <button
-            onClick={() => setActiveBreakdown(passivePerceptionBreakdown)}
-            className={`p-2 rounded-xl border transition-all flex flex-col items-center group cursor-pointer ${
-              conditionMods.passivePerceptionPenalty > 0
+            {/* Passive Perception */}
+            <button
+              onClick={() => setActiveBreakdown(passivePerceptionBreakdown)}
+              className={`p-2 rounded-xl border transition-all flex flex-col items-center group cursor-pointer ${conditionMods.passivePerceptionPenalty > 0
                 ? 'bg-amber-950/40 border-amber-800/80'
                 : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
-            }`}
-          >
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-              <span>Pass. Percept.</span>
-              <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
-            </span>
-            <span
-              className={`text-xl font-black font-mono tracking-tight ${
-                conditionMods.passivePerceptionPenalty > 0 ? 'text-amber-400' : 'text-white'
-              }`}
+                }`}
             >
-              {Math.max(0, passivePerceptionBreakdown.total - conditionMods.passivePerceptionPenalty)}
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              {conditionMods.passivePerceptionPenalty > 0 ? '-5 Blinded' : '10 + WIS + Prof'}
-            </span>
-          </button>
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                <span>Pass. Percept.</span>
+                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+              </span>
+              <span
+                className={`text-xl font-black font-mono tracking-tight ${conditionMods.passivePerceptionPenalty > 0 ? 'text-amber-400' : 'text-white'
+                  }`}
+              >
+                {Math.max(0, passivePerceptionBreakdown.total - conditionMods.passivePerceptionPenalty)}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                {conditionMods.passivePerceptionPenalty > 0 ? '-5 Blinded' : '10 + WIS + Prof'}
+              </span>
+            </button>
 
-          {/* Spell Save DC */}
-          <button
-            onClick={() => setActiveBreakdown(spellDCBreakdown)}
-            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
-          >
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-              <span>Spell DC</span>
-              <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
-            </span>
-            <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
-              {spellDCBreakdown.total}
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
-              {spellAtkBreakdown.displayValue} Atk Bonus
-            </span>
-          </button>
-        </div>
+            {/* Spell Save DC */}
+            <button
+              onClick={() => setActiveBreakdown(spellDCBreakdown)}
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+            >
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                <span>Spell DC</span>
+                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+              </span>
+              <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
+                {spellDCBreakdown.total}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                {spellAtkBreakdown.displayValue} Atk Bonus
+              </span>
+            </button>
+          </div>
 
-        {/* 2.5 ACTIVE CONDITIONS & MECHANICAL IMPACTS BAR */}
-        <div className="mt-4">
-          <ActiveConditionsBar
-            conditions={character.combat?.conditions || []}
-            onToggleCondition={onToggleCondition}
-          />
+          {/* 2.5 ACTIVE CONDITIONS & MECHANICAL IMPACTS BAR */}
+          <div className="mt-4">
+            <ActiveConditionsBar
+              conditions={character.combat?.conditions || []}
+              onToggleCondition={onToggleCondition}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 3. ACTIVE TAB RENDERER */}
       <div className="animate-fade-in">
@@ -1169,13 +1285,12 @@ export default function UnifiedCharacterSheet({
                           'attack'
                         )
                       }
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                        conditionMods.cannotTakeActions
-                          ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed opacity-60'
-                          : conditionMods.hasDisadvantageOnAttacks
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer ${conditionMods.cannotTakeActions
+                        ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed opacity-60'
+                        : conditionMods.hasDisadvantageOnAttacks
                           ? 'bg-amber-950/60 text-amber-300 border border-amber-800/80 hover:bg-amber-900'
                           : 'bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-300'
-                      }`}
+                        }`}
                     >
                       <span>To-Hit</span>
                       <span>{formatModifier(atk.attackBonus)}</span>
@@ -1251,8 +1366,8 @@ export default function UnifiedCharacterSheet({
                                     else if (onRestoreSpellSlot) onRestoreSpellSlot(lvl);
                                   }}
                                   className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
-                                      ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
-                                      : 'bg-zinc-800 border-zinc-700'
+                                    ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                                    : 'bg-zinc-800 border-zinc-700'
                                     }`}
                                   title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
                                 />
@@ -1318,8 +1433,8 @@ export default function UnifiedCharacterSheet({
                       key={cond}
                       onClick={() => toggleCondition(cond)}
                       className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer border ${isActive
-                          ? 'bg-red-950 text-red-300 border-red-800 font-bold'
-                          : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200'
+                        ? 'bg-red-950 text-red-300 border-red-800 font-bold'
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200'
                         }`}
                     >
                       {cond}
@@ -1406,11 +1521,10 @@ export default function UnifiedCharacterSheet({
                           conditionMods.checkDisadvantageReasons.join(', ')
                         )
                       }
-                      className={`text-3xl font-black font-mono transition-colors cursor-pointer my-0.5 ${
-                        conditionMods.hasDisadvantageOnChecks
-                          ? 'text-amber-400'
-                          : 'text-zinc-100 hover:text-amber-300'
-                      }`}
+                      className={`text-3xl font-black font-mono transition-colors cursor-pointer my-0.5 ${conditionMods.hasDisadvantageOnChecks
+                        ? 'text-amber-400'
+                        : 'text-zinc-100 hover:text-amber-300'
+                        }`}
                       title={
                         conditionMods.hasDisadvantageOnChecks
                           ? `Disadvantage on checks due to: ${conditionMods.checkDisadvantageReasons.join(', ')}`
@@ -1452,8 +1566,8 @@ export default function UnifiedCharacterSheet({
                           isAutoFail
                             ? `AUTOMATIC FAILURE (${conditionMods.actionLockoutReasons.join(', ')})`
                             : isDisadv
-                            ? `d20 + ${saveBreakdown.total} [DISADVANTAGE (Restrained)]`
-                            : `d20 + ${saveBreakdown.total} (Save)`,
+                              ? `d20 + ${saveBreakdown.total} [DISADVANTAGE (Restrained)]`
+                              : `d20 + ${saveBreakdown.total} (Save)`,
                           isDisadv ? 'disadvantage' : 'normal',
                           isDisadv ? 'Restrained' : isAutoFail ? conditionMods.actionLockoutReasons.join(', ') : undefined,
                           isAutoFail
@@ -1463,15 +1577,14 @@ export default function UnifiedCharacterSheet({
                         e.preventDefault();
                         setActiveBreakdown(saveBreakdown);
                       }}
-                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${
-                        conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
-                          ? 'bg-red-950/80 border-red-700 text-red-300 font-bold animate-pulse'
-                          : conditionMods.hasDisadvantageOnDEXSaves && ability === 'DEX'
+                      className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between border transition-all cursor-pointer ${conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                        ? 'bg-red-950/80 border-red-700 text-red-300 font-bold animate-pulse'
+                        : conditionMods.hasDisadvantageOnDEXSaves && ability === 'DEX'
                           ? 'bg-amber-950/50 border-amber-600 text-amber-200'
                           : stat.saveProficient
-                          ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 font-bold'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                      }`}
+                            ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 font-bold'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
                       title={
                         conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
                           ? 'Auto-fails saving throw due to active condition'
@@ -1480,13 +1593,12 @@ export default function UnifiedCharacterSheet({
                     >
                       <span className="flex items-center gap-1">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
-                              ? 'bg-red-500'
-                              : stat.saveProficient
+                          className={`w-1.5 h-1.5 rounded-full ${conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
+                            ? 'bg-red-500'
+                            : stat.saveProficient
                               ? 'bg-amber-400'
                               : 'bg-zinc-600'
-                          }`}
+                            }`}
                         />
                         <span>Save</span>
                       </span>
@@ -1529,13 +1641,12 @@ export default function UnifiedCharacterSheet({
                           title="Toggle Proficiency"
                         >
                           <span
-                            className={`w-3 h-3 rounded-full inline-block ${
-                              sk.expertise
-                                ? 'bg-amber-400 ring-2 ring-amber-400/40'
-                                : sk.proficient
+                            className={`w-3 h-3 rounded-full inline-block ${sk.expertise
+                              ? 'bg-amber-400 ring-2 ring-amber-400/40'
+                              : sk.proficient
                                 ? 'bg-amber-400'
                                 : 'bg-zinc-700'
-                            }`}
+                              }`}
                           />
                         </button>
                         <span className="font-medium text-zinc-200 truncate">{sk.name}</span>
@@ -1643,11 +1754,10 @@ export default function UnifiedCharacterSheet({
                                   onRestoreSpellSlot(lvl);
                                 }
                               }}
-                              className={`w-4.5 h-4.5 rounded-full border cursor-pointer transition-all active:scale-90 ${
-                                idx < available
-                                  ? 'bg-purple-500 border-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
-                                  : 'bg-zinc-950 border-zinc-700'
-                              }`}
+                              className={`w-4.5 h-4.5 rounded-full border cursor-pointer transition-all active:scale-90 ${idx < available
+                                ? 'bg-purple-500 border-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                                : 'bg-zinc-950 border-zinc-700'
+                                }`}
                               title={idx < available ? 'Tap to expend slot' : 'Tap to restore slot'}
                               aria-label={idx < available ? `Expend Level ${lvl} slot` : `Restore Level ${lvl} slot`}
                             />
@@ -1719,17 +1829,15 @@ export default function UnifiedCharacterSheet({
                     <button
                       key={lvl}
                       onClick={() => setSelectedSpellLevelFilter(lvl)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
-                        selectedSpellLevelFilter === lvl
-                          ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]'
-                          : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${selectedSpellLevelFilter === lvl
+                        ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                        : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                        }`}
                     >
                       {lvl === 'all' ? 'All Spells' : lvl === 0 ? 'Cantrips' : `Lvl ${lvl}`}
                       {count > 0 && (
-                        <span className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${
-                          selectedSpellLevelFilter === lvl ? 'bg-purple-900/80 text-purple-200' : 'bg-zinc-800 text-zinc-500'
-                        }`}>
+                        <span className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${selectedSpellLevelFilter === lvl ? 'bg-purple-900/80 text-purple-200' : 'bg-zinc-800 text-zinc-500'
+                          }`}>
                           {count}
                         </span>
                       )}
@@ -1778,16 +1886,15 @@ export default function UnifiedCharacterSheet({
                     const hasAvailableSlot =
                       spell.level === 0 ||
                       (character.spellcasting?.slots?.[spell.level]?.used || 0) <
-                        (character.spellcasting?.slots?.[spell.level]?.max || 0);
+                      (character.spellcasting?.slots?.[spell.level]?.max || 0);
 
                     return (
                       <div
                         key={spell.id}
-                        className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
-                          isExpanded
-                            ? 'bg-[#10131e] border-purple-800/70 shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
-                            : 'bg-[#0e1017]/90 hover:bg-[#121520] border-zinc-800 hover:border-zinc-700'
-                        }`}
+                        className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${isExpanded
+                          ? 'bg-[#10131e] border-purple-800/70 shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
+                          : 'bg-[#0e1017]/90 hover:bg-[#121520] border-zinc-800 hover:border-zinc-700'
+                          }`}
                       >
                         {/* CARD TOP ROW (Always Visible & Interactive) */}
                         <div
@@ -1800,11 +1907,10 @@ export default function UnifiedCharacterSheet({
                               <h3 className="text-sm sm:text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100 group-hover:text-purple-300 truncate">
                                 {spell.name}
                               </h3>
-                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
-                                spell.level === 0
-                                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                                  : 'bg-purple-950/80 text-purple-300 border border-purple-800/60'
-                              }`}>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${spell.level === 0
+                                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
+                                : 'bg-purple-950/80 text-purple-300 border border-purple-800/60'
+                                }`}>
                                 {spell.level === 0 ? 'Cantrip' : `Lvl ${spell.level}`}
                               </span>
                               {spell.school && (
@@ -1855,11 +1961,10 @@ export default function UnifiedCharacterSheet({
                                 e.stopPropagation();
                                 handleCastSpell(spell);
                               }}
-                              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${
-                                !hasAvailableSlot
-                                  ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                                  : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200 hover:text-white border-purple-700/60 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-                              }`}
+                              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${!hasAvailableSlot
+                                ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                                : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200 hover:text-white border-purple-700/60 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                }`}
                               title={
                                 !hasAvailableSlot
                                   ? `No Level ${spell.level} slots remaining (tap to roll anyway)`
@@ -2498,11 +2603,10 @@ export default function UnifiedCharacterSheet({
                           key={die}
                           type="button"
                           onClick={() => handleDiceSelect(die)}
-                          className={`py-1.5 px-1 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border text-center active:scale-95 ${
-                            isSelected
-                              ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
-                              : 'bg-zinc-900/90 border-zinc-700/70 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500 hover:text-white'
-                          }`}
+                          className={`py-1.5 px-1 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border text-center active:scale-95 ${isSelected
+                            ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
+                            : 'bg-zinc-900/90 border-zinc-700/70 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500 hover:text-white'
+                            }`}
                         >
                           {die}
                         </button>
@@ -2511,11 +2615,10 @@ export default function UnifiedCharacterSheet({
                     <button
                       type="button"
                       onClick={() => handleDiceSelect(null)}
-                      className={`py-1.5 px-1 rounded-xl font-mono text-[10px] transition-all cursor-pointer border text-center ${
-                        !detectedDice.die
-                          ? 'bg-zinc-800 border-zinc-600 text-zinc-200 font-bold'
-                          : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                      }`}
+                      className={`py-1.5 px-1 rounded-xl font-mono text-[10px] transition-all cursor-pointer border text-center ${!detectedDice.die
+                        ? 'bg-zinc-800 border-zinc-600 text-zinc-200 font-bold'
+                        : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                        }`}
                       title="Utility or Non-Damaging Spell"
                     >
                       None
@@ -2557,11 +2660,10 @@ export default function UnifiedCharacterSheet({
                           key={q}
                           type="button"
                           onClick={() => handleDiceSelect(detectedDice.die || 'd8', q)}
-                          className={`w-6 h-6 rounded-lg text-[10px] font-mono cursor-pointer transition-all border ${
-                            detectedDice.count === q
-                              ? 'bg-purple-900/90 border-purple-500 text-purple-200 font-bold shadow-xs'
-                              : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                          }`}
+                          className={`w-6 h-6 rounded-lg text-[10px] font-mono cursor-pointer transition-all border ${detectedDice.count === q
+                            ? 'bg-purple-900/90 border-purple-500 text-purple-200 font-bold shadow-xs'
+                            : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            }`}
                         >
                           {q}
                         </button>
@@ -2614,11 +2716,10 @@ export default function UnifiedCharacterSheet({
                           key={dmg}
                           type="button"
                           onClick={() => handleDamageTypeSelect(dmg)}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer border ${
-                            isCurrent
-                              ? 'bg-amber-950/80 border-amber-600 text-amber-200 font-bold shadow-xs'
-                              : 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                          }`}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer border ${isCurrent
+                            ? 'bg-amber-950/80 border-amber-600 text-amber-200 font-bold shadow-xs'
+                            : 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                            }`}
                         >
                           {dmg}
                         </button>
@@ -2758,17 +2859,15 @@ export default function UnifiedCharacterSheet({
                 return (
                   <div
                     key={lvl}
-                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                      max > 0 ? 'bg-purple-950/20 border-purple-800/40' : 'bg-zinc-900/50 border-zinc-800/80'
-                    }`}
+                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${max > 0 ? 'bg-purple-950/20 border-purple-800/40' : 'bg-zinc-900/50 border-zinc-800/80'
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <span
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${
-                          max > 0
-                            ? 'bg-purple-900/60 text-purple-200 border border-purple-700/60'
-                            : 'bg-zinc-800 text-zinc-500'
-                        }`}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${max > 0
+                          ? 'bg-purple-900/60 text-purple-200 border border-purple-700/60'
+                          : 'bg-zinc-800 text-zinc-500'
+                          }`}
                       >
                         {lvl}
                       </span>
@@ -2783,11 +2882,10 @@ export default function UnifiedCharacterSheet({
                             Array.from({ length: Math.min(max, 10) }).map((_, i) => (
                               <span
                                 key={i}
-                                className={`w-2.5 h-2.5 rounded-full border ${
-                                  i < Math.max(0, max - used)
-                                    ? 'bg-purple-500 border-purple-400'
-                                    : 'bg-zinc-800 border-zinc-700'
-                                }`}
+                                className={`w-2.5 h-2.5 rounded-full border ${i < Math.max(0, max - used)
+                                  ? 'bg-purple-500 border-purple-400'
+                                  : 'bg-zinc-800 border-zinc-700'
+                                  }`}
                               />
                             ))
                           )}
@@ -2805,11 +2903,10 @@ export default function UnifiedCharacterSheet({
                             key={preset}
                             type="button"
                             onClick={() => handleSlotMaxChange(lvl, preset)}
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer border ${
-                              max === preset
-                                ? 'bg-purple-600 border-purple-400 text-white font-bold'
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer border ${max === preset
+                              ? 'bg-purple-600 border-purple-400 text-white font-bold'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                              }`}
                           >
                             {preset}
                           </button>
