@@ -91,6 +91,27 @@ export type EquipmentSlotId =
   | 'ranged_main'
   | 'ranged_off';
 
+export type ItemCategory =
+  | 'weapon'
+  | 'armor'
+  | 'shield'
+  | 'ring'
+  | 'amulet'
+  | 'consumable'
+  | 'wondrous'
+  | 'gear'
+  | 'tool'
+  | 'treasure';
+
+export interface ItemStatModifiers {
+  STR?: number;
+  DEX?: number;
+  CON?: number;
+  INT?: number;
+  WIS?: number;
+  CHA?: number;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -98,12 +119,16 @@ export interface InventoryItem {
   weight: number;
   description: string;
   equipped: boolean;
-  category: 'weapon' | 'armor' | 'gear' | 'consumable' | 'treasure' | 'tool';
+  category: ItemCategory;
   slot?: EquipmentSlotId;
   rarity?: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Legendary';
   damage?: string;
+  damageType?: string;
   attackBonus?: number;
+  range?: string;
   acBonus?: number;
+  baseAC?: number;
+  statModifiers?: ItemStatModifiers;
   icon?: string;
 }
 

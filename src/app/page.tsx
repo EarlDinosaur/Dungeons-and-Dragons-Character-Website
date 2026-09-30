@@ -14,12 +14,11 @@ import WynelScarletSigil from '@/components/ui/backgrounds/WynelScarletSigil';
 import KastorielStarryNight from '@/components/ui/backgrounds/KastorielStarryNight';
 
 // Shared UI & Campaign components
-import TabNavigation from '@/components/ui/TabNavigation';
+import { FloatingFantasyDock } from '@/components/ui/TabNavigation';
 import MobileCharacterDock from '@/components/ui/MobileCharacterDock';
 import MobileTabSelectorModal from '@/components/ui/MobileTabSelectorModal';
 import MobileDiceRollerModal from '@/components/ui/MobileDiceRollerModal';
 import CampaignMainMenu from '@/components/campaign/CampaignMainMenu';
-import SyncStatusBadge from '@/components/ui/SyncStatusBadge';
 import UnifiedCharacterSheet from '@/components/characters/shared/UnifiedCharacterSheet';
 
 // Signature Character Engines (Anchored per Hero)
@@ -1332,33 +1331,6 @@ export default function Home() {
         <TavernBackground />
       )}
 
-      {/* Top Bar when in Guildhall Menu */}
-      {activeView === 'menu' && (
-        <header className="sticky top-0 z-40 bg-[#08090d]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-6 py-2.5 hidden md:block shadow-md">
-          <div className="max-w-[1720px] mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-200/90 font-serif">
-                <span>🏰</span>
-                <span>The Ashen Pact</span>
-              </div>
-              <span className="text-zinc-600 text-xs">&bull;</span>
-              <span className="text-[11px] font-mono text-zinc-400">
-                Campaign Hub &amp; Hero Vault
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <SyncStatusBadge />
-            </div>
-          </div>
-        </header>
-      )}
-
-      {/* Single Unified Header when in Character Sheet */}
-      {activeView === 'character' && (
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      )}
-
       {/* Main View Area */}
       {activeView === 'menu' ? (
         <main className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 flex-1">
@@ -1417,13 +1389,21 @@ export default function Home() {
         </main>
       )}
 
-      {/* Mobile Portable Navigation Dock & Modals (Inspired by D&D Beyond) */}
+      {/* Character Navigation Docks & Modals (Inspired by D&D Beyond & Baldur's Gate 3) */}
       {activeView === 'character' && (
         <>
+          {/* Mobile Bottom Navigation Dock */}
           <MobileCharacterDock
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onOpenTabSelector={() => setIsMobileTabMenuOpen(true)}
+            onOpenDiceRoller={() => setIsMobileDiceRollerOpen(true)}
+          />
+
+          {/* Desktop & Tablet Floating Fantasy HUD Capsule */}
+          <FloatingFantasyDock
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
             onOpenDiceRoller={() => setIsMobileDiceRollerOpen(true)}
           />
 

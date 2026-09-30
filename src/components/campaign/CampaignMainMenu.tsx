@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users,
   Crown,
   Shield,
   ArrowRight,
-  Coins,
   BookOpen,
   Sparkles,
   Scroll,
@@ -23,11 +22,13 @@ import {
   HelpCircle,
   Clock,
   Camera,
+  Pin,
 } from 'lucide-react';
 import SpotlightCard from '../ui/SpotlightCard';
 import GlowButton from '../ui/GlowButton';
+import SyncStatusBadge from '../ui/SyncStatusBadge';
 import { useCharacter } from '@/app/providers';
-import type { CampaignMystery } from '@/lib/types';
+import type { DMNote } from '@/lib/dm-types';
 
 // Storage key for custom party members added by the user's gaming group
 const CUSTOM_ROSTER_KEY = 'dnd_tavern_custom_roster';
@@ -55,29 +56,32 @@ export default function CampaignMainMenu() {
     wynel,
     kastoriel,
     navigateToCharacter,
-    setMysteries,
     showToastNotification,
     getPortraitUrl,
     openMediaPicker,
     customMembers,
     setCustomMembers: saveCustomMembers,
+    dmNotes,
+    addDMNote,
+    updateDMNote,
+    deleteDMNote,
   } = useCharacter();
 
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Partial<CustomMember> | null>(null);
 
-  // Quest Editing State
+  // Quest Editing State (Synchronized with DM Chronicle)
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
-  const [editingQuest, setEditingQuest] = useState<Partial<CampaignMystery> | null>(null);
+  const [editingQuest, setEditingQuest] = useState<Partial<DMNote> | null>(null);
 
   // Open modal to add or edit custom member
-  const handleOpenMemberModal = (member?: CustomMember, slotIndex?: number) => {
+  const handleOpenMemberModal = (member?: CustomMember) => {
     if (member) {
       setEditingMember(member);
     } else {
       setEditingMember({
         id: `custom-${Date.now()}`,
-        name: `Adventurer #${(slotIndex ?? customMembers.length) + 3}`,
+        name: `Adventurer #${customMembers.length + 6}`,
         playerName: 'Guild Friend',
         race: 'Human',
         characterClass: 'Fighter',
@@ -85,7 +89,7 @@ export default function CampaignMainMenu() {
         currentHP: 85,
         maxHP: 85,
         ac: 16,
-        role: slotIndex === 4 || slotIndex === 5 ? 'Guest Companion' : 'Core Member',
+        role: 'Core Member',
         avatar: '⚔️',
         notes: 'A brave companion in The Ashen Pact campaign.',
       });
@@ -132,136 +136,134 @@ export default function CampaignMainMenu() {
     }
   };
 
-  // Quest Management Functions
-  const mysteries = character.dossier.mysteries || [];
+  // Helper to format target companion name for quests
+  const getTargetName = (targetId: string) => {
+    switch (targetId.toLowerCase()) {
+      case 'all':
+        return 'All Party';
+      case 'vesper':
+      case 'earl':
+        return character.name || 'Earl';
+      case 'aria':
+        return aria.name || 'Aria';
+      case 'cyrus':
+        return cyrus.name || 'Cyrus';
+      case 'wynel':
+        return wynel.name || "Wyn'el";
+      case 'kastoriel':
+        return kastoriel.name || 'Kastoriel';
+      default: {
+        const found = customMembers.find(
+          (m) => m.id === targetId || m.name.toLowerCase() === targetId.toLowerCase()
+        );
+        return found ? found.name : targetId;
+      }
+    }
+  };
 
-  const handleOpenQuestModal = (quest?: CampaignMystery) => {
+  // Tavern Quests Synchronized with DM Campaign Chronicle
+  const dmQuests = useMemo(() => {
+    return (dmNotes || []).filter(
+      (note) =>
+        note.category === 'quest' ||
+        (note.tags && note.tags.some((t) => t.toLowerCase().includes('quest')))
+    );
+  }, [dmNotes]);
+
+  // Priority sorting: Active first (pinned at top), then resolved at bottom
+  const sortedQuests = useMemo(() => {
+    return [...dmQuests].sort((a, b) => {
+      if (a.resolved && !b.resolved) return 1;
+      if (!a.resolved && b.resolved) return -1;
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+  }, [dmQuests]);
+
+  const handleOpenQuestModal = (quest?: DMNote) => {
     if (quest) {
-      setEditingQuest(quest);
+      setEditingQuest({
+        ...quest,
+        tags: quest.tags || [],
+      });
     } else {
       setEditingQuest({
-        id: `quest-${Date.now()}`,
-        title: 'New Guild Notice / Mystery',
-        description: 'Describe the active quest objectives, clues, and bounty reward...',
-        clues: [],
+        title: '',
+        content: '',
+        category: 'quest',
+        targetCharacterId: 'all',
+        isPlayerVisible: true,
+        pinned: false,
         resolved: false,
+        tags: ['#quest', '#bounty'],
+        author: 'Dungeon Master',
       });
     }
     setIsQuestModalOpen(true);
   };
 
   const handleSaveQuest = () => {
-    if (!editingQuest || !editingQuest.title) return;
+    if (!editingQuest || !editingQuest.title?.trim()) return;
 
-    const newQuest: CampaignMystery = {
-      id: editingQuest.id || `quest-${Date.now()}`,
-      title: editingQuest.title || 'Untitled Quest',
-      description: editingQuest.description || '',
-      clues: editingQuest.clues || [],
-      resolved: editingQuest.resolved || false,
-    };
-
-    const exists = mysteries.some((q) => q.id === newQuest.id);
-    let updated: CampaignMystery[];
-    if (exists) {
-      updated = mysteries.map((q) => (q.id === newQuest.id ? newQuest : q));
+    if (editingQuest.id) {
+      updateDMNote(editingQuest.id, {
+        title: editingQuest.title.trim(),
+        content: editingQuest.content?.trim() || '',
+        category: 'quest',
+        targetCharacterId: editingQuest.targetCharacterId || 'all',
+        isPlayerVisible: editingQuest.isPlayerVisible ?? true,
+        pinned: editingQuest.pinned ?? false,
+        resolved: editingQuest.resolved ?? false,
+        tags: editingQuest.tags || [],
+        author: editingQuest.author || 'Dungeon Master',
+      });
+      showToastNotification('Tavern Quest Board', `Updated quest: ${editingQuest.title}`, 'quest');
     } else {
-      updated = [newQuest, ...mysteries];
+      addDMNote({
+        title: editingQuest.title.trim(),
+        content: editingQuest.content?.trim() || '',
+        category: 'quest',
+        targetCharacterId: editingQuest.targetCharacterId || 'all',
+        isPlayerVisible: true,
+        pinned: editingQuest.pinned ?? false,
+        resolved: editingQuest.resolved ?? false,
+        tags: editingQuest.tags || ['#quest'],
+        author: editingQuest.author || 'Dungeon Master',
+      });
+      showToastNotification('Tavern Quest Board', `Posted new quest: ${editingQuest.title}`, 'quest');
     }
 
-    setMysteries(updated);
-    showToastNotification('Tavern Quest Board', `Posted quest: ${newQuest.title}`, 'quest');
     setIsQuestModalOpen(false);
     setEditingQuest(null);
   };
 
-  const handleDeleteQuest = (id: string) => {
-    if (confirm('Are you sure you want to remove this quest scroll from the board?')) {
-      const updated = mysteries.filter((q) => q.id !== id);
-      setMysteries(updated);
+  const handleDeleteQuest = (id: string, title: string) => {
+    if (confirm(`Are you sure you want to remove quest "${title}" from the tavern board? This also removes it from the DM campaign chronicle.`)) {
+      deleteDMNote(id);
+      showToastNotification('Tavern Quest Board', `Removed quest: ${title}`, 'quest');
     }
   };
 
-  const handleToggleQuestResolved = (quest: CampaignMystery) => {
-    const updated = mysteries.map((q) => (q.id === quest.id ? { ...q, resolved: !q.resolved } : q));
-    setMysteries(updated);
-    showToastNotification('Quest Status Updated', `Marked "${quest.title}" as ${!quest.resolved ? 'RESOLVED' : 'ACTIVE'}`, 'quest');
+  const handleToggleQuestResolved = (quest: DMNote) => {
+    const nextResolved = !quest.resolved;
+    updateDMNote(quest.id, { resolved: nextResolved });
+    showToastNotification(
+      'Quest Status Updated',
+      `Marked "${quest.title}" as ${nextResolved ? 'RESOLVED' : 'ACTIVE'}`,
+      'quest'
+    );
+  };
+
+  const handleToggleQuestPinned = (quest: DMNote) => {
+    updateDMNote(quest.id, { pinned: !quest.pinned });
   };
 
   // Total party size calculation
   const totalMembersCount = 5 + customMembers.length; // Earl + Aria + Cyrus + Wyn'el + Kastoriel + Custom
 
-  // Total treasury
-  const partyGold = character.currency.gp + aria.currency.gp + (cyrus?.currency?.gp || 0) + (wynel?.currency?.gp || 0) + (kastoriel?.currency?.gp || 0);
-  const partyPlatinum = character.currency.pp + aria.currency.pp + (cyrus?.currency?.pp || 0) + (wynel?.currency?.pp || 0) + (kastoriel?.currency?.pp || 0);
-
-  // We want to render 6 core slots + 1 guest slot = total 7 slots on the tavern board
-  // Slots 0, 1, 2, 3, 4 are Earl, Aria, Cyrus, Wyn'el & Kastoriel. Slots 5..6 are custom or unassigned wooden pegs.
-  const emptySlotsCount = Math.max(0, 2 - customMembers.length); // 2 available slots to reach 7 total party members
-
   return (
     <div className="space-y-10 animate-fade-in-up py-2 w-full max-w-[1720px] mx-auto font-['Spectral',serif]">
-      {/* ====================================================================
-         1. FANTASY TAVERN GUILDHALL BANNER & NOTICE BOARD HEADER
-         ==================================================================== */}
-      <div className="relative overflow-hidden rounded-2xl border-2 border-[#d9b872]/60 shadow-[0_16px_50px_rgba(0,0,0,0.85)] bg-[linear-gradient(135deg,rgba(28,21,16,0.96)_0%,rgba(18,13,10,0.98)_100%)] p-6 sm:p-8">
-        {/* Carved Wood & Gold Top Rail */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#8b5a2b] via-[#d9b872] to-[#8b5a2b] shadow-md" />
-
-        {/* Tavern Wax Seal Stamp */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="text-center lg:text-left space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(217,184,114,0.12)] border border-[#d9b872]/40 text-[#d9b872] text-xs font-mono font-bold uppercase tracking-widest shadow-inner">
-              <Scroll size={14} className="text-[#d9b872]" /> 🍺 Fantasy Tavern Guildhall &bull; Campaign Hub
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-glow-gold tracking-wider font-['Cormorant_Garamond',serif] uppercase text-amber-100 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-              The Ashen Pact
-            </h1>
-
-            <p className="text-sm sm:text-base text-[var(--color-parchment-muted)] italic leading-relaxed">
-              &ldquo;Where shadow and starlight converge. Six adventurers bound by fate, blood, and the celestial weave.&rdquo;
-            </p>
-          </div>
-
-          {/* Quick Campaign Stats Badge Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2.5 shrink-0 text-xs font-mono w-full lg:w-auto">
-            <div className="bg-black/70 text-[var(--color-parchment)] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
-              <Users size={16} className="text-[#d9b872] shrink-0" />
-              <div>
-                <span className="block text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Guild Roster</span>
-                <span>
-                  <strong className="text-amber-200 text-sm">{totalMembersCount}</strong> Members (6 Core + Guest)
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-black/70 text-[#d9b872] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
-              <Coins size={16} className="text-amber-400 shrink-0" />
-              <div>
-                <span className="block text-[9px] uppercase tracking-wider text-amber-300/60 font-bold">Tavern Treasury</span>
-                <span>
-                  <strong className="text-amber-200 text-sm">{partyGold} GP</strong> <span className="text-indigo-300 text-xs">({partyPlatinum} PP)</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-black/70 text-[var(--color-parchment)] px-4 py-2.5 rounded-xl border border-[#d9b872]/30 flex items-center gap-2.5 shadow-md">
-              <BookOpen size={16} className="text-amber-300 shrink-0" />
-              <div>
-                <span className="block text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Active Quests</span>
-                <span>
-                  <strong className="text-amber-200 text-sm">{mysteries.filter((m) => !m.resolved).length}</strong> Bounties Posted
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ====================================================================
-         2. PARTY HERO ROSTER BOARD (FANTASY TAVERN BOARD - NO TEXT OVERLAPS!)
-         ==================================================================== */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#d9b872]/30">
           <div>
@@ -269,11 +271,13 @@ export default function CampaignMainMenu() {
               <Crown size={22} className="text-amber-400" /> Guild Hero Roster Board
             </h2>
             <p className="text-xs font-mono text-[var(--color-parchment-dim)]">
-              6 Party Members + Occasional Guest Companion &bull; Click to open sheet or edit slot
+              5 Core Companions{customMembers.length > 0 ? ` + ${customMembers.length} Guild Allies` : ''} &bull; Click to open character sheet
             </p>
           </div>
 
           <div className="flex items-center gap-2">
+            <SyncStatusBadge subtle={true} />
+
             <button
               onClick={() => openMediaPicker()}
               className="flex items-center gap-1.5 bg-[rgba(218,165,32,0.15)] hover:bg-[rgba(218,165,32,0.3)] text-amber-100 border border-[#d9b872]/60 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shadow-md hover:-translate-y-0.5 active:scale-95 min-h-[38px] cursor-pointer"
@@ -869,96 +873,15 @@ export default function CampaignMainMenu() {
               </button>
             </div>
           ))}
-
-          {/* ================================================================
-             EMPTY UNASSIGNED TAVERN PEGS / GUILD SEATS (UP TO 6+1 MEMBERS)
-             ================================================================ */}
-          {Array.from({ length: emptySlotsCount }).map((_, idx) => {
-            const slotNum = customMembers.length + idx + 5;
-            const isGuestSlot = slotNum >= 7;
-
-            return (
-              <div
-                key={`empty-slot-${idx}`}
-                onClick={() => handleOpenMemberModal(undefined, idx)}
-                className="p-5 border-2 border-dashed border-[#d9b872]/30 hover:border-[#d9b872] bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.06)_0%,transparent_70%),linear-gradient(145deg,rgba(18,14,10,0.85)_0%,rgba(10,8,6,0.95)_100%)] hover:bg-[linear-gradient(145deg,rgba(28,22,16,0.95)_0%,rgba(16,12,8,0.98)_100%)] rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[340px] shadow-lg relative overflow-hidden"
-              >
-                {/* Corner Filigree Glyphs */}
-                <span className="medieval-corner tl text-[#d9b872]/40">❖</span>
-                <span className="medieval-corner tr text-[#d9b872]/40">❖</span>
-                <span className="medieval-corner bl text-[#d9b872]/40">❖</span>
-                <span className="medieval-corner br text-[#d9b872]/40">❖</span>
-
-                <div className="w-14 h-14 rounded-full bg-black/70 border border-[#d9b872]/40 flex items-center justify-center text-[#d9b872] text-2xl mb-3 group-hover:scale-110 group-hover:border-[#d9b872] transition-transform shadow-inner">
-                  {isGuestSlot ? '🍺' : '⚔️'}
-                </div>
-
-                <h4 className="text-xl font-bold text-[#d9b872] font-['Cormorant_Garamond',serif] uppercase tracking-wider mb-1">
-                  {isGuestSlot ? `Guest Companion Seat` : `Guild Seat #${slotNum}`}
-                </h4>
-
-                <p className="text-xs text-[var(--color-parchment-muted)] max-w-[200px] mb-4 italic">
-                  {isGuestSlot
-                    ? 'Reserved for visiting allies & guest adventurers.'
-                    : `Unassigned hero slot. Click to recruit party member #${slotNum}.`}
-                </p>
-
-                <span className="medieval-writ-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono text-amber-200">
-                  <Plus size={13} /> {isGuestSlot ? 'Recruit Guest Adventurer' : 'Recruit Party Member'}
-                </span>
-              </div>
-            );
-          })}
         </div>
       </div>
 
       {/* ====================================================================
-         3. GUILD TREASURY & EDITABLE ACTIVE QUEST BOARD
+         3. EDITABLE ACTIVE QUEST BOARD (SYNCED WITH DM CHRONICLE)
          ==================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Treasury Card */}
-        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] flex flex-col justify-between rounded-2xl relative overflow-hidden">
-          {/* Corner Filigrees */}
-          <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
-          <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
-          <span className="medieval-corner bl text-[#d9b872]/70">❖</span>
-          <span className="medieval-corner br text-[#d9b872]/70">❖</span>
-
-          {/* Inner Hairline Border */}
-          <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#d9b872]/30">
-              <Coins size={22} className="text-amber-400" />
-              <h3 className="text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                Guild Treasury &amp; Vault
-              </h3>
-            </div>
-
-            <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed mb-4 italic">
-              Shared coffers of The Ashen Pact stored securely within the enchanted tavern vault.
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 text-center font-mono">
-              <div className="medieval-stat-plaque p-4 rounded-xl border border-[#d9b872]/30 shadow-inner">
-                <span className="block text-[10px] text-amber-200/60 uppercase tracking-widest font-bold">Gold (GP)</span>
-                <span className="text-2xl font-black text-amber-300 font-['Cormorant_Garamond',serif]">{partyGold} GP</span>
-              </div>
-              <div className="medieval-stat-plaque p-4 rounded-xl border border-[#d9b872]/30 shadow-inner">
-                <span className="block text-[10px] text-indigo-200/60 uppercase tracking-widest font-bold">Platinum (PP)</span>
-                <span className="text-2xl font-black text-indigo-200 font-['Cormorant_Garamond',serif]">{partyPlatinum} PP</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 mt-6 p-3 rounded-xl bg-[rgba(217,184,114,0.08)] border border-[#d9b872]/30 text-xs text-amber-200/90 italic flex items-center gap-2">
-            <Shield size={16} className="text-amber-400 shrink-0" />
-            <span>Vault sealed by Ashen Pact ancient oath wards.</span>
-          </div>
-        </div>
-
+      <div>
         {/* EDITABLE ACTIVE QUEST BOARD */}
-        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] lg:col-span-2 rounded-2xl relative overflow-hidden">
+        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.12)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] rounded-2xl relative overflow-hidden">
           {/* Corner Filigrees */}
           <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
           <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
@@ -969,12 +892,17 @@ export default function CampaignMainMenu() {
           <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between gap-3 mb-4 pb-2 border-b border-[#d9b872]/30">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-[#d9b872]/30">
+              <div className="flex items-center gap-2.5">
                 <BookOpen size={22} className="text-amber-400" />
-                <h3 className="text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
-                  Active Tavern Quest Mysteries
-                </h3>
+                <div>
+                  <h3 className="text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+                    Tavern Quest Board &amp; DM Chronicle
+                  </h3>
+                  <p className="text-[11px] font-mono text-[var(--color-parchment-dim)]">
+                    Synchronized with DM Campaign Chronicle &bull; {sortedQuests.filter(q => !q.resolved).length} Active Bounties, {sortedQuests.filter(q => q.resolved).length} Resolved
+                  </p>
+                </div>
               </div>
 
               <button
@@ -986,85 +914,124 @@ export default function CampaignMainMenu() {
               </button>
             </div>
 
-            <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
-              {mysteries.length === 0 ? (
-                <div className="p-6 text-center text-xs text-[var(--color-parchment-muted)] italic bg-black/40 rounded-xl border border-white/5">
-                  No active quests pinned to the board. Click &ldquo;Post New Quest Scroll&rdquo; to add campaign bounties!
+            <div className="space-y-3.5 max-h-[520px] overflow-y-auto pr-1">
+              {sortedQuests.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[var(--color-parchment-muted)] italic bg-black/40 rounded-xl border border-white/5 space-y-1">
+                  <p>No active quests pinned to the board.</p>
+                  <p className="text-[10px] text-zinc-500">Click &ldquo;Post New Quest Scroll&rdquo; or create a quest in the DM Sanctum to pin directives here.</p>
                 </div>
               ) : (
-                mysteries.map((quest) => (
-                  <div
-                    key={quest.id}
-                    className={`p-4 rounded-xl border transition-all text-xs relative ${quest.resolved
-                      ? 'bg-black/40 border-stone-800 opacity-60'
-                      : 'medieval-parchment-scroll border-[#d9b872]/40 hover:border-[#d9b872] shadow-md'
-                      }`}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm">📌</span>
-                        <h4
-                          className={`font-bold text-base font-['Cormorant_Garamond',serif] ${quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
+                sortedQuests.map((quest) => {
+                  const targetLabel = getTargetName(quest.targetCharacterId || 'all');
+                  const isAllParty = !quest.targetCharacterId || quest.targetCharacterId === 'all';
+
+                  return (
+                    <div
+                      key={quest.id}
+                      className={`p-4 rounded-xl border transition-all text-xs relative ${quest.resolved
+                        ? 'bg-black/40 border-stone-800 opacity-60'
+                        : quest.pinned
+                        ? 'medieval-parchment-scroll border-[#d9b872] shadow-[0_0_15px_rgba(218,165,32,0.18)] ring-1 ring-[#d9b872]/40'
+                        : 'medieval-parchment-scroll border-[#d9b872]/40 hover:border-[#d9b872] shadow-md'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <button
+                            onClick={() => handleToggleQuestPinned(quest)}
+                            className={`p-1 rounded transition-colors cursor-pointer ${
+                              quest.pinned ? 'text-amber-400 hover:text-amber-300' : 'text-zinc-600 hover:text-amber-400'
                             }`}
-                        >
-                          {quest.title}
-                        </h4>
-                        <span
-                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border font-bold ${quest.resolved
-                            ? 'bg-zinc-900 text-zinc-400 border-zinc-700'
-                            : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                            title={quest.pinned ? 'Unpin from top' : 'Pin to top of board'}
+                          >
+                            <Pin size={14} className={quest.pinned ? 'fill-amber-400' : ''} />
+                          </button>
+
+                          <h4
+                            className={`font-bold text-base font-['Cormorant_Garamond',serif] ${quest.resolved ? 'text-gray-400 line-through' : 'text-amber-200'
+                              }`}
+                          >
+                            {quest.title}
+                          </h4>
+
+                          <span
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border font-bold ${quest.resolved
+                              ? 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                              : quest.pinned
+                              ? 'bg-amber-950 text-amber-200 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.25)]'
+                              : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                              }`}
+                          >
+                            {quest.resolved ? '✓ RESOLVED' : quest.pinned ? '★ PRIORITY BOUNTY' : 'ACTIVE BOUNTY'}
+                          </span>
+
+                          {/* Recipient Target Pill */}
+                          <span
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                              isAllParty
+                                ? 'bg-zinc-950/80 text-amber-300/90 border-[#d9b872]/30'
+                                : 'bg-purple-950/70 text-purple-200 border-purple-800/60'
                             }`}
-                        >
-                          {quest.resolved ? 'RESOLVED' : 'ACTIVE BOUNTY'}
-                        </span>
+                          >
+                            🎯 {targetLabel}
+                          </span>
+
+                          {/* Author Pill */}
+                          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-zinc-950/60 text-zinc-400 border border-zinc-800">
+                            👑 {quest.author || 'Dungeon Master'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => handleToggleQuestResolved(quest)}
+                            className={`p-1.5 rounded transition-colors cursor-pointer ${quest.resolved
+                              ? 'text-zinc-500 hover:text-amber-300'
+                              : 'text-amber-400 hover:text-emerald-400'
+                              }`}
+                            title={quest.resolved ? 'Reactivate Quest' : 'Mark Quest Resolved'}
+                          >
+                            <CheckCircle2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleOpenQuestModal(quest)}
+                            className="text-gray-400 hover:text-amber-300 p-1.5 transition-colors cursor-pointer"
+                            title="Edit Quest Scroll"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuest(quest.id, quest.title)}
+                            className="text-gray-400 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                            title="Remove Quest Scroll"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => handleToggleQuestResolved(quest)}
-                          className={`p-1 rounded transition-colors cursor-pointer ${quest.resolved
-                            ? 'text-zinc-500 hover:text-amber-300'
-                            : 'text-amber-400 hover:text-emerald-400'
-                            }`}
-                          title={quest.resolved ? 'Reactivate Quest' : 'Mark Quest Resolved'}
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleOpenQuestModal(quest)}
-                          className="text-gray-400 hover:text-amber-300 p-1 transition-colors cursor-pointer"
-                          title="Edit Quest Scroll"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteQuest(quest.id)}
-                          className="text-gray-400 hover:text-red-400 p-1 transition-colors cursor-pointer"
-                          title="Remove Quest Scroll"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
+                      <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed italic mb-2 whitespace-pre-wrap">
+                        &ldquo;{quest.content}&rdquo;
+                      </p>
 
-                    <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed italic mb-2">
-                      &ldquo;{quest.description}&rdquo;
-                    </p>
-
-                    {quest.clues && quest.clues.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-[#d9b872]/20 space-y-1">
-                        <span className="text-[10px] font-mono text-amber-300/80 uppercase font-bold block">
-                          📜 Clues &amp; Objectives:
-                        </span>
-                        <ul className="list-disc list-inside space-y-0.5 text-[11px] text-[var(--color-parchment)] font-serif">
-                          {quest.clues.map((clue, cIdx) => (
-                            <li key={cIdx}>{clue}</li>
+                      {quest.tags && quest.tags.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-[#d9b872]/20 flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[10px] font-mono text-amber-300/80 uppercase font-bold mr-1">
+                            📜 Directives &amp; Clues:
+                          </span>
+                          {quest.tags.map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="px-2 py-0.5 rounded bg-black/60 border border-[#d9b872]/25 text-amber-200 text-[10px] font-mono"
+                            >
+                              {tag}
+                            </span>
                           ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ))
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -1232,7 +1199,7 @@ export default function CampaignMainMenu() {
       )}
 
       {/* ====================================================================
-         MODAL 2: ADD / EDIT ACTIVE QUEST SCROLL
+         MODAL 2: ADD / EDIT ACTIVE QUEST SCROLL (SYNCED WITH DM)
          ==================================================================== */}
       {isQuestModalOpen && editingQuest && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
@@ -1240,11 +1207,9 @@ export default function CampaignMainMenu() {
             <div className="flex items-center justify-between pb-3 border-b border-[#d9b872]/30">
               <h3 className="text-xl font-bold text-amber-200 font-['Cormorant_Garamond',serif] flex items-center gap-2">
                 <Scroll size={18} className="text-amber-400" />
-                {editingQuest.id && mysteries.some((q) => q.id === editingQuest.id)
-                  ? 'Edit Active Quest Scroll'
-                  : 'Post New Quest Scroll'}
+                {editingQuest.id ? 'Edit DM Quest Scroll' : 'Post New Tavern Quest Scroll'}
               </h3>
-              <button onClick={() => setIsQuestModalOpen(false)} className="text-gray-400 hover:text-white">
+              <button onClick={() => setIsQuestModalOpen(false)} className="text-gray-400 hover:text-white cursor-pointer">
                 <X size={18} />
               </button>
             </div>
@@ -1257,64 +1222,111 @@ export default function CampaignMainMenu() {
                   value={editingQuest.title || ''}
                   onChange={(e) => setEditingQuest({ ...editingQuest, title: e.target.value })}
                   className="w-full bg-black/70 border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none focus:border-[#d9b872]"
-                  placeholder="e.g. The Rusted Manacle Mystery"
+                  placeholder="e.g. Bounty: The Ashen Inquisitors"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-amber-300/90 mb-1 font-bold">Recipient / Target</label>
+                  <select
+                    value={editingQuest.targetCharacterId || 'all'}
+                    onChange={(e) => setEditingQuest({ ...editingQuest, targetCharacterId: e.target.value })}
+                    className="w-full bg-[#120e0a] border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none focus:border-[#d9b872]"
+                  >
+                    <option value="all">All Party (Public Tavern Board)</option>
+                    <option value="vesper">Earl (Vesper)</option>
+                    <option value="aria">Aria</option>
+                    <option value="cyrus">Cyrus</option>
+                    <option value="wynel">Wyn&apos;el</option>
+                    <option value="kastoriel">Kastoriel</option>
+                    {customMembers.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-amber-300/90 mb-1 font-bold">Author / Issuer</label>
+                  <input
+                    type="text"
+                    value={editingQuest.author || 'Dungeon Master'}
+                    onChange={(e) => setEditingQuest({ ...editingQuest, author: e.target.value })}
+                    className="w-full bg-black/70 border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none focus:border-[#d9b872]"
+                    placeholder="e.g. Dungeon Master"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-amber-300/90 mb-1 font-bold">Quest Description / Story *</label>
+                <label className="block text-amber-300/90 mb-1 font-bold">Quest Objectives &amp; Bounty Details *</label>
                 <textarea
                   rows={4}
-                  value={editingQuest.description || ''}
-                  onChange={(e) => setEditingQuest({ ...editingQuest, description: e.target.value })}
+                  value={editingQuest.content || ''}
+                  onChange={(e) => setEditingQuest({ ...editingQuest, content: e.target.value })}
                   className="w-full bg-black/70 border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none focus:border-[#d9b872] leading-relaxed"
-                  placeholder="Enter full quest overview, rumors, and objectives..."
+                  placeholder="Describe the quest lore, directives, bounties, and targets..."
                 />
               </div>
 
               <div>
-                <label className="block text-amber-300/90 mb-1 font-bold">Discovered Clues (Comma Separated)</label>
+                <label className="block text-amber-300/90 mb-1 font-bold">Directives &amp; Clues (Comma Separated)</label>
                 <input
                   type="text"
-                  value={editingQuest.clues ? editingQuest.clues.join(', ') : ''}
+                  value={editingQuest.tags ? editingQuest.tags.join(', ') : ''}
                   onChange={(e) =>
                     setEditingQuest({
                       ...editingQuest,
-                      clues: e.target.value
+                      tags: e.target.value
                         .split(',')
                         .map((c) => c.trim())
                         .filter(Boolean),
                     })
                   }
-                  className="w-full bg-black/70 border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none"
-                  placeholder="e.g. Corroded iron mark, Orphanage ruins, Eclipse scar"
+                  className="w-full bg-black/70 border border-[#d9b872]/40 rounded-lg p-2 text-white focus:outline-none focus:border-[#d9b872]"
+                  placeholder="e.g. #bounty, #catacombs, #ashen_pact"
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="quest-resolved-check"
-                  checked={editingQuest.resolved || false}
-                  onChange={(e) => setEditingQuest({ ...editingQuest, resolved: e.target.checked })}
-                  className="rounded border-[#d9b872] text-[#8b5a2b] focus:ring-0"
-                />
-                <label htmlFor="quest-resolved-check" className="text-amber-200 cursor-pointer font-bold">
-                  Mark as Resolved / Completed Quest
-                </label>
+              <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="quest-pinned-check"
+                    checked={editingQuest.pinned || false}
+                    onChange={(e) => setEditingQuest({ ...editingQuest, pinned: e.target.checked })}
+                    className="rounded border-[#d9b872] text-[#8b5a2b] focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="quest-pinned-check" className="text-amber-200 cursor-pointer font-bold">
+                    📌 Pin to Top of Board
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="quest-resolved-check"
+                    checked={editingQuest.resolved || false}
+                    onChange={(e) => setEditingQuest({ ...editingQuest, resolved: e.target.checked })}
+                    className="rounded border-[#d9b872] text-[#8b5a2b] focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="quest-resolved-check" className="text-amber-200 cursor-pointer font-bold">
+                    ✓ Mark as Resolved / Completed
+                  </label>
+                </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
               <button
                 onClick={() => setIsQuestModalOpen(false)}
-                className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-mono"
+                className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-mono cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveQuest}
-                className="px-4 py-1.5 bg-[#8b5a2b] hover:bg-[#a66d35] text-amber-100 border border-[#d9b872] rounded-xl text-xs font-mono font-bold flex items-center gap-1 shadow"
+                className="px-4 py-1.5 bg-[#8b5a2b] hover:bg-[#a66d35] text-amber-100 border border-[#d9b872] rounded-xl text-xs font-mono font-bold flex items-center gap-1 shadow cursor-pointer"
               >
                 <Save size={13} /> Save Quest Scroll
               </button>

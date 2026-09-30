@@ -27,9 +27,12 @@ import {
   Sliders,
   Zap,
   AlertCircle,
+  Edit2,
 } from 'lucide-react';
 import type { CharacterState, InventoryItem, Currency, EquipmentSlotId } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
+import { calculateACWithBreakdown } from '@/lib/calc-engine';
+import ItemEditorModal from '@/components/shared/ItemEditorModal';
 
 interface BG3EquipmentPaperdollProps {
   character: CharacterState;
@@ -446,6 +449,44 @@ export default function BG3EquipmentPaperdoll({
   const [bagCategory, setBagCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Item Editor Modal State
+  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
+  const [isNewItem, setIsNewItem] = useState(false);
+
+  const handleOpenCreateModal = () => {
+    setItemToEdit({
+      id: `item-${Date.now()}`,
+      name: '',
+      category: 'gear',
+      quantity: 1,
+      weight: 0,
+      equipped: false,
+      description: '',
+    });
+    setIsNewItem(true);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item: InventoryItem) => {
+    setItemToEdit(item);
+    setIsNewItem(false);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleSaveItemFromModal = (savedItem: InventoryItem) => {
+    if (isNewItem) {
+      onInventoryChange([...character.inventory, savedItem]);
+    } else {
+      onInventoryChange(
+        character.inventory.map((i) => (i.id === savedItem.id ? savedItem : i))
+      );
+      if (inspectedItem?.id === savedItem.id) {
+        setInspectedItem(savedItem);
+      }
+    }
+  };
+
   // Map equipped items by their effective and validated slot
   const equippedBySlot = useMemo(() => {
     const map: Partial<Record<EquipmentSlotId, InventoryItem>> = {};
@@ -463,6 +504,9 @@ export default function BG3EquipmentPaperdoll({
     }
     return map;
   }, [character.inventory]);
+
+  // Live AC breakdown accounting for all equipped items and stat modifiers
+  const liveACBreakdown = useMemo(() => calculateACWithBreakdown(character), [character]);
 
   // Carrying capacity
   const totalWeight = useMemo(() => {
@@ -498,8 +542,15 @@ export default function BG3EquipmentPaperdoll({
   const rangedMain = equippedBySlot.ranged_main;
 
   const profBonus = character.proficiencyBonus || 4;
-  const strMod = Math.floor(((character.abilityScores?.STR?.total || 10) - 10) / 2);
-  const dexMod = Math.floor(((character.abilityScores?.DEX?.total || 10) - 10) / 2);
+  const strBonus = (character.inventory || [])
+    .filter((i) => i.equipped && i.statModifiers?.STR)
+    .reduce((sum, i) => sum + (i.statModifiers?.STR || 0), 0);
+  const dexBonus = (character.inventory || [])
+    .filter((i) => i.equipped && i.statModifiers?.DEX)
+    .reduce((sum, i) => sum + (i.statModifiers?.DEX || 0), 0);
+
+  const strMod = Math.floor(((character.abilityScores?.STR?.total || 10) + strBonus - 10) / 2);
+  const dexMod = Math.floor(((character.abilityScores?.DEX?.total || 10) + dexBonus - 10) / 2);
 
   const meleeAttackBonus = (meleeMain?.attackBonus ?? 0) + profBonus + strMod;
   const meleeDamageRange = meleeMain?.damage || '1d8 + 3';
@@ -668,11 +719,14 @@ export default function BG3EquipmentPaperdoll({
           </div>
 
           {/* Center: Prominent AC Badge */}
-          <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-gradient-to-b from-amber-500/20 via-zinc-900 to-zinc-950 border-2 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.2)] w-20 h-20 shrink-0">
+          <div
+            className="flex flex-col items-center justify-center p-2 rounded-xl bg-gradient-to-b from-amber-500/20 via-zinc-900 to-zinc-950 border-2 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.2)] w-20 h-20 shrink-0 cursor-help"
+            title={`Armor Class: ${liveACBreakdown.formula}`}
+          >
             <Shield size={22} className="text-amber-400 mb-0.5" />
             <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">AC</span>
             <span className="text-base font-extrabold text-white leading-none">
-              {character.ac || 15}
+              {liveACBreakdown.total}
             </span>
           </div>
 
@@ -836,18 +890,29 @@ export default function BG3EquipmentPaperdoll({
             ))}
           </div>
 
-          <div className="relative w-48">
-            <Search
-              size={13}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search bag..."
-              className="w-full pl-8 pr-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenCreateModal}
+              className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95 cursor-pointer shrink-0"
+              title="Forge a new custom item, weapon, or armor piece"
+            >
+              <Plus size={13} />
+              <span>Forge Item</span>
+            </button>
+
+            <div className="relative w-40 sm:w-48">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search bag..."
+                className="w-full pl-8 pr-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
+              />
+            </div>
           </div>
         </div>
 
@@ -920,8 +985,8 @@ export default function BG3EquipmentPaperdoll({
 
               return (
                 <>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-bold text-xs ${itemStyle.text}`}>
                         {inspectedItem.name}
                       </span>
@@ -929,6 +994,9 @@ export default function BG3EquipmentPaperdoll({
                         className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${itemStyle.badgeBg} ${itemStyle.badgeText}`}
                       >
                         {itemRarity}
+                      </span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-zinc-400 font-mono">
+                        {inspectedItem.category}
                       </span>
                       <span className="text-[10px] text-zinc-500">
                         {inspectedItem.weight || 0} lbs &bull; Qty {inspectedItem.quantity}
@@ -938,6 +1006,39 @@ export default function BG3EquipmentPaperdoll({
                           [{getSlotTypeName(compatibleSlot)}]
                         </span>
                       )}
+
+                      {/* Stat badges */}
+                      {inspectedItem.acBonus !== undefined && inspectedItem.acBonus !== 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          +{inspectedItem.acBonus} AC
+                        </span>
+                      )}
+                      {inspectedItem.baseAC !== undefined && inspectedItem.baseAC > 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                          {inspectedItem.baseAC} Base AC
+                        </span>
+                      )}
+                      {inspectedItem.attackBonus !== undefined && inspectedItem.attackBonus !== 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/15 text-red-300 border border-red-500/30">
+                          +{inspectedItem.attackBonus} Atk
+                        </span>
+                      )}
+                      {inspectedItem.damage && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                          {inspectedItem.damage} {inspectedItem.damageType || ''}
+                        </span>
+                      )}
+                      {inspectedItem.statModifiers &&
+                        Object.entries(inspectedItem.statModifiers).map(([attr, val]) =>
+                          val ? (
+                            <span
+                              key={attr}
+                              className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                            >
+                              +{val} {attr}
+                            </span>
+                          ) : null
+                        )}
                     </div>
                     <p className="text-[11px] text-zinc-400">
                       {inspectedItem.description || 'No description provided.'}
@@ -945,6 +1046,15 @@ export default function BG3EquipmentPaperdoll({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(inspectedItem)}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/80 cursor-pointer flex items-center gap-1.5 transition-colors"
+                      title="Edit Item Stats, Category, Rarity, and Description"
+                    >
+                      <Edit2 size={12} className="text-amber-400" />
+                      <span>Edit Stats</span>
+                    </button>
+
                     {inspectedItem.equipped ? (
                       <button
                         onClick={() => unequipInventoryItem(characterId, inspectedItem.id)}
@@ -1014,6 +1124,17 @@ export default function BG3EquipmentPaperdoll({
           </div>
         </div>
       </div>
+
+      {/* 8. Full Item Editor Modal */}
+      {isEditorModalOpen && (
+        <ItemEditorModal
+          isOpen={isEditorModalOpen}
+          initialItem={itemToEdit}
+          isNew={isNewItem}
+          onSave={handleSaveItemFromModal}
+          onClose={() => setIsEditorModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

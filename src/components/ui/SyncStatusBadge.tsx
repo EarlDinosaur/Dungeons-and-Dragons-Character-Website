@@ -18,7 +18,11 @@ import {
 } from 'lucide-react';
 import { useCharacter } from '@/app/providers';
 
-export default function SyncStatusBadge() {
+interface SyncStatusBadgeProps {
+  subtle?: boolean;
+}
+
+export default function SyncStatusBadge({ subtle = true }: SyncStatusBadgeProps) {
   const { syncStatus, dbInfo, lastSyncedAt, forceSync } = useCharacter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSyncingManual, setIsSyncingManual] = useState(false);
@@ -54,10 +58,19 @@ export default function SyncStatusBadge() {
       <button
         onClick={() => setIsModalOpen(true)}
         type="button"
-        title="Click to view database connection status and sync settings"
-        className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200 backdrop-blur-md cursor-pointer select-none bg-zinc-950/70 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700 shadow-sm hover:shadow-md"
+        title={
+          isCloud
+            ? `Turso Cloud Connected (${syncStatus === 'syncing' || isSyncingManual ? 'Syncing...' : 'Live'}) • Click for database info & sync settings`
+            : `Database Connected (${syncStatus === 'syncing' || isSyncingManual ? 'Syncing...' : 'Live'}) • Click for database info & sync settings`
+        }
+        className={`group relative flex items-center transition-all duration-200 backdrop-blur-md cursor-pointer select-none border shadow-sm active:scale-95 ${
+          subtle
+            ? 'p-2 px-2.5 rounded-full bg-zinc-950/70 hover:bg-zinc-900 border-zinc-800 hover:border-emerald-500/50 hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] gap-1.5'
+            : 'px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-950/70 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:shadow-md gap-2'
+        }`}
+        aria-label="Database Connection Status"
       >
-        {/* Status Indicator Dot */}
+        {/* Status Indicator Dot (Green Light) */}
         <span className="relative flex h-2 w-2">
           {syncStatus === 'syncing' || isSyncingManual ? (
             <>
@@ -68,35 +81,40 @@ export default function SyncStatusBadge() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
           ) : (
             <>
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </>
           )}
         </span>
 
-        {/* Icon & Label */}
+        {/* Icon */}
         {isCloud ? (
-          <Cloud className="w-3.5 h-3.5 text-sky-400" />
+          <Cloud className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
         ) : (
-          <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+          <HardDrive className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
         )}
 
-        <span className="text-zinc-300 font-mono tracking-tight hidden sm:inline">
-          {syncStatus === 'syncing' || isSyncingManual
-            ? 'Syncing...'
-            : syncStatus === 'offline'
-            ? 'Offline (Cached)'
-            : isCloud
-            ? 'Turso Cloud'
-            : 'SQLite Live'}
-        </span>
+        {/* Optional Text Label (Hidden in subtle mode) */}
+        {!subtle && (
+          <>
+            <span className="text-zinc-300 font-mono tracking-tight hidden sm:inline">
+              {syncStatus === 'syncing' || isSyncingManual
+                ? 'Syncing...'
+                : syncStatus === 'offline'
+                ? 'Offline (Cached)'
+                : isCloud
+                ? 'Turso Cloud'
+                : 'SQLite Live'}
+            </span>
 
-        {/* Subtle Refresh Indicator */}
-        <RefreshCw
-          className={`w-3 h-3 text-zinc-500 group-hover:text-zinc-300 transition-colors ${
-            syncStatus === 'syncing' || isSyncingManual ? 'animate-spin text-amber-400' : ''
-          }`}
-        />
+            {/* Subtle Refresh Indicator */}
+            <RefreshCw
+              className={`w-3 h-3 text-zinc-500 group-hover:text-zinc-300 transition-colors ${
+                syncStatus === 'syncing' || isSyncingManual ? 'animate-spin text-amber-400' : ''
+              }`}
+            />
+          </>
+        )}
       </button>
 
       {/* Database & Sync Center Modal */}

@@ -22,6 +22,7 @@ import {
   HelpCircle,
   FileText,
   Send,
+  CheckCircle2,
 } from 'lucide-react';
 import type { DMNote, DMNoteCategory } from '@/lib/dm-types';
 
@@ -491,6 +492,14 @@ export default function DMCampaignChronicle({
                       >
                         🎯 {getTargetName(note.targetCharacterId)}
                       </span>
+
+                      {/* Resolved Badge */}
+                      {note.resolved && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-zinc-900 text-zinc-400 border-zinc-700 flex items-center gap-1">
+                          <span>✓</span>
+                          <span>RESOLVED</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Quick Pin Toggle */}
@@ -508,7 +517,9 @@ export default function DMCampaignChronicle({
                   </div>
 
                   {/* Note Title */}
-                  <h4 className="font-bold text-zinc-100 text-xs mb-1.5 font-[family-name:var(--font-heading)] flex items-center gap-1.5">
+                  <h4 className={`font-bold text-xs mb-1.5 font-[family-name:var(--font-heading)] flex items-center gap-1.5 ${
+                    note.resolved ? 'line-through text-zinc-400' : 'text-zinc-100'
+                  }`}>
                     <span>{note.title}</span>
                   </h4>
 
@@ -547,6 +558,15 @@ export default function DMCampaignChronicle({
                     </button>
 
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onUpdateNote(note.id, { resolved: !note.resolved })}
+                        className={`p-1 rounded transition-colors cursor-pointer ${
+                          note.resolved ? 'text-zinc-500 hover:text-amber-400' : 'text-zinc-500 hover:text-emerald-400'
+                        }`}
+                        title={note.resolved ? 'Reactivate quest/note' : 'Mark quest/note resolved'}
+                      >
+                        <CheckCircle2 size={12} className={note.resolved ? 'text-zinc-500' : 'text-emerald-500'} />
+                      </button>
                       <button
                         onClick={() => handleOpenEdit(note)}
                         className="p-1 rounded text-zinc-500 hover:text-amber-300 transition-colors cursor-pointer"

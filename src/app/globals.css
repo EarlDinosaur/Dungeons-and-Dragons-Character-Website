@@ -66,8 +66,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  color-scheme: dark;
+}
+
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
@@ -387,8 +392,8 @@ input[type="text"],
 input[type="number"],
 textarea,
 select {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 215, 0, 0.1);
+  background: #10121a;
+  border: 1px solid rgba(255, 215, 0, 0.15);
   color: var(--color-parchment);
   border-radius: 8px;
   padding: 8px 12px;
@@ -397,23 +402,52 @@ select {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   outline: none;
   width: 100%;
+  color-scheme: dark;
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(255, 215, 0, 0.3);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
 }
 
 select {
   cursor: pointer;
   appearance: none;
+  background-color: #12141d;
+  color: var(--color-parchment);
+  color-scheme: dark;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c4b69c' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
+}
+
+select option {
+  background-color: #10121a !important;
+  color: #e8dcc8 !important;
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+select option:checked {
+  background-color: #1e2436 !important;
+  color: #fbbf24 !important;
+}
+
+select option:hover,
+select option:focus {
+  background-color: #262e42 !important;
+  color: #fef08a !important;
+}
+
+select optgroup {
+  background-color: #0b0d14 !important;
+  color: #c4b69c !important;
+  font-family: var(--font-heading);
 }
 
 /* ============================================================================

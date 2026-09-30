@@ -18,6 +18,7 @@ import {
   Info,
   Skull,
   Store,
+  Package,
 } from 'lucide-react';
 import type { PartyMemberHUDState, AtmosphereState, Combatant } from '@/lib/dm-types';
 import type { CustomNPC } from '@/lib/npc-types';
@@ -29,6 +30,7 @@ import DMRulesReference from './DMRulesReference';
 import DMAtmosphereBar from './DMAtmosphereBar';
 import DMNPCCodex from './DMNPCCodex';
 import DMShopManager from './DMShopManager';
+import DMPartyInventoryManager from './DMPartyInventoryManager';
 
 export type DMWorkspaceTab = 'roster' | 'combat' | 'npcs' | 'shops' | 'chronicle' | 'rules';
 
@@ -77,6 +79,9 @@ export default function DMDashboardGrid({
 
   // Active Workspace Tab (Default to Party Roster)
   const [activeTab, setActiveTab] = useState<DMWorkspaceTab>('roster');
+
+  // Party Inventory & Equipment Manager Modal State
+  const [inventoryCharId, setInventoryCharId] = useState<string | null>(null);
 
   // Combat queue for sending NPCs directly into encounter
   const [queuedCombatants, setQueuedCombatants] = useState<Combatant[]>([]);
@@ -232,6 +237,16 @@ export default function DMDashboardGrid({
 
           {/* Right: Tools Toggle, Rest Actions & Injected Page Controls */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Party Gear & Inventory Manager */}
+            <button
+              onClick={() => setInventoryCharId(partyMembers[0]?.id || 'vesper')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer"
+              title="Inspect and edit equipment and inventory for any party member"
+            >
+              <Package size={13} className="text-amber-400" />
+              <span className="font-bold hidden sm:inline">Party Gear</span>
+            </button>
+
             {/* Atmosphere & Secret Dice Drawer Toggle */}
             <button
               onClick={() => setIsToolsOpen(!isToolsOpen)}
@@ -407,6 +422,14 @@ export default function DMDashboardGrid({
           </div>
         )}
       </main>
+
+      {/* 3. DM Party Inventory & Equipment Modal */}
+      {inventoryCharId && (
+        <DMPartyInventoryManager
+          initialCharacterId={inventoryCharId}
+          onClose={() => setInventoryCharId(null)}
+        />
+      )}
     </div>
   );
 }

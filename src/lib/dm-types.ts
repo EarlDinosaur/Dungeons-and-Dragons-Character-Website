@@ -122,6 +122,7 @@ export interface DMNote {
   targetCharacterId: string; // 'all' for party-wide, or 'vesper', 'aria', 'cyrus', 'wynel', 'kastoriel', custom ID
   isPlayerVisible: boolean; // if true, appears on the player's sheet!
   pinned?: boolean;
+  resolved?: boolean; // if true, marked completed/resolved
   tags: string[];
   author?: string;
   createdAt: number;

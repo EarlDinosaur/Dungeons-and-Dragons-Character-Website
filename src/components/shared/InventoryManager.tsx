@@ -26,6 +26,7 @@ import BG3EquipmentPaperdoll, {
   getItemRarity,
   RARITY_COLORS,
 } from '@/components/characters/shared/BG3EquipmentPaperdoll';
+import ItemEditorModal from './ItemEditorModal';
 
 interface InventoryManagerProps {
   character: CharacterState;
@@ -36,19 +37,27 @@ interface InventoryManagerProps {
 const CATEGORY_COLORS: Record<string, string> = {
   weapon: 'var(--color-crimson-500)',
   armor: 'var(--color-gold-500)',
+  shield: 'var(--color-gold-bright)',
+  ring: 'var(--color-arcane-400)',
+  amulet: 'var(--color-gold-500)',
   gear: 'var(--color-parchment-muted)',
   consumable: 'var(--color-vitality)',
   treasure: 'var(--color-gold-bright)',
   tool: 'var(--color-arcane-400)',
+  wondrous: 'var(--color-purple-400, #c084fc)',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
   weapon: 'Weapon',
   armor: 'Armor',
+  shield: 'Shield',
+  ring: 'Ring',
+  amulet: 'Amulet',
   gear: 'Gear',
   consumable: 'Consumable',
   treasure: 'Treasure',
   tool: 'Tool',
+  wondrous: 'Wondrous',
 };
 
 export default function InventoryManager({
@@ -60,16 +69,11 @@ export default function InventoryManager({
   const { activeCharacterId } = useCharacter();
   const [viewMode, setViewMode] = useState<'bg3' | 'classic'>('bg3');
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState<Partial<InventoryItem>>({
-    name: '',
-    quantity: 1,
-    weight: 0,
-    description: '',
-    equipped: false,
-    category: 'gear',
-  });
+  
+  // Full Item Editor Modal State
+  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
+  const [isNewItem, setIsNewItem] = useState(false);
 
   // Calculate encumbrance
   const totalWeight = character.inventory.reduce(
@@ -92,21 +96,36 @@ export default function InventoryManager({
     item.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddItem = () => {
-    if (!newItem.name) return;
-    const item: InventoryItem = {
+  const handleOpenCreateModal = () => {
+    setItemToEdit({
       id: `item-${Date.now()}`,
-      name: newItem.name || 'New Item',
-      quantity: newItem.quantity || 1,
-      weight: newItem.weight || 0,
-      description: newItem.description || '',
-      equipped: newItem.equipped || false,
-      category: (newItem.category as InventoryItem['category']) || 'gear',
-    };
-    onInventoryChange([...character.inventory, item]);
-    showToast('Item Added', `Added "${item.name}" (x${item.quantity}) to inventory`, 'inventory');
-    setNewItem({ name: '', quantity: 1, weight: 0, description: '', equipped: false, category: 'gear' });
-    setShowAddForm(false);
+      name: '',
+      category: 'gear',
+      quantity: 1,
+      weight: 0,
+      equipped: false,
+      description: '',
+    });
+    setIsNewItem(true);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item: InventoryItem) => {
+    setItemToEdit(item);
+    setIsNewItem(false);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleSaveItemFromModal = (savedItem: InventoryItem) => {
+    if (isNewItem) {
+      onInventoryChange([...character.inventory, savedItem]);
+      showToast('Item Forged', `Added "${savedItem.name}" to inventory`, 'inventory');
+    } else {
+      onInventoryChange(
+        character.inventory.map((i) => (i.id === savedItem.id ? savedItem : i))
+      );
+      showToast('Item Updated', `Updated "${savedItem.name}" stats and details`, 'inventory');
+    }
   };
 
   const handleDeleteItem = (id: string) => {
@@ -264,12 +283,12 @@ export default function InventoryManager({
                 </span>
               </h2>
               <button
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={handleOpenCreateModal}
                 className="btn btn-gold btn-sm w-full sm:w-auto justify-center"
                 id="add-item-btn"
               >
                 <Plus size={14} />
-                Add Item
+                Forge / Add Item
               </button>
             </div>
 
@@ -285,68 +304,6 @@ export default function InventoryManager({
                 id="inventory-search"
               />
             </div>
-
-            {/* Add Form */}
-            {showAddForm && (
-              <div className="glass-card-gold p-4 mb-3 space-y-3 animate-fade-in-up">
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Item name"
-                    value={newItem.name || ''}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    id="new-item-name"
-                  />
-                  <select
-                    value={newItem.category || 'gear'}
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value as InventoryItem['category'] })}
-                    id="new-item-category"
-                  >
-                    {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-[var(--color-parchment-dim)] uppercase tracking-wider block mb-1">Qty</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newItem.quantity || 1}
-                      onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
-                      id="new-item-qty"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-[var(--color-parchment-dim)] uppercase tracking-wider block mb-1">Weight (lbs)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={newItem.weight || 0}
-                      onChange={(e) => setNewItem({ ...newItem, weight: parseFloat(e.target.value) || 0 })}
-                      id="new-item-weight"
-                    />
-                  </div>
-                </div>
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newItem.description || ''}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                  className="!h-16 !text-sm"
-                  id="new-item-desc"
-                />
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
-                    <X size={12} /> Cancel
-                  </button>
-                  <button onClick={handleAddItem} className="btn btn-gold btn-sm">
-                    <Check size={12} /> Add
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Items List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -385,103 +342,141 @@ export default function InventoryManager({
                       {/* Category dot */}
                       <div
                         className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: CATEGORY_COLORS[item.category] }}
+                        style={{ backgroundColor: CATEGORY_COLORS[item.category] || 'var(--color-parchment-muted)' }}
                       />
 
                       {/* Item info */}
                       <div className="flex-1 min-w-0">
-                        {editingId === item.id ? (
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                            onBlur={() => setEditingId(null)}
-                            onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)}
-                            className="!text-sm !p-0 !bg-transparent !border-b !border-t-0 !border-l-0 !border-r-0 !rounded-none"
-                            autoFocus
-                          />
-                        ) : (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span
-                              className={cn(
-                                'text-sm truncate block font-medium',
-                                item.equipped ? rarityStyle.text : 'text-[var(--color-parchment)]'
-                              )}
-                            >
-                              {item.name}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={cn(
+                              'text-sm truncate block font-medium cursor-pointer hover:underline',
+                              item.equipped ? rarityStyle.text : 'text-[var(--color-parchment)]'
+                            )}
+                            onClick={() => handleOpenEditModal(item)}
+                            title="Click to edit item stats"
+                          >
+                            {item.name}
+                          </span>
+                          <span
+                            className={cn(
+                              'text-[9px] font-bold px-1.5 py-0.2 rounded border',
+                              rarityStyle.badgeBg,
+                              rarityStyle.badgeText
+                            )}
+                          >
+                            {rarity}
+                          </span>
+                          <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-zinc-400 font-mono">
+                            {CATEGORY_LABELS[item.category] || item.category}
+                          </span>
+
+                          {/* Dynamic Combat & Armor Stat Badges */}
+                          {item.acBonus !== undefined && item.acBonus !== 0 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              +{item.acBonus} AC
                             </span>
-                            <span
-                              className={cn(
-                                'text-[9px] font-bold px-1.5 py-0.2 rounded border',
-                                rarityStyle.badgeBg,
-                                rarityStyle.badgeText
-                              )}
-                            >
-                              {rarity}
+                          )}
+                          {item.baseAC !== undefined && item.baseAC > 0 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                              {item.baseAC} Base AC
                             </span>
-                          </div>
-                        )}
+                          )}
+                          {item.attackBonus !== undefined && item.attackBonus !== 0 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/15 text-red-300 border border-red-500/30">
+                              +{item.attackBonus} Atk
+                            </span>
+                          )}
+                          {item.damage && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                              {item.damage} {item.damageType || ''}
+                            </span>
+                          )}
+                          {item.statModifiers &&
+                            Object.entries(item.statModifiers).map(([attr, val]) =>
+                              val ? (
+                                <span
+                                  key={attr}
+                                  className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                                >
+                                  +{val} {attr}
+                                </span>
+                              ) : null
+                            )}
+                        </div>
                         {item.description && (
-                          <span className="text-[10px] text-[var(--color-parchment-dim)] truncate block">
+                          <span className="text-[10px] text-[var(--color-parchment-dim)] truncate block mt-0.5">
                             {item.description}
                           </span>
                         )}
                       </div>
                     </div>
 
-                  {/* Quantity & Weight & Actions bar for mobile/desktop */}
-                  <div className="flex items-center gap-3 shrink-0 text-xs font-[family-name:var(--font-mono)] ml-auto sm:ml-0">
-                    {/* Quantity Controls */}
-                    <div className="flex items-center gap-1 bg-black/30 p-0.5 rounded border border-white/5">
-                      <button
-                        onClick={() => handleUpdateItem(item.id, { quantity: Math.max(1, item.quantity - 1) })}
-                        className="text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center rounded active:bg-white/10"
-                        aria-label="Decrease quantity"
-                      >
-                        <ChevronDown size={12} />
-                      </button>
-                      <span className="text-[var(--color-parchment-muted)] min-w-[20px] text-center font-bold">
-                        {item.quantity}
+                    {/* Quantity & Weight & Actions bar for mobile/desktop */}
+                    <div className="flex items-center gap-3 shrink-0 text-xs font-[family-name:var(--font-mono)] ml-auto sm:ml-0">
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-1 bg-black/30 p-0.5 rounded border border-white/5">
+                        <button
+                          onClick={() => handleUpdateItem(item.id, { quantity: Math.max(1, item.quantity - 1) })}
+                          className="text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center rounded active:bg-white/10"
+                          aria-label="Decrease quantity"
+                        >
+                          <ChevronDown size={12} />
+                        </button>
+                        <span className="text-[var(--color-parchment-muted)] min-w-[20px] text-center font-bold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateItem(item.id, { quantity: item.quantity + 1 })}
+                          className="text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center rounded active:bg-white/10"
+                          aria-label="Increase quantity"
+                        >
+                          <ChevronUp size={12} />
+                        </button>
+                      </div>
+
+                      <span className="text-[var(--color-parchment-dim)] min-w-[42px] text-right">
+                        {(item.weight * item.quantity).toFixed(1)} lb
                       </span>
-                      <button
-                        onClick={() => handleUpdateItem(item.id, { quantity: item.quantity + 1 })}
-                        className="text-[var(--color-parchment-dim)] hover:text-[var(--color-parchment)] p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center rounded active:bg-white/10"
-                        aria-label="Increase quantity"
-                      >
-                        <ChevronUp size={12} />
-                      </button>
-                    </div>
 
-                    <span className="text-[var(--color-parchment-dim)] min-w-[42px] text-right">
-                      {(item.weight * item.quantity).toFixed(1)} lb
-                    </span>
-
-                    {/* Actions: Always visible on touchscreens (opacity-100), hidden until hover on desktop (sm:opacity-0 sm:group-hover:opacity-100) */}
-                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setEditingId(item.id)}
-                        className="p-1.5 text-[var(--color-parchment-dim)] hover:text-[var(--color-gold-400)] rounded active:bg-white/10"
-                        aria-label={`Edit ${item.name}`}
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="p-1.5 text-[var(--color-parchment-dim)] hover:text-[var(--color-crimson-500)] rounded active:bg-white/10"
-                        aria-label={`Delete ${item.name}`}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenEditModal(item)}
+                          className="p-1.5 text-[var(--color-parchment-dim)] hover:text-[var(--color-gold-400)] rounded active:bg-white/10 cursor-pointer"
+                          title={`Edit ${item.name} stats, category & details`}
+                          aria-label={`Edit ${item.name}`}
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="p-1.5 text-[var(--color-parchment-dim)] hover:text-[var(--color-crimson-500)] rounded active:bg-white/10 cursor-pointer"
+                          aria-label={`Delete ${item.name}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+
+      {/* Full Item Editor Modal (for both editing and forging items) */}
+      {isEditorModalOpen && (
+        <ItemEditorModal
+          isOpen={isEditorModalOpen}
+          initialItem={itemToEdit}
+          isNew={isNewItem}
+          onSave={handleSaveItemFromModal}
+          onClose={() => setIsEditorModalOpen(false)}
+        />
+      )}
+    </div>
+  );
 }
 

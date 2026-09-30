@@ -329,6 +329,10 @@ interface CharacterContextType {
   equipInventoryItem: (charId: string, itemId: string, slot?: EquipmentSlotId) => void;
   unequipInventoryItem: (charId: string, itemId: string) => void;
 
+  // Unified Character Inventory Management (Player & DM)
+  getCharacterInventory: (charId: string) => InventoryItem[];
+  updateCharacterInventory: (charId: string, inventory: InventoryItem[]) => void;
+
   isLoaded: boolean;
 }
 
@@ -3064,6 +3068,36 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
 
   // ----------------------------------------------------
+  // Unified Character Inventory Management (Player & DM)
+  // ----------------------------------------------------
+  const getCharacterInventory = useCallback((charId: string): InventoryItem[] => {
+    const cleanId = (charId || '').toLowerCase();
+    if (cleanId === 'vesper' || cleanId === 'earl') return character.inventory || [];
+    if (cleanId === 'aria') return aria.inventory || [];
+    if (cleanId === 'cyrus') return cyrus.inventory || [];
+    if (cleanId === 'wynel') return wynel.inventory || [];
+    if (cleanId === 'kastoriel') return kastoriel.inventory || [];
+    return customCharacters[charId]?.inventory || [];
+  }, [character.inventory, aria.inventory, cyrus.inventory, wynel.inventory, kastoriel.inventory, customCharacters]);
+
+  const updateCharacterInventory = useCallback((charId: string, items: InventoryItem[]) => {
+    const cleanId = (charId || '').toLowerCase();
+    if (cleanId === 'vesper' || cleanId === 'earl') {
+      updateCharacter((prev) => ({ ...prev, inventory: items }));
+    } else if (cleanId === 'aria') {
+      updateAria((prev) => ({ ...prev, inventory: items }));
+    } else if (cleanId === 'cyrus') {
+      updateCyrus((prev) => ({ ...prev, inventory: items }));
+    } else if (cleanId === 'wynel') {
+      updateWynel((prev) => ({ ...prev, inventory: items }));
+    } else if (cleanId === 'kastoriel') {
+      updateKastoriel((prev) => ({ ...prev, inventory: items }));
+    } else {
+      updateCustomCharacter(charId, (prev) => ({ ...prev, inventory: items }));
+    }
+  }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
+
+  // ----------------------------------------------------
   // Marketplace Purchasing
   // ----------------------------------------------------
   const purchaseShopItem = useCallback((characterId: string, shopId: string, itemId: string) => {
@@ -3334,6 +3368,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         purchaseShopItem,
         equipInventoryItem,
         unequipInventoryItem,
+        getCharacterInventory,
+        updateCharacterInventory,
         isLoaded,
       }}
     >

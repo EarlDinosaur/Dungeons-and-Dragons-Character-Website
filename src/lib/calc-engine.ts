@@ -2,7 +2,7 @@
 // D&D 5e Calculation Engine with Transparent Formula Breakdowns
 // ============================================================================
 
-import type { CharacterState, AbilityName, SkillName, InventoryItem } from './types';
+import type { CharacterState, AbilityName, SkillName, InventoryItem, ClassLevel } from './types';
 import { getModifier, formatModifier } from './character-engine';
 
 export interface StatBreakdownPart {
@@ -22,10 +22,36 @@ export interface StatBreakdown {
   notes?: string;
 }
 
+// Helper: get total bonus to an ability score from equipped items
+export function getItemStatBonus(char: { inventory?: InventoryItem[] }, ability: AbilityName): number {
+  return (char.inventory || [])
+    .filter((i) => i.equipped && i.statModifiers?.[ability])
+    .reduce((sum, i) => sum + (i.statModifiers?.[ability] || 0), 0);
+}
+
+// Helper: get effective modifier for an ability score accounting for equipped items
+export function getEffectiveAbilityModifier(
+  char: {
+    inventory?: InventoryItem[];
+    abilityScores?: Partial<Record<AbilityName, { total?: number; base?: number; modifier?: number }>>;
+  },
+  ability: AbilityName
+): number {
+  const baseScore = char.abilityScores?.[ability]?.total ?? char.abilityScores?.[ability]?.base ?? 10;
+  const bonus = getItemStatBonus(char, ability);
+  return Math.floor((baseScore + bonus - 10) / 2);
+}
+
 /**
  * Calculate Armor Class with detailed breakdown based on equipped inventory and DEX mod.
  */
-export function calculateACWithBreakdown(char: CharacterState): StatBreakdown {
+export function calculateACWithBreakdown(char: {
+  inventory?: InventoryItem[];
+  abilityScores?: Partial<Record<AbilityName, { total?: number; base?: number; modifier?: number }>>;
+  overrides?: { ac?: number };
+  classes?: ClassLevel[];
+  class?: string;
+}): StatBreakdown {
   if (char.overrides?.ac !== undefined && char.overrides.ac !== null) {
     return {
       statName: 'Armor Class (AC)',
@@ -40,12 +66,25 @@ export function calculateACWithBreakdown(char: CharacterState): StatBreakdown {
     };
   }
 
-  const dexMod = char.abilityScores.DEX.modifier;
+  // Calculate effective DEX modifier, accounting for any equipped items with DEX modifiers
+  const dexBonusFromItems = getItemStatBonus(char, 'DEX');
+  const baseDexScore = char.abilityScores?.DEX?.total || char.abilityScores?.DEX?.base || 10;
+  const effectiveDexMod = Math.floor((baseDexScore + dexBonusFromItems - 10) / 2);
+  const dexMod = effectiveDexMod;
+
   const equippedArmor = char.inventory?.find(
     (item) => item.equipped && item.category === 'armor' && !item.name.toLowerCase().includes('shield')
   );
   const equippedShield = char.inventory?.find(
-    (item) => item.equipped && item.name.toLowerCase().includes('shield')
+    (item) => item.equipped && (item.category === 'shield' || item.name.toLowerCase().includes('shield'))
+  );
+  const otherEquippedBonusItems = (char.inventory || []).filter(
+    (item) =>
+      item.equipped &&
+      item.id !== equippedArmor?.id &&
+      item.id !== equippedShield?.id &&
+      item.acBonus !== undefined &&
+      item.acBonus !== 0
   );
 
   const parts: StatBreakdownPart[] = [];
@@ -54,92 +93,120 @@ export function calculateACWithBreakdown(char: CharacterState): StatBreakdown {
   let armorName = 'Unarmored';
 
   if (equippedArmor) {
-    const name = equippedArmor.name.toLowerCase();
-    if (name.includes('leather') && !name.includes('studded')) {
-      baseAC = 11;
-      armorName = equippedArmor.name;
-    } else if (name.includes('studded leather')) {
-      baseAC = 12;
-      armorName = equippedArmor.name;
-    } else if (name.includes('padded')) {
-      baseAC = 11;
-      armorName = equippedArmor.name;
-    } else if (name.includes('hide')) {
-      baseAC = 12;
-      dexAllowed = Math.min(2, dexMod);
-      armorName = `${equippedArmor.name} (Max +2 DEX)`;
-    } else if (name.includes('chain shirt')) {
-      baseAC = 13;
-      dexAllowed = Math.min(2, dexMod);
-      armorName = `${equippedArmor.name} (Max +2 DEX)`;
-    } else if (name.includes('scale mail')) {
-      baseAC = 14;
-      dexAllowed = Math.min(2, dexMod);
-      armorName = `${equippedArmor.name} (Max +2 DEX)`;
-    } else if (name.includes('breastplate')) {
-      baseAC = 14;
-      dexAllowed = Math.min(2, dexMod);
-      armorName = `${equippedArmor.name} (Max +2 DEX)`;
-    } else if (name.includes('half plate')) {
-      baseAC = 15;
-      dexAllowed = Math.min(2, dexMod);
-      armorName = `${equippedArmor.name} (Max +2 DEX)`;
-    } else if (name.includes('ring mail')) {
-      baseAC = 14;
-      dexAllowed = 0;
-      armorName = `${equippedArmor.name} (No DEX)`;
-    } else if (name.includes('chain mail')) {
-      baseAC = 16;
-      dexAllowed = 0;
-      armorName = `${equippedArmor.name} (No DEX)`;
-    } else if (name.includes('splint')) {
-      baseAC = 17;
-      dexAllowed = 0;
-      armorName = `${equippedArmor.name} (No DEX)`;
-    } else if (name.includes('plate')) {
-      baseAC = 18;
-      dexAllowed = 0;
-      armorName = `${equippedArmor.name} (No DEX)`;
+    armorName = equippedArmor.name;
+    if (equippedArmor.baseAC !== undefined && equippedArmor.baseAC > 0) {
+      baseAC = equippedArmor.baseAC;
+      const name = equippedArmor.name.toLowerCase();
+      if (name.includes('plate') || name.includes('splint') || name.includes('ring mail') || name.includes('chain mail')) {
+        dexAllowed = 0;
+        armorName = `${equippedArmor.name} (Heavy: No DEX)`;
+      } else if (name.includes('scale') || name.includes('breastplate') || name.includes('half plate') || name.includes('hide') || name.includes('chain shirt')) {
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Medium: Max +2 DEX)`;
+      } else {
+        dexAllowed = dexMod;
+      }
     } else {
-      // Generic light armor fallback
-      baseAC = 11;
-      armorName = equippedArmor.name;
+      const name = equippedArmor.name.toLowerCase();
+      if (name.includes('leather') && !name.includes('studded')) {
+        baseAC = 11;
+      } else if (name.includes('studded leather')) {
+        baseAC = 12;
+      } else if (name.includes('padded')) {
+        baseAC = 11;
+      } else if (name.includes('hide')) {
+        baseAC = 12;
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Max +2 DEX)`;
+      } else if (name.includes('chain shirt')) {
+        baseAC = 13;
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Max +2 DEX)`;
+      } else if (name.includes('scale mail')) {
+        baseAC = 14;
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Max +2 DEX)`;
+      } else if (name.includes('breastplate')) {
+        baseAC = 14;
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Max +2 DEX)`;
+      } else if (name.includes('half plate')) {
+        baseAC = 15;
+        dexAllowed = Math.min(2, dexMod);
+        armorName = `${equippedArmor.name} (Max +2 DEX)`;
+      } else if (name.includes('ring mail')) {
+        baseAC = 14;
+        dexAllowed = 0;
+        armorName = `${equippedArmor.name} (No DEX)`;
+      } else if (name.includes('chain mail')) {
+        baseAC = 16;
+        dexAllowed = 0;
+        armorName = `${equippedArmor.name} (No DEX)`;
+      } else if (name.includes('splint')) {
+        baseAC = 17;
+        dexAllowed = 0;
+        armorName = `${equippedArmor.name} (No DEX)`;
+      } else if (name.includes('plate')) {
+        baseAC = 18;
+        dexAllowed = 0;
+        armorName = `${equippedArmor.name} (No DEX)`;
+      } else {
+        // Generic light armor fallback
+        baseAC = 11;
+      }
     }
   }
 
   // Check for Monk / Barbarian unarmored defense or fallback default calculation
   if (!equippedArmor) {
-    const isBarbarian = char.classes?.some((c) => c.className.toLowerCase() === 'barbarian');
-    const isMonk = char.classes?.some((c) => c.className.toLowerCase() === 'monk');
+    const isBarbarian =
+      char.classes?.some((c) => c.className.toLowerCase() === 'barbarian') ||
+      char.class?.toLowerCase() === 'barbarian';
+    const isMonk =
+      char.classes?.some((c) => c.className.toLowerCase() === 'monk') ||
+      char.class?.toLowerCase() === 'monk';
+
     if (isBarbarian) {
       baseAC = 10;
-      const conMod = char.abilityScores.CON.modifier;
+      const conMod = getEffectiveAbilityModifier(char, 'CON');
       parts.push({ label: 'Base Unarmored', value: 10, type: 'base' });
       parts.push({ label: 'DEX Modifier', value: formatModifier(dexMod), type: 'ability' });
       parts.push({ label: 'Unarmored Defense (CON)', value: formatModifier(conMod), type: 'feature' });
       let total = 10 + dexMod + conMod;
       if (equippedShield) {
-        total += 2;
-        parts.push({ label: equippedShield.name, value: '+2', type: 'equipment' });
+        const shieldBonus = equippedShield.acBonus !== undefined ? equippedShield.acBonus : 2;
+        total += shieldBonus;
+        parts.push({ label: equippedShield.name, value: formatModifier(shieldBonus), type: 'equipment' });
+      }
+      for (const item of otherEquippedBonusItems) {
+        const bonus = item.acBonus || 0;
+        total += bonus;
+        parts.push({ label: item.name, value: formatModifier(bonus), type: 'equipment', description: item.description });
       }
       return {
         statName: 'Armor Class (AC)',
         total,
         displayValue: `${total}`,
-        formula: `10 + ${dexMod} (DEX) + ${conMod} (CON)${equippedShield ? ' + 2 (Shield)' : ''}`,
+        formula: `10 + ${dexMod} (DEX) + ${conMod} (CON)${equippedShield ? ` + ${equippedShield.acBonus !== undefined ? equippedShield.acBonus : 2} (Shield)` : ''}`,
         summary: 'Barbarian Unarmored Defense: AC equals 10 + DEX mod + CON mod.',
         parts,
       };
-    } else if (isMonk) {
+    } else if (isMonk && !equippedShield) {
       baseAC = 10;
-      const wisMod = char.abilityScores.WIS.modifier;
+      const wisMod = getEffectiveAbilityModifier(char, 'WIS');
       parts.push({ label: 'Base Unarmored', value: 10, type: 'base' });
       parts.push({ label: 'DEX Modifier', value: formatModifier(dexMod), type: 'ability' });
       parts.push({ label: 'Unarmored Defense (WIS)', value: formatModifier(wisMod), type: 'feature' });
+      let total = 10 + dexMod + wisMod;
+      for (const item of otherEquippedBonusItems) {
+        const bonus = item.acBonus || 0;
+        total += bonus;
+        parts.push({ label: item.name, value: formatModifier(bonus), type: 'equipment', description: item.description });
+      }
       return {
         statName: 'Armor Class (AC)',
-        total: 10 + dexMod + wisMod,
-        displayValue: `${10 + dexMod + wisMod}`,
+        total,
+        displayValue: `${total}`,
         formula: `10 + ${dexMod} (DEX) + ${wisMod} (WIS)`,
         summary: 'Monk Unarmored Defense: AC equals 10 + DEX mod + WIS mod while not wearing armor or shield.',
         parts,
@@ -153,23 +220,54 @@ export function calculateACWithBreakdown(char: CharacterState): StatBreakdown {
   }
 
   let total = baseAC + dexAllowed;
-
-  if (equippedShield) {
-    total += 2;
-    parts.push({ label: equippedShield.name, value: '+2', type: 'equipment', description: 'Shield bonus to AC' });
-  }
-
   const formulaParts = [`${baseAC} (${armorName})`];
   if (dexAllowed !== 0) formulaParts.push(`${formatModifier(dexAllowed)} (DEX)`);
-  if (equippedShield) formulaParts.push(`+2 (${equippedShield.name})`);
+
+  // Equipped armor enchantment bonus
+  if (equippedArmor?.acBonus && equippedArmor.acBonus !== 0) {
+    total += equippedArmor.acBonus;
+    parts.push({
+      label: `${equippedArmor.name} (Bonus)`,
+      value: formatModifier(equippedArmor.acBonus),
+      type: 'equipment',
+      description: 'Enchantment bonus to armor',
+    });
+    formulaParts.push(`${formatModifier(equippedArmor.acBonus)} (Armor Bonus)`);
+  }
+
+  // Equipped Shield
+  if (equippedShield) {
+    const shieldBonus = equippedShield.acBonus !== undefined ? equippedShield.acBonus : 2;
+    total += shieldBonus;
+    parts.push({
+      label: equippedShield.name,
+      value: formatModifier(shieldBonus),
+      type: 'equipment',
+      description: 'Shield defense bonus to AC',
+    });
+    formulaParts.push(`${formatModifier(shieldBonus)} (${equippedShield.name})`);
+  }
+
+  // Other Equipped Items with AC Bonus (e.g. Ring of Protection, Cloak of Protection, Bracers)
+  for (const item of otherEquippedBonusItems) {
+    const bonus = item.acBonus || 0;
+    total += bonus;
+    parts.push({
+      label: item.name,
+      value: formatModifier(bonus),
+      type: 'equipment',
+      description: item.description || 'Magic item AC bonus',
+    });
+    formulaParts.push(`${formatModifier(bonus)} (${item.name})`);
+  }
 
   return {
     statName: 'Armor Class (AC)',
     total,
     displayValue: `${total}`,
-    formula: formulaParts.join(' + '),
+    formula: formulaParts.join(' + ').replace(/\+ -/g, '- '),
     summary: equippedArmor
-      ? `Derived from ${equippedArmor.name} plus Dexterity modifier${equippedShield ? ' and a Shield' : ''}.`
+      ? `Derived from ${equippedArmor.name} plus Dexterity modifier${equippedShield ? ' and a Shield' : ''}${otherEquippedBonusItems.length > 0 ? ' plus magical accessory bonuses' : ''}.`
       : 'Standard 5e unarmored defense (10 + DEX modifier).',
     parts,
   };
@@ -190,10 +288,14 @@ export function calculateInitiativeWithBreakdown(char: CharacterState): StatBrea
     };
   }
 
-  const dexMod = char.abilityScores.DEX.modifier;
+  const dexMod = getEffectiveAbilityModifier(char, 'DEX');
+  const dexItemBonus = getItemStatBonus(char, 'DEX');
   const parts: StatBreakdownPart[] = [
     { label: 'DEX Modifier', value: formatModifier(dexMod), type: 'ability', description: 'Base initiative bonus' },
   ];
+  if (dexItemBonus !== 0) {
+    parts.push({ label: 'Item DEX Bonus', value: formatModifier(dexItemBonus), type: 'equipment', description: 'Bonus from equipped items' });
+  }
 
   let bonus = 0;
   const formulaParts = [`${formatModifier(dexMod)} (DEX)`];
@@ -247,7 +349,7 @@ export function calculateSpellDCWithBreakdown(
     else if (firstClass === 'rogue') ability = 'INT'; // Arcane Trickster / Assassin INT
   }
 
-  const abilityMod = char.abilityScores[ability]?.modifier ?? 0;
+  const abilityMod = getEffectiveAbilityModifier(char, ability);
   const total = 8 + prof + abilityMod;
 
   const parts: StatBreakdownPart[] = [
@@ -285,7 +387,7 @@ export function calculateSpellAttackWithBreakdown(
     else if (firstClass === 'rogue') ability = 'INT';
   }
 
-  const abilityMod = char.abilityScores[ability]?.modifier ?? 0;
+  const abilityMod = getEffectiveAbilityModifier(char, ability);
   const total = prof + abilityMod;
 
   const parts: StatBreakdownPart[] = [
@@ -314,7 +416,7 @@ export function calculatePassiveSenseWithBreakdown(
   let abilityName: AbilityName = 'WIS';
   if (sense === 'Investigation') abilityName = 'INT';
 
-  const abilityMod = char.abilityScores[abilityName]?.modifier ?? 0;
+  const abilityMod = getEffectiveAbilityModifier(char, abilityName);
   const skill = char.skills?.find((s) => s.name === sense);
 
   const isProf = skill?.proficient ?? false;
@@ -373,7 +475,7 @@ export function calculateSavingThrowWithBreakdown(
   ability: AbilityName
 ): StatBreakdown {
   const abilityScore = char.abilityScores[ability];
-  const mod = abilityScore.modifier;
+  const mod = getEffectiveAbilityModifier(char, ability);
   const isProf = abilityScore.saveProficient;
   const prof = char.proficiencyBonus;
   const conditions = char.combat?.conditions || [];
@@ -487,7 +589,7 @@ export function calculateSkillWithBreakdown(
 ): StatBreakdown {
   const skill = char.skills?.find((s) => s.name === skillName);
   const ability = skill?.ability || 'DEX';
-  const mod = char.abilityScores[ability]?.modifier ?? 0;
+  const mod = getEffectiveAbilityModifier(char, ability);
   const prof = char.proficiencyBonus;
   const isProf = skill?.proficient ?? false;
   const isExpert = skill?.expertise ?? false;
@@ -534,7 +636,7 @@ export function calculateEncumbranceWithBreakdown(char: CharacterState): {
   percentUsed: number;
   breakdown: StatBreakdown;
 } {
-  const strScore = char.abilityScores.STR.total || char.abilityScores.STR.base || 10;
+  const strScore = (char.abilityScores?.STR?.total || char.abilityScores?.STR?.base || 10) + getItemStatBonus(char, 'STR');
   const carryingCapacity = strScore * 15;
   const encumberedThreshold = strScore * 5;
   const heavilyEncumberedThreshold = strScore * 10;

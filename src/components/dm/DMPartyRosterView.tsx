@@ -17,8 +17,10 @@ import {
   X,
   Check,
   Zap,
+  Package,
 } from 'lucide-react';
 import type { PartyMemberHUDState } from '@/lib/dm-types';
+import DMPartyInventoryManager from './DMPartyInventoryManager';
 
 interface DMPartyRosterViewProps {
   partyMembers: PartyMemberHUDState[];
@@ -63,6 +65,9 @@ export default function DMPartyRosterView({
 
   // Active Condition Modal State
   const [activeConditionMember, setActiveConditionMember] = useState<PartyMemberHUDState | null>(null);
+
+  // Active Inventory & Equipment Manager State
+  const [inventoryCharId, setInventoryCharId] = useState<string | null>(null);
 
   const handleApplyDamage = () => {
     if (!activeAdjustMember) return;
@@ -349,6 +354,13 @@ export default function DMPartyRosterView({
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => setInventoryCharId(member.id)}
+                            className="p-1.5 rounded bg-zinc-900 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 cursor-pointer transition-colors"
+                            title="Manage Inventory & Equipment"
+                          >
+                            <Package size={12} />
+                          </button>
+                          <button
                             onClick={() => {
                               setActiveAdjustMember(member);
                               setAdjustAmt('');
@@ -524,6 +536,26 @@ export default function DMPartyRosterView({
                     ))}
                   </div>
                 )}
+
+                {/* Actions Ribbon */}
+                <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2 mt-auto">
+                  <button
+                    onClick={() => setInventoryCharId(member.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    <Package size={12} className="text-amber-400" />
+                    <span>Gear &amp; Bag</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveAdjustMember(member);
+                      setAdjustAmt('');
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-[10px] font-bold cursor-pointer"
+                  >
+                    HP &plusmn;
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -638,6 +670,14 @@ export default function DMPartyRosterView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 6. DM Party Inventory & Equipment Modal */}
+      {inventoryCharId && (
+        <DMPartyInventoryManager
+          initialCharacterId={inventoryCharId}
+          onClose={() => setInventoryCharId(null)}
+        />
       )}
     </div>
   );

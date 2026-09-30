@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useCharacter } from '@/app/providers';
 import DMDashboardGrid from '@/components/dm/DMDashboardGrid';
-import SyncStatusBadge from '@/components/ui/SyncStatusBadge';
 import TavernBackground from '@/components/ui/backgrounds/TavernBackground';
 import type { PartyMemberHUDState } from '@/lib/dm-types';
 
@@ -531,8 +530,6 @@ export default function DMPage() {
               }}
               customHeaderActions={
                 <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
-                  <SyncStatusBadge />
-
                   <button
                     onClick={() => setIsChangingPasscode(!isChangingPasscode)}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-200 border border-zinc-800 text-xs font-mono transition-colors cursor-pointer"
