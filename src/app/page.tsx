@@ -783,16 +783,16 @@ export default function Home() {
     : isCyrus
     ? { primary: '#eab308', accent: '#fbbf24', portraitUrl: getPortraitUrl('cyrus') }
     : isWynel
-    ? { primary: '#ef4444', accent: '#f43f5e', portraitUrl: getPortraitUrl('wynel') }
+    ? { primary: '#ec4899', accent: '#f472b6', portraitUrl: getPortraitUrl('wynel') }
     : isKastoriel
-    ? { primary: '#f59e0b', accent: '#fb923c', portraitUrl: getPortraitUrl('kastoriel') }
+    ? { primary: '#14b8a6', accent: '#2dd4bf', portraitUrl: getPortraitUrl('kastoriel') }
     : (customThemes[activeCharacterId] || { primary: '#3b82f6', accent: '#38bdf8', portraitUrl: '/vesper-portrait.png' });
 
   // Resolve Anchored Signature Tab Component
   const signatureTabConfig = isVesper
     ? {
         id: 'artifact',
-        label: "Soul Harvester",
+        label: "Artifact",
         component: (
           <SoulHarvester
             character={character}
@@ -804,7 +804,7 @@ export default function Home() {
     : isAria
     ? {
         id: 'artifact',
-        label: "Lunar Tides",
+        label: "Artifact",
         component: (
           <LunarPhaseEngine
             aria={aria}
@@ -818,7 +818,7 @@ export default function Home() {
     : isCyrus
     ? {
         id: 'artifact',
-        label: "Solar Engine",
+        label: "Artifact",
         component: (
           <CyrusOracleEngine
             cyrus={cyrus}
@@ -834,7 +834,7 @@ export default function Home() {
     : isWynel
     ? {
         id: 'artifact',
-        label: "Crimson Tattoo",
+        label: "Artifact",
         component: (
           <CrimsonTattooEngine
             wynel={wynel}
@@ -851,7 +851,7 @@ export default function Home() {
     : isKastoriel
     ? {
         id: 'artifact',
-        label: "Starry Form",
+        label: "Artifact",
         component: (
           <StarryFormEngine
             kastoriel={kastoriel}
@@ -1198,8 +1198,8 @@ export default function Home() {
       subclass: wynel?.subclass || 'Archfey / Crimson Pact',
       level: wynel?.level || 10,
       portraitUrl: getPortraitUrl('wynel'),
-      primaryColor: '#dc2626',
-      accentColor: '#ef4444',
+      primaryColor: '#ec4899',
+      accentColor: '#f472b6',
       currentHP: wynel?.combat?.currentHP || 72,
       maxHP: wynel?.combat?.maxHP || 72,
       tempHP: wynel?.combat?.tempHP || 0,
@@ -1230,8 +1230,8 @@ export default function Home() {
       subclass: kastoriel?.subclass || 'Circle of the Stars',
       level: kastoriel?.level || 10,
       portraitUrl: getPortraitUrl('kastoriel'),
-      primaryColor: '#f59e0b',
-      accentColor: '#fb923c',
+      primaryColor: '#14b8a6',
+      accentColor: '#2dd4bf',
       currentHP: kastoriel?.combat?.currentHP || 73,
       maxHP: kastoriel?.combat?.maxHP || 73,
       tempHP: kastoriel?.combat?.tempHP || 0,

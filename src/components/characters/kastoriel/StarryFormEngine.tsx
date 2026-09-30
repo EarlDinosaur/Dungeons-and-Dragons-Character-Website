@@ -67,18 +67,18 @@ export default function StarryFormEngine({
       {/* ====================================================================
          1. STARRY FORM (TWINKLING CONSTELLATIONS LV 10)
          ==================================================================== */}
-      <SpotlightCard className="p-6 border border-amber-500/50 bg-[linear-gradient(135deg,rgba(26,18,8,0.95)_0%,rgba(13,10,6,0.98)_100%)] shadow-[0_0_30px_rgba(245,158,11,0.18)] rounded-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-amber-500/25">
+      <SpotlightCard className="p-6 border border-teal-500/50 bg-[linear-gradient(135deg,rgba(4,24,28,0.95)_0%,rgba(2,14,18,0.98)_100%)] shadow-[0_0_30px_rgba(20,184,166,0.18)] rounded-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-teal-500/25">
           <div className="flex items-center gap-2">
-            <Sparkles size={22} className="text-amber-400 animate-pulse" />
-            <h3 className="text-xl font-bold text-amber-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
+            <Sparkles size={22} className="text-teal-400 animate-pulse" />
+            <h3 className="text-xl font-bold text-teal-100 font-['Cormorant_Garamond',serif] uppercase tracking-wider">
               Starry Form &bull; Twinkling Constellations
             </h3>
           </div>
 
           {/* Wild Shape Usage Pips */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-amber-300/80">Wild Shape:</span>
+            <span className="text-xs font-mono text-teal-300/80">Wild Shape:</span>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: sEngine.wildShapeMax }).map((_, idx) => {
                 const isAvailable = idx < sEngine.wildShapeMax - sEngine.wildShapeUsed;
@@ -92,7 +92,7 @@ export default function StarryFormEngine({
                     }}
                     className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
                       isAvailable
-                        ? 'bg-amber-400 border-amber-200 shadow-[0_0_10px_rgba(251,191,36,0.8)] scale-105'
+                        ? 'bg-teal-400 border-teal-200 shadow-[0_0_10px_rgba(45,212,191,0.8)] scale-105'
                         : 'bg-black/60 border-zinc-700'
                     }`}
                     title={isAvailable ? 'Click to expend Wild Shape' : 'Click to restore Wild Shape'}
@@ -114,24 +114,24 @@ export default function StarryFormEngine({
             onClick={() => onConstellationChange(activeConstellation === 'archer' ? 'none' : 'archer')}
             className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
               activeConstellation === 'archer'
-                ? 'bg-gradient-to-b from-amber-950/80 to-black border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] scale-[1.02]'
-                : 'bg-black/40 border-zinc-800 hover:border-amber-600/50 hover:bg-zinc-900/60'
+                ? 'bg-gradient-to-b from-teal-950/80 to-black border-teal-400 shadow-[0_0_20px_rgba(20,184,166,0.35)] scale-[1.02]'
+                : 'bg-black/40 border-zinc-800 hover:border-teal-600/50 hover:bg-zinc-900/60'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 font-['Cormorant_Garamond',serif] font-bold text-lg text-amber-200">
-                <Crosshair size={18} className="text-amber-400" />
+              <div className="flex items-center gap-2 font-['Cormorant_Garamond',serif] font-bold text-lg text-teal-200">
+                <Crosshair size={18} className="text-teal-400" />
                 <span>The Archer</span>
               </div>
               {activeConstellation === 'archer' && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-amber-400 text-black shadow-xs">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-teal-400 text-black shadow-xs">
                   Active
                 </span>
               )}
             </div>
-            <p className="text-xs text-amber-200/70 leading-relaxed font-serif">
+            <p className="text-xs text-teal-200/80 leading-relaxed font-serif">
               Luminous starlight bow. As a bonus action, make a ranged spell attack:
-              <strong className="text-amber-300 block mt-1 font-mono">2d8 + 5 Radiant Damage (60 ft)</strong>
+              <strong className="text-teal-300 block mt-1 font-mono">2d8 + 5 Radiant Damage (60 ft)</strong>
             </p>
           </button>
 
@@ -156,7 +156,7 @@ export default function StarryFormEngine({
                 </span>
               )}
             </div>
-            <p className="text-xs text-emerald-200/70 leading-relaxed font-serif">
+            <p className="text-xs text-emerald-200/80 leading-relaxed font-serif">
               Overflowing starry cup. Whenever you cast a spell using a slot that restores HP:
               <strong className="text-emerald-300 block mt-1 font-mono">+2d8 + 5 Extra Healing to nearby ally</strong>
             </p>
@@ -168,32 +168,32 @@ export default function StarryFormEngine({
             onClick={() => onConstellationChange(activeConstellation === 'dragon' ? 'none' : 'dragon')}
             className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
               activeConstellation === 'dragon'
-                ? 'bg-gradient-to-b from-orange-950/80 to-black border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.35)] scale-[1.02]'
-                : 'bg-black/40 border-zinc-800 hover:border-orange-600/50 hover:bg-zinc-900/60'
+                ? 'bg-gradient-to-b from-cyan-950/80 to-black border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] scale-[1.02]'
+                : 'bg-black/40 border-zinc-800 hover:border-cyan-600/50 hover:bg-zinc-900/60'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 font-['Cormorant_Garamond',serif] font-bold text-lg text-orange-200">
-                <Wind size={18} className="text-orange-400" />
+              <div className="flex items-center gap-2 font-['Cormorant_Garamond',serif] font-bold text-lg text-cyan-200">
+                <Wind size={18} className="text-cyan-400" />
                 <span>The Dragon</span>
               </div>
               {activeConstellation === 'dragon' && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-orange-400 text-black shadow-xs">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-cyan-400 text-black shadow-xs">
                   Active
                 </span>
               )}
             </div>
-            <p className="text-xs text-orange-200/70 leading-relaxed font-serif">
+            <p className="text-xs text-cyan-200/80 leading-relaxed font-serif">
               Wise cosmic dragon. INT/WIS checks &amp; CON concentration saves under 9 become a 10:
-              <strong className="text-orange-300 block mt-1 font-mono">20 ft Flying Speed (Hover)</strong>
+              <strong className="text-cyan-300 block mt-1 font-mono">20 ft Flying Speed (Hover)</strong>
             </p>
           </button>
         </div>
 
         {isFormActive && (
-          <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between text-xs font-mono text-amber-200">
+          <div className="p-3 rounded-xl bg-teal-950/40 border border-teal-500/30 flex items-center justify-between text-xs font-mono text-teal-200">
             <span className="flex items-center gap-1.5">
-              <Sparkles size={14} className="text-amber-400 animate-spin" />
+              <Sparkles size={14} className="text-teal-400 animate-spin" />
               <span>
                 Twinkling Constellations (Lv 10): You can switch constellations freely at the start of your turn!
               </span>
@@ -214,11 +214,11 @@ export default function StarryFormEngine({
          ==================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Cosmic Omen Panel */}
-        <SpotlightCard className="p-5 border border-amber-500/40 bg-black/60 rounded-2xl space-y-4">
+        <SpotlightCard className="p-5 border border-teal-500/40 bg-black/60 rounded-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <Eye size={18} className="text-amber-400" />
-              <h4 className="font-bold text-amber-100 font-['Cormorant_Garamond',serif] text-lg">
+              <Eye size={18} className="text-teal-400" />
+              <h4 className="font-bold text-teal-100 font-['Cormorant_Garamond',serif] text-lg">
                 Cosmic Omen (Weal / Woe)
               </h4>
             </div>
@@ -249,7 +249,7 @@ export default function StarryFormEngine({
             <button
               type="button"
               onClick={onRollCosmicOmen}
-              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-teal-300 border border-zinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Dices size={14} />
               <span>Consult Stars</span>
@@ -269,7 +269,7 @@ export default function StarryFormEngine({
                     onClick={onUseCosmicOmen}
                     className={`w-4.5 h-4.5 rounded-full border transition-all cursor-pointer ${
                       isAvailable
-                        ? 'bg-amber-400 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                        ? 'bg-teal-400 border-teal-200 shadow-[0_0_8px_rgba(45,212,191,0.6)]'
                         : 'bg-black/80 border-zinc-700'
                     }`}
                     title={isAvailable ? 'Click to expend Cosmic Omen' : 'Expended'}
@@ -281,11 +281,11 @@ export default function StarryFormEngine({
         </SpotlightCard>
 
         {/* Star Map Guiding Bolt Free Casts */}
-        <SpotlightCard className="p-5 border border-amber-500/40 bg-black/60 rounded-2xl space-y-4">
+        <SpotlightCard className="p-5 border border-teal-500/40 bg-black/60 rounded-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <Compass size={18} className="text-amber-400" />
-              <h4 className="font-bold text-amber-100 font-['Cormorant_Garamond',serif] text-lg">
+              <Compass size={18} className="text-teal-400" />
+              <h4 className="font-bold text-teal-100 font-['Cormorant_Garamond',serif] text-lg">
                 Star Map Free Guiding Bolts
               </h4>
             </div>
@@ -296,7 +296,7 @@ export default function StarryFormEngine({
 
           <p className="text-xs text-zinc-300 font-serif leading-relaxed">
             Your carved obsidian Star Map allows you to channel pure celestial starlight, casting 
-            <strong className="text-amber-300 font-mono"> Guiding Bolt (4d6 Radiant)</strong> a number of times equal to your proficiency bonus without expending spell slots.
+            <strong className="text-teal-300 font-mono"> Guiding Bolt (4d6 Radiant)</strong> a number of times equal to your proficiency bonus without expending spell slots.
           </p>
 
           <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
@@ -314,7 +314,7 @@ export default function StarryFormEngine({
                     }}
                     className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
                       isAvailable
-                        ? 'bg-amber-400 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.7)]'
+                        ? 'bg-teal-400 border-teal-200 shadow-[0_0_8px_rgba(45,212,191,0.7)]'
                         : 'bg-black/80 border-zinc-700'
                     }`}
                     title={isAvailable ? 'Click to expend free cast' : 'Click to restore'}
@@ -332,17 +332,17 @@ export default function StarryFormEngine({
       {/* ====================================================================
          3. PENDULUM — THE STOLEN BLADE & TWIN SOUL-TETHER
          ==================================================================== */}
-      <SpotlightCard className="p-6 border border-orange-500/50 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.15)_0%,rgba(10,12,18,0.98)_100%)] shadow-2xl rounded-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-orange-500/20">
+      <SpotlightCard className="p-6 border border-teal-500/40 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.15)_0%,rgba(4,14,18,0.98)_100%)] shadow-2xl rounded-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-teal-500/20">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-orange-950/60 border border-orange-600/50 text-orange-300">
+            <div className="p-2 rounded-xl bg-teal-950/60 border border-teal-600/50 text-teal-300">
               <Swords size={20} />
             </div>
             <div>
-              <h4 className="font-bold text-amber-100 font-['Cormorant_Garamond',serif] text-xl">
+              <h4 className="font-bold text-teal-100 font-['Cormorant_Garamond',serif] text-xl">
                 Pendulum &bull; The Stolen Tether Blade
               </h4>
-              <span className="text-[11px] font-mono text-orange-300/80">
+              <span className="text-[11px] font-mono text-teal-300/80">
                 Bound Artifact Blade &bull; Linked to Twin Brother Poluxien
               </span>
             </div>
@@ -353,8 +353,8 @@ export default function StarryFormEngine({
             onClick={handlePulseTether}
             className={`px-4 py-2 rounded-xl border text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${
               pulseAnimation
-                ? 'bg-orange-500 text-black border-orange-300 shadow-[0_0_20px_rgba(249,115,22,0.8)] scale-105'
-                : 'bg-orange-950/60 hover:bg-orange-900 text-orange-200 border-orange-600/60 shadow-md'
+                ? 'bg-teal-400 text-black border-teal-200 shadow-[0_0_20px_rgba(45,212,191,0.8)] scale-105'
+                : 'bg-teal-950/60 hover:bg-teal-900 text-teal-200 border border-teal-600/60 shadow-md'
             }`}
           >
             <Radio size={14} className={pulseAnimation ? 'animate-ping' : ''} />
@@ -374,16 +374,16 @@ export default function StarryFormEngine({
 
           <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
             <span className="text-[10px] text-zinc-500 uppercase block mb-1">Estimated Distance</span>
-            <span className="font-bold text-amber-300">{sEngine.poluxienDistance}</span>
+            <span className="font-bold text-teal-300">{sEngine.poluxienDistance}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
             <span className="text-[10px] text-zinc-500 uppercase block mb-1">Heading / Vector</span>
-            <span className="font-bold text-orange-300">{sEngine.poluxienDirection}</span>
+            <span className="font-bold text-cyan-300">{sEngine.poluxienDirection}</span>
           </div>
         </div>
 
-        <p className="text-xs text-zinc-300 font-serif leading-relaxed italic p-3 rounded-xl bg-black/40 border-l-2 border-l-orange-500">
+        <p className="text-xs text-zinc-300 font-serif leading-relaxed italic p-3 rounded-xl bg-black/40 border-l-2 border-l-teal-500">
           &ldquo;Stolen on the night of the ritual N’elestel to prevent Poluxien&apos;s soul from being devoured. 
           While Poluxien hunts you with bitter vengeance, the blade vibrates with warmth, alerting you to his approach.&rdquo;
         </p>
@@ -418,7 +418,7 @@ export default function StarryFormEngine({
           <button
             type="button"
             onClick={() => setConfirmRest(true)}
-            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-700 font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-teal-300 border border-zinc-700 font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <RotateCcw size={13} />
             <span>Long Rest</span>

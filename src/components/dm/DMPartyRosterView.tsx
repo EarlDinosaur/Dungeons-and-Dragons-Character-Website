@@ -198,7 +198,8 @@ export default function DMPartyRosterView({
                         <div className="flex items-center gap-2.5">
                           <div
                             onClick={() => onInspectCharacter?.(member.id)}
-                            className="w-9 h-9 rounded-lg overflow-hidden border border-zinc-700/80 shrink-0 bg-zinc-900 cursor-pointer group-hover:border-amber-400 transition-colors"
+                            className="w-9 h-9 rounded-lg overflow-hidden border shrink-0 bg-zinc-900 cursor-pointer transition-colors shadow-inner"
+                            style={{ borderColor: `${member.accentColor || member.primaryColor || '#d9b872'}60` }}
                             title="Inspect full sheet"
                           >
                             {member.portraitUrl ? (
@@ -395,18 +396,31 @@ export default function DMPartyRosterView({
             );
             const isCritical = hpPercent <= 25 && member.currentHP > 0;
             const isUnconscious = member.currentHP <= 0;
+            const themePrimary = member.primaryColor || '#d9b872';
+            const themeAccent = member.accentColor || themePrimary;
 
             return (
               <div
                 key={member.id}
-                className="flex flex-col rounded-2xl bg-[#0a0c12]/95 border border-zinc-800/90 shadow-lg hover:border-zinc-700 transition-all p-3.5 space-y-3"
+                className="flex flex-col rounded-2xl bg-[#0a0c12]/95 border transition-all p-3.5 space-y-3 relative overflow-hidden group shadow-lg hover:shadow-xl"
+                style={{
+                  borderColor: `${themePrimary}45`,
+                  boxShadow: `0 8px 30px -10px ${themePrimary}20`,
+                }}
               >
+                {/* Ambient Top Glow */}
+                <div
+                  className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-20 transition-opacity group-hover:opacity-30"
+                  style={{ backgroundColor: themePrimary }}
+                />
+
                 {/* Header */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 relative z-10">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       onClick={() => onInspectCharacter?.(member.id)}
-                      className="w-10 h-10 rounded-xl overflow-hidden border border-zinc-700/80 shrink-0 bg-zinc-900 cursor-pointer hover:border-amber-400 transition-colors"
+                      className="w-10 h-10 rounded-xl overflow-hidden border shrink-0 bg-zinc-900 cursor-pointer transition-colors shadow-inner"
+                      style={{ borderColor: `${themeAccent}70` }}
                       title="Inspect full sheet"
                     >
                       {member.portraitUrl ? (
@@ -416,7 +430,10 @@ export default function DMPartyRosterView({
                           className="w-full h-full object-cover object-top"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center font-serif text-amber-400 font-bold text-sm">
+                        <div
+                          className="w-full h-full flex items-center justify-center font-serif font-bold text-sm"
+                          style={{ color: themeAccent }}
+                        >
                           {member.name.charAt(0)}
                         </div>
                       )}
@@ -426,11 +443,20 @@ export default function DMPartyRosterView({
                       <div className="flex items-center gap-1.5">
                         <h3
                           onClick={() => onInspectCharacter?.(member.id)}
-                          className="font-bold text-zinc-100 truncate cursor-pointer hover:text-amber-300 font-[family-name:var(--font-heading)] text-xs"
+                          className="font-bold text-zinc-100 truncate cursor-pointer hover:brightness-125 font-[family-name:var(--font-heading)] text-xs transition-all"
                         >
                           {member.name}
                         </h3>
-                        <span className="text-[10px] text-zinc-400">Lv {member.level}</span>
+                        <span
+                          className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border shadow-xs"
+                          style={{
+                            backgroundColor: `${themePrimary}20`,
+                            borderColor: `${themePrimary}50`,
+                            color: themeAccent,
+                          }}
+                        >
+                          Lv {member.level}
+                        </span>
                       </div>
                       <p className="text-[10px] text-zinc-400 truncate">
                         {member.characterClass} {member.subclass ? `(${member.subclass})` : ''}
@@ -461,7 +487,7 @@ export default function DMPartyRosterView({
                 </div>
 
                 {/* Senses Ribbon */}
-                <div className="grid grid-cols-4 divide-x divide-zinc-800/80 rounded-xl bg-zinc-950/60 border border-zinc-800/80 py-1.5 text-center text-[10px]">
+                <div className="grid grid-cols-4 divide-x divide-zinc-800/80 rounded-xl bg-zinc-950/60 border border-zinc-800/80 py-1.5 text-center text-[10px] relative z-10">
                   <div>
                     <span className="text-zinc-500 block text-[9px] uppercase">AC</span>
                     <span className="font-bold text-zinc-200">{member.ac}</span>
@@ -476,7 +502,15 @@ export default function DMPartyRosterView({
                   </div>
                   <div>
                     <span className="text-zinc-500 block text-[9px] uppercase">Spell DC</span>
-                    <span className="font-bold text-purple-300">{member.spellSaveDC}</span>
+                    <span
+                      className="font-bold px-1 rounded text-[10px]"
+                      style={{
+                        backgroundColor: `${themePrimary}20`,
+                        color: themeAccent,
+                      }}
+                    >
+                      {member.spellSaveDC}
+                    </span>
                   </div>
                 </div>
 

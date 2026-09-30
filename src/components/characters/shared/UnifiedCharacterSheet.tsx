@@ -852,7 +852,7 @@ export default function UnifiedCharacterSheet({
             </div>
 
             {/* Expanded Hit Points & Vitality Console (Scales across available width) */}
-            <div className="flex-1 min-w-0 bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 rounded-2xl p-3.5 sm:p-4 transition-all shadow-inner backdrop-blur-sm">
+            <div className="flex-1 min-w-0 bg-zinc-950/80 border border-[var(--char-primary,#dc2626)]/25 hover:border-[var(--char-primary,#dc2626)]/45 rounded-2xl p-3.5 sm:p-4 transition-all shadow-inner backdrop-blur-sm">
               {/* Top Row: Title, Health State & Numeric HP Readout */}
               <div className="flex items-center justify-between gap-3 text-xs mb-1 font-mono flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1010,7 +1010,7 @@ export default function UnifiedCharacterSheet({
             </div>
 
             {/* Quick Resting & Recovery Controls */}
-            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 shrink-0 bg-zinc-950/40 border border-zinc-800/70 rounded-2xl p-8">
+            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 shrink-0 bg-zinc-950/60 border border-[var(--char-primary,#dc2626)]/25 hover:border-[var(--char-primary,#dc2626)]/45 rounded-2xl p-4 sm:p-5 transition-all shadow-inner">
               <div className="flex items-center gap-2">
                 {onShortRest && (
                   <button
@@ -1050,11 +1050,11 @@ export default function UnifiedCharacterSheet({
             {/* AC */}
             <button
               onClick={() => setActiveBreakdown(acBreakdown)}
-              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-[var(--char-primary,#dc2626)]/40 transition-all flex flex-col items-center group cursor-pointer"
             >
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
                 <span>Armor Class</span>
-                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+                <Info size={11} className="text-zinc-500 group-hover:text-[var(--char-accent,#ffd700)] transition-colors" />
               </span>
               <span className="text-xl font-black font-mono text-white tracking-tight">
                 {acBreakdown.total}
@@ -1071,21 +1071,21 @@ export default function UnifiedCharacterSheet({
                 e.preventDefault();
                 setActiveBreakdown(initBreakdown);
               }}
-              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-[var(--char-primary,#dc2626)]/40 transition-all flex flex-col items-center group cursor-pointer"
               title="Left-click to Roll, Right-click to Inspect Formula"
             >
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
                 <span>Initiative</span>
                 <Info
                   size={11}
-                  className="text-zinc-500 group-hover:text-amber-400 transition-colors"
+                  className="text-zinc-500 group-hover:text-[var(--char-accent,#ffd700)] transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     setActiveBreakdown(initBreakdown);
                   }}
                 />
               </span>
-              <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
+              <span className="text-xl font-black font-mono text-[var(--char-accent,#ffd700)] tracking-tight">
                 {initBreakdown.displayValue}
               </span>
               <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
@@ -1098,7 +1098,7 @@ export default function UnifiedCharacterSheet({
               onClick={() => setActiveBreakdown(speedBreakdown)}
               className={`p-2 rounded-xl border flex flex-col items-center transition-all group cursor-pointer ${conditionMods.isSpeedZero
                 ? 'bg-red-950/60 border-red-800 text-red-300'
-                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
+                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-[var(--char-primary,#dc2626)]/40'
                 }`}
               title={
                 conditionMods.isSpeedZero
@@ -1108,7 +1108,7 @@ export default function UnifiedCharacterSheet({
             >
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
                 <span>Speed</span>
-                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+                <Info size={11} className="text-zinc-500 group-hover:text-[var(--char-accent,#ffd700)] transition-colors" />
               </span>
               <span
                 className={`text-xl font-black font-mono tracking-tight ${conditionMods.isSpeedZero ? 'text-red-400 animate-pulse' : 'text-white'
@@ -1137,12 +1137,12 @@ export default function UnifiedCharacterSheet({
               onClick={() => setActiveBreakdown(passivePerceptionBreakdown)}
               className={`p-2 rounded-xl border transition-all flex flex-col items-center group cursor-pointer ${conditionMods.passivePerceptionPenalty > 0
                 ? 'bg-amber-950/40 border-amber-800/80'
-                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-zinc-700'
+                : 'bg-zinc-900/60 hover:bg-zinc-800/70 border-zinc-800 hover:border-[var(--char-primary,#dc2626)]/40'
                 }`}
             >
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
                 <span>Pass. Percept.</span>
-                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+                <Info size={11} className="text-zinc-500 group-hover:text-[var(--char-accent,#ffd700)] transition-colors" />
               </span>
               <span
                 className={`text-xl font-black font-mono tracking-tight ${conditionMods.passivePerceptionPenalty > 0 ? 'text-amber-400' : 'text-white'
@@ -1158,13 +1158,13 @@ export default function UnifiedCharacterSheet({
             {/* Spell Save DC */}
             <button
               onClick={() => setActiveBreakdown(spellDCBreakdown)}
-              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col items-center group cursor-pointer"
+              className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/70 border border-zinc-800 hover:border-[var(--char-primary,#dc2626)]/40 transition-all flex flex-col items-center group cursor-pointer"
             >
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1">
                 <span>Spell DC</span>
-                <Info size={11} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
+                <Info size={11} className="text-zinc-500 group-hover:text-[var(--char-accent,#ffd700)] transition-colors" />
               </span>
-              <span className="text-xl font-black font-mono text-amber-300 tracking-tight">
+              <span className="text-xl font-black font-mono text-[var(--char-accent,#ffd700)] tracking-tight">
                 {spellDCBreakdown.total}
               </span>
               <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
@@ -1240,7 +1240,7 @@ export default function UnifiedCharacterSheet({
               {(character.attacks || []).map((atk) => (
                 <div
                   key={atk.id}
-                  className="p-4 rounded-xl bg-[#0e1017]/90 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col justify-between group shadow-sm"
+                  className="p-4 rounded-xl bg-[#0e1017]/90 border border-[var(--char-primary,#dc2626)]/25 hover:border-[var(--char-primary,#dc2626)]/50 transition-all flex flex-col justify-between group shadow-sm hover:shadow-[0_4px_20px_-8px_var(--char-primary,#dc2626)]"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
@@ -1289,7 +1289,7 @@ export default function UnifiedCharacterSheet({
                         ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed opacity-60'
                         : conditionMods.hasDisadvantageOnAttacks
                           ? 'bg-amber-950/60 text-amber-300 border border-amber-800/80 hover:bg-amber-900'
-                          : 'bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-300'
+                          : 'bg-zinc-800 hover:bg-[var(--char-primary,#dc2626)] hover:text-white text-[var(--char-accent,#ffd700)]'
                         }`}
                     >
                       <span>To-Hit</span>
@@ -1311,7 +1311,7 @@ export default function UnifiedCharacterSheet({
                       className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-zinc-700/60"
                     >
                       <span>Damage</span>
-                      <span className="font-bold text-amber-300">{atk.damage}</span>
+                      <span className="font-bold text-[var(--char-accent,#ffd700)]">{atk.damage}</span>
                       <span className="text-[10px] text-zinc-400">({atk.damageType})</span>
                     </button>
                   </div>
@@ -1321,10 +1321,10 @@ export default function UnifiedCharacterSheet({
 
             {/* Combat Spellcasting & Slot Quick-Tracker */}
             {hasSpells && (
-              <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-purple-900/40 space-y-3">
+              <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-[var(--char-primary,#a855f7)]/40 space-y-3 shadow-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Wand2 size={18} className="text-purple-400" />
+                    <Wand2 size={18} className="text-[var(--char-accent,#ffd700)]" />
                     <h3 className="text-sm font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
                       Spell Slots &amp; Combat Quick-Casting
                     </h3>
@@ -1332,11 +1332,11 @@ export default function UnifiedCharacterSheet({
                   <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
                     <span>
                       Save DC:{' '}
-                      <strong className="text-amber-300">{spellDCBreakdown.total}</strong>
+                      <strong className="text-[var(--char-accent,#ffd700)]">{spellDCBreakdown.total}</strong>
                     </span>
                     <span>
                       Spell Atk:{' '}
-                      <strong className="text-amber-300">{spellAtkBreakdown.displayValue}</strong>
+                      <strong className="text-[var(--char-accent,#ffd700)]">{spellAtkBreakdown.displayValue}</strong>
                     </span>
                   </div>
                 </div>
@@ -1366,7 +1366,7 @@ export default function UnifiedCharacterSheet({
                                     else if (onRestoreSpellSlot) onRestoreSpellSlot(lvl);
                                   }}
                                   className={`w-3.5 h-3.5 rounded-full border cursor-pointer transition-all ${idx < available
-                                    ? 'bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                                    ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#ffd700)] shadow-[0_0_6px_var(--char-primary,#a855f7)]'
                                     : 'bg-zinc-800 border-zinc-700'
                                     }`}
                                   title={idx < available ? 'Click to expend slot' : 'Click to restore slot'}
@@ -1387,7 +1387,7 @@ export default function UnifiedCharacterSheet({
                   <button
                     type="button"
                     onClick={openEditSlotsModal}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-purple-300 border border-zinc-700/80 text-xs font-mono transition-colors cursor-pointer shadow-xs"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-[var(--char-accent,#ffd700)] border border-zinc-700/80 text-xs font-mono transition-colors cursor-pointer shadow-xs"
                     title="Edit Spell Slot Quantities"
                   >
                     <Edit2 size={11} />
@@ -1400,7 +1400,7 @@ export default function UnifiedCharacterSheet({
                   {(character.spellcasting?.spells || []).map((spell) => (
                     <div
                       key={spell.id}
-                      className="p-2.5 rounded-lg bg-zinc-900/70 border border-zinc-800/90 flex items-center justify-between gap-2 hover:border-zinc-700 transition-colors"
+                      className="p-2.5 rounded-lg bg-zinc-900/70 border border-[var(--char-primary,#a855f7)]/25 flex items-center justify-between gap-2 hover:border-[var(--char-primary,#a855f7)]/50 transition-colors"
                     >
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-zinc-200 truncate">{spell.name}</h4>
@@ -1410,7 +1410,7 @@ export default function UnifiedCharacterSheet({
                       </div>
                       <button
                         onClick={() => handleCastSpell(spell)}
-                        className="px-2.5 py-1 rounded bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800/60 text-[11px] font-mono font-bold shrink-0 cursor-pointer shadow-xs"
+                        className="px-2.5 py-1 rounded bg-[var(--char-primary,#a855f7)]/20 hover:bg-[var(--char-primary,#a855f7)]/40 text-[var(--char-accent,#ffd700)] hover:text-white border border-[var(--char-primary,#a855f7)]/50 text-[11px] font-mono font-bold shrink-0 cursor-pointer shadow-xs transition-all"
                       >
                         Cast
                       </button>
@@ -1421,7 +1421,7 @@ export default function UnifiedCharacterSheet({
             )}
 
             {/* Quick Conditions Banner */}
-            <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-zinc-800">
+            <div className="p-4 rounded-xl bg-[#0e1017]/90 border border-[var(--char-primary,#dc2626)]/25">
               <span className="text-xs font-mono uppercase text-zinc-400 tracking-wider font-bold block mb-2">
                 Active Conditions
               </span>
@@ -1502,9 +1502,9 @@ export default function UnifiedCharacterSheet({
                 return (
                   <div
                     key={ability}
-                    className="p-3 rounded-xl bg-[#0e1017]/90 border border-zinc-800 flex flex-col items-center text-center relative group"
+                    className="p-3 rounded-xl bg-[#0e1017]/90 border border-[var(--char-primary,#dc2626)]/25 hover:border-[var(--char-primary,#dc2626)]/50 flex flex-col items-center text-center relative group transition-all shadow-sm hover:shadow-[0_4px_20px_-10px_var(--char-primary,#dc2626)]"
                   >
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-bold mb-1">
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 group-hover:text-[var(--char-accent,#ffd700)] font-bold mb-1 transition-colors">
                       {ability}
                     </span>
 
@@ -1523,7 +1523,7 @@ export default function UnifiedCharacterSheet({
                       }
                       className={`text-3xl font-black font-mono transition-colors cursor-pointer my-0.5 ${conditionMods.hasDisadvantageOnChecks
                         ? 'text-amber-400'
-                        : 'text-zinc-100 hover:text-amber-300'
+                        : 'text-zinc-100 hover:text-[var(--char-accent,#ffd700)]'
                         }`}
                       title={
                         conditionMods.hasDisadvantageOnChecks
@@ -1582,7 +1582,7 @@ export default function UnifiedCharacterSheet({
                         : conditionMods.hasDisadvantageOnDEXSaves && ability === 'DEX'
                           ? 'bg-amber-950/50 border-amber-600 text-amber-200'
                           : stat.saveProficient
-                            ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 font-bold'
+                            ? 'bg-[var(--char-primary,#dc2626)]/20 border-[var(--char-primary,#dc2626)]/50 text-[var(--char-accent,#ffd700)] font-bold shadow-xs'
                             : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                         }`}
                       title={
@@ -1596,7 +1596,7 @@ export default function UnifiedCharacterSheet({
                           className={`w-1.5 h-1.5 rounded-full ${conditionMods.autoFailSaves.includes(ability as 'STR' | 'DEX')
                             ? 'bg-red-500'
                             : stat.saveProficient
-                              ? 'bg-amber-400'
+                              ? 'bg-[var(--char-accent,#ffd700)] shadow-[0_0_6px_var(--char-primary,#dc2626)]'
                               : 'bg-zinc-600'
                             }`}
                         />
@@ -1614,10 +1614,10 @@ export default function UnifiedCharacterSheet({
             </div>
 
             {/* Skills Grid */}
-            <div className="rounded-xl bg-[#0e1017]/90 border border-zinc-800 p-3 sm:p-4">
+            <div className="rounded-xl bg-[#0e1017]/90 border border-[var(--char-primary,#dc2626)]/25 p-3 sm:p-4 shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800/80 text-xs font-mono uppercase text-zinc-400 font-bold">
                 <span className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-amber-400" />
+                  <Sparkles size={14} className="text-[var(--char-accent,#ffd700)]" />
                   <span>Skills &amp; Proficiencies</span>
                 </span>
                 <span className="text-[11px] text-zinc-500 font-normal hidden sm:inline">
@@ -1632,7 +1632,7 @@ export default function UnifiedCharacterSheet({
                   return (
                     <div
                       key={sk.name}
-                      className="p-2.5 rounded-lg bg-black/40 border border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-900/40 transition-colors flex items-center justify-between gap-2 text-xs"
+                      className="p-2.5 rounded-lg bg-black/40 border border-zinc-800/60 hover:border-[var(--char-primary,#dc2626)]/40 hover:bg-zinc-900/40 transition-colors flex items-center justify-between gap-2 text-xs"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <button
@@ -1642,9 +1642,9 @@ export default function UnifiedCharacterSheet({
                         >
                           <span
                             className={`w-3 h-3 rounded-full inline-block ${sk.expertise
-                              ? 'bg-amber-400 ring-2 ring-amber-400/40'
+                              ? 'bg-[var(--char-accent,#ffd700)] ring-2 ring-[var(--char-accent,#ffd700)]/40 shadow-[0_0_6px_var(--char-primary,#dc2626)]'
                               : sk.proficient
-                                ? 'bg-amber-400'
+                                ? 'bg-[var(--char-accent,#ffd700)]'
                                 : 'bg-zinc-700'
                               }`}
                           />
@@ -1676,7 +1676,7 @@ export default function UnifiedCharacterSheet({
                               conditionMods.checkDisadvantageReasons.join(', ')
                             )
                           }
-                          className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-amber-500 hover:text-black font-mono font-bold text-zinc-200 transition-colors cursor-pointer text-xs"
+                          className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-[var(--char-primary,#dc2626)] hover:text-white font-mono font-bold text-zinc-200 transition-colors cursor-pointer text-xs"
                         >
                           {breakdown.displayValue}
                         </button>
@@ -1693,11 +1693,11 @@ export default function UnifiedCharacterSheet({
         {activeTab === 'spells' && (
           <div className="space-y-4 sm:space-y-6">
             {/* Spellcasting Header Banner */}
-            <div className="p-3.5 sm:p-5 rounded-2xl bg-[#0e1017]/95 border border-zinc-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xl">
+            <div className="p-3.5 sm:p-5 rounded-2xl bg-[#0e1017]/95 border border-[var(--char-primary,#a855f7)]/35 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xl">
               {/* Left: Info & DCs */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-purple-950/60 border border-purple-800/50 text-purple-300 shadow-xs shrink-0">
+                  <div className="p-2.5 rounded-xl bg-[var(--char-primary,#a855f7)]/20 border border-[var(--char-primary,#a855f7)]/40 text-[var(--char-accent,#d8b4fe)] shadow-xs shrink-0">
                     <Wand2 size={22} />
                   </div>
                   <div>
@@ -1718,7 +1718,7 @@ export default function UnifiedCharacterSheet({
                   </div>
                   <div className="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-center">
                     <span className="text-[9px] text-zinc-500 uppercase block leading-none mb-0.5">Spell Atk</span>
-                    <span className="font-bold text-purple-300">{spellAtkBreakdown.displayValue}</span>
+                    <span className="font-bold text-[var(--char-accent,#d8b4fe)]">{spellAtkBreakdown.displayValue}</span>
                   </div>
                 </div>
               </div>
@@ -1755,7 +1755,7 @@ export default function UnifiedCharacterSheet({
                                 }
                               }}
                               className={`w-4.5 h-4.5 rounded-full border cursor-pointer transition-all active:scale-90 ${idx < available
-                                ? 'bg-purple-500 border-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                                ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#d8b4fe)] shadow-[0_0_8px_var(--char-primary,#a855f7)]'
                                 : 'bg-zinc-950 border-zinc-700'
                                 }`}
                               title={idx < available ? 'Tap to expend slot' : 'Tap to restore slot'}
@@ -1776,7 +1776,7 @@ export default function UnifiedCharacterSheet({
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer shrink-0 shadow-xs"
                   title="Configure Spell Slot Quantities"
                 >
-                  <Edit2 size={13} className="text-purple-400" />
+                  <Edit2 size={13} className="text-[var(--char-accent,#d8b4fe)]" />
                   <span className="whitespace-nowrap">Slots</span>
                 </button>
               </div>
@@ -1792,7 +1792,7 @@ export default function UnifiedCharacterSheet({
                     value={spellSearchQuery}
                     onChange={(e) => setSpellSearchQuery(e.target.value)}
                     placeholder="Search spells, schools..."
-                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0b0d14] border border-zinc-700/80 text-xs text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-zinc-500 shadow-inner"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0b0d14] border border-zinc-700/80 text-xs text-white focus:outline-none focus:border-[var(--char-primary,#a855f7)] transition-colors placeholder:text-zinc-500 shadow-inner"
                   />
                   {spellSearchQuery && (
                     <button
@@ -1807,7 +1807,7 @@ export default function UnifiedCharacterSheet({
                 <button
                   type="button"
                   onClick={handleOpenAddSpell}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 text-xs font-mono font-bold transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--char-primary,#a855f7)] hover:brightness-110 text-white border border-[var(--char-accent,#d8b4fe)]/40 text-xs font-mono font-bold transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
                 >
                   <Plus size={14} />
                   <span>Add Spell</span>
@@ -1830,13 +1830,13 @@ export default function UnifiedCharacterSheet({
                       key={lvl}
                       onClick={() => setSelectedSpellLevelFilter(lvl)}
                       className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${selectedSpellLevelFilter === lvl
-                        ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                        ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#d8b4fe)] text-white font-bold shadow-[0_0_10px_var(--char-primary,#a855f7)]'
                         : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                         }`}
                     >
                       {lvl === 'all' ? 'All Spells' : lvl === 0 ? 'Cantrips' : `Lvl ${lvl}`}
                       {count > 0 && (
-                        <span className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${selectedSpellLevelFilter === lvl ? 'bg-purple-900/80 text-purple-200' : 'bg-zinc-800 text-zinc-500'
+                        <span className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${selectedSpellLevelFilter === lvl ? 'bg-black/40 text-white' : 'bg-zinc-800 text-zinc-500'
                           }`}>
                           {count}
                         </span>
@@ -1871,7 +1871,7 @@ export default function UnifiedCharacterSheet({
                     <button
                       type="button"
                       onClick={handleOpenAddSpell}
-                      className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                      className="px-3.5 py-1.5 rounded-lg bg-[var(--char-primary,#a855f7)] hover:opacity-90 text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
                     >
                       <Plus size={14} /> Add First Spell
                     </button>
@@ -1892,24 +1892,24 @@ export default function UnifiedCharacterSheet({
                       <div
                         key={spell.id}
                         className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${isExpanded
-                          ? 'bg-[#10131e] border-purple-800/70 shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
-                          : 'bg-[#0e1017]/90 hover:bg-[#121520] border-zinc-800 hover:border-zinc-700'
+                          ? 'bg-[#10131e] border-[var(--char-primary,#a855f7)]/70 shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
+                          : 'bg-[#0e1017]/90 hover:bg-[#121520] border-[var(--char-primary,#a855f7)]/25 hover:border-[var(--char-primary,#a855f7)]/50'
                           }`}
                       >
                         {/* CARD TOP ROW (Always Visible & Interactive) */}
                         <div
                           onClick={() => toggleSpellExpand(spell.id)}
-                          className="p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
+                          className="p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none group"
                         >
                           {/* Left: Name & Badges */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <h3 className="text-sm sm:text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100 group-hover:text-purple-300 truncate">
+                              <h3 className="text-sm sm:text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100 group-hover:text-[var(--char-accent,#d8b4fe)] transition-colors truncate">
                                 {spell.name}
                               </h3>
                               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${spell.level === 0
                                 ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                                : 'bg-purple-950/80 text-purple-300 border border-purple-800/60'
+                                : 'bg-[var(--char-primary,#a855f7)]/20 text-[var(--char-accent,#d8b4fe)] border border-[var(--char-primary,#a855f7)]/50'
                                 }`}>
                                 {spell.level === 0 ? 'Cantrip' : `Lvl ${spell.level}`}
                               </span>
@@ -1929,7 +1929,7 @@ export default function UnifiedCharacterSheet({
                             <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap text-[10px] sm:text-[11px] font-mono text-zinc-400">
                               {spell.castingTime && (
                                 <span className="flex items-center gap-1 text-zinc-300">
-                                  <Clock size={11} className="text-purple-400" />
+                                  <Clock size={11} className="text-[var(--char-accent,#d8b4fe)]" />
                                   <span>{spell.castingTime}</span>
                                 </span>
                               )}
@@ -1963,7 +1963,7 @@ export default function UnifiedCharacterSheet({
                               }}
                               className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${!hasAvailableSlot
                                 ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                                : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200 hover:text-white border-purple-700/60 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                : 'bg-[var(--char-primary,#a855f7)]/25 hover:bg-[var(--char-primary,#a855f7)] text-zinc-100 hover:text-white border-[var(--char-primary,#a855f7)]/60 shadow-xs'
                                 }`}
                               title={
                                 !hasAvailableSlot
@@ -1971,7 +1971,7 @@ export default function UnifiedCharacterSheet({
                                   : `Cast ${spell.name}`
                               }
                             >
-                              <Wand2 size={13} className={hasAvailableSlot ? 'text-purple-300' : 'text-zinc-500'} />
+                              <Wand2 size={13} className={hasAvailableSlot ? 'text-[var(--char-accent,#d8b4fe)]' : 'text-zinc-500'} />
                               <span>{hasAvailableSlot ? 'Cast' : 'Cast (0)'}</span>
                             </button>
 
@@ -2023,7 +2023,7 @@ export default function UnifiedCharacterSheet({
                                   onClick={() => handleOpenEditSpell(spell)}
                                   className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-mono transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
                                 >
-                                  <Edit2 size={12} className="text-purple-400" />
+                                  <Edit2 size={12} className="text-[var(--char-accent,#d8b4fe)]" />
                                   <span>Edit</span>
                                 </button>
                                 <button
@@ -2037,7 +2037,7 @@ export default function UnifiedCharacterSheet({
                               </div>
 
                               {spell.level > 0 && (
-                                <span className="text-[10px] font-mono text-purple-400 bg-purple-950/40 px-2 py-1 rounded border border-purple-800/40">
+                                <span className="text-[10px] font-mono text-[var(--char-accent,#d8b4fe)] bg-[var(--char-primary,#a855f7)]/15 px-2 py-1 rounded border border-[var(--char-primary,#a855f7)]/40">
                                   Expends Level {spell.level} Slot
                                 </span>
                               )}
@@ -2452,12 +2452,12 @@ export default function UnifiedCharacterSheet({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-[#0e1017] border border-purple-900/50 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none"
+            className="w-full max-w-lg bg-[#0e1017] border border-[var(--char-primary,#a855f7)]/50 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <Wand2 size={18} className="text-purple-400" />
+                <Wand2 size={18} className="text-[var(--char-accent,#d8b4fe)]" />
                 <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
                   {editingSpellId ? 'Edit Spell' : 'Add Spell to Spellbook'}
                 </h3>
@@ -2479,7 +2479,7 @@ export default function UnifiedCharacterSheet({
                   value={newSpellForm.name}
                   onChange={(e) => setNewSpellForm((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. Misty Step or Guiding Bolt"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white focus:outline-none focus:border-purple-400"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700/80 text-white focus:outline-none focus:border-[var(--char-primary,#a855f7)]"
                 />
               </div>
 
@@ -2561,16 +2561,16 @@ export default function UnifiedCharacterSheet({
               </div>
 
               {/* DEDICATED DAMAGE / EFFECT DICE & AUTO-DETECTOR */}
-              <div className="p-3.5 rounded-2xl bg-purple-950/20 border border-purple-800/40 space-y-3 shadow-inner">
+              <div className="p-3.5 rounded-2xl bg-[var(--char-primary,#a855f7)]/15 border border-[var(--char-primary,#a855f7)]/40 space-y-3 shadow-inner">
                 {/* Header row with auto-detection pill */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-zinc-200 font-mono font-bold flex items-center gap-1.5">
-                    <Dices size={15} className="text-purple-400" />
+                    <Dices size={15} className="text-[var(--char-accent,#d8b4fe)]" />
                     <span>Damage / Effect Dice</span>
                   </label>
 
                   {detectedDice.die ? (
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-900/70 text-purple-200 border border-purple-600/70 font-bold flex items-center gap-1 shadow-xs animate-fade-in">
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--char-primary,#a855f7)]/40 text-[var(--char-accent,#d8b4fe)] border border-[var(--char-primary,#a855f7)]/60 font-bold flex items-center gap-1 shadow-xs animate-fade-in">
                       <Sparkles size={11} className="text-amber-400" />
                       <span>Auto-detected: <strong className="text-amber-300">{detectedDice.count}{detectedDice.die}</strong></span>
                     </span>
@@ -2604,7 +2604,7 @@ export default function UnifiedCharacterSheet({
                           type="button"
                           onClick={() => handleDiceSelect(die)}
                           className={`py-1.5 px-1 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border text-center active:scale-95 ${isSelected
-                            ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
+                            ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#d8b4fe)] text-white shadow-md scale-105'
                             : 'bg-zinc-900/90 border-zinc-700/70 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500 hover:text-white'
                             }`}
                         >
@@ -2661,7 +2661,7 @@ export default function UnifiedCharacterSheet({
                           type="button"
                           onClick={() => handleDiceSelect(detectedDice.die || 'd8', q)}
                           className={`w-6 h-6 rounded-lg text-[10px] font-mono cursor-pointer transition-all border ${detectedDice.count === q
-                            ? 'bg-purple-900/90 border-purple-500 text-purple-200 font-bold shadow-xs'
+                            ? 'bg-[var(--char-primary,#a855f7)]/50 border-[var(--char-primary,#a855f7)] text-[var(--char-accent,#d8b4fe)] font-bold shadow-xs'
                             : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                             }`}
                         >
@@ -2679,7 +2679,7 @@ export default function UnifiedCharacterSheet({
                         value={newSpellForm.damageDice || ''}
                         onChange={(e) => setNewSpellForm((prev) => ({ ...prev, damageDice: e.target.value }))}
                         placeholder="e.g. 2d8 radiant, 8d6 fire"
-                        className="w-full px-3 py-2 pr-8 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs focus:outline-none focus:border-purple-400 placeholder:text-zinc-600 shadow-inner"
+                        className="w-full px-3 py-2 pr-8 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs focus:outline-none focus:border-[var(--char-primary,#a855f7)] placeholder:text-zinc-600 shadow-inner"
                       />
                       {newSpellForm.damageDice && (
                         <button
@@ -2696,7 +2696,7 @@ export default function UnifiedCharacterSheet({
                 </div>
 
                 {/* Quick Damage / Effect Type Pills */}
-                <div className="space-y-1.5 pt-1 border-t border-purple-900/30">
+                <div className="space-y-1.5 pt-1 border-t border-[var(--char-primary,#a855f7)]/30">
                   <span className="text-[10px] font-mono text-zinc-400 uppercase block">Quick Damage / Effect Type:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {[
@@ -2790,7 +2790,7 @@ export default function UnifiedCharacterSheet({
                     prepared: true,
                   });
                 }}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold cursor-pointer shadow-md"
+                className="px-4 py-1.5 rounded-lg bg-[var(--char-primary,#a855f7)] hover:opacity-90 text-white text-xs font-mono font-bold cursor-pointer shadow-md"
               >
                 {editingSpellId ? 'Update Spell' : 'Save Spell'}
               </button>
@@ -2807,11 +2807,11 @@ export default function UnifiedCharacterSheet({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl bg-[#0e1017] border border-purple-700/50 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-[#0e1017] border border-[var(--char-primary,#a855f7)]/50 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <Wand2 size={20} className="text-purple-400" />
+                <Wand2 size={20} className="text-[var(--char-accent,#d8b4fe)]" />
                 <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
                   Manage Spell Slots
                 </h3>
@@ -2859,13 +2859,13 @@ export default function UnifiedCharacterSheet({
                 return (
                   <div
                     key={lvl}
-                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${max > 0 ? 'bg-purple-950/20 border-purple-800/40' : 'bg-zinc-900/50 border-zinc-800/80'
+                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${max > 0 ? 'bg-[var(--char-primary,#a855f7)]/15 border-[var(--char-primary,#a855f7)]/40' : 'bg-zinc-900/50 border-zinc-800/80'
                       }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <span
                         className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${max > 0
-                          ? 'bg-purple-900/60 text-purple-200 border border-purple-700/60'
+                          ? 'bg-[var(--char-primary,#a855f7)]/40 text-[var(--char-accent,#d8b4fe)] border border-[var(--char-primary,#a855f7)]/60'
                           : 'bg-zinc-800 text-zinc-500'
                           }`}
                       >
@@ -2883,14 +2883,14 @@ export default function UnifiedCharacterSheet({
                               <span
                                 key={i}
                                 className={`w-2.5 h-2.5 rounded-full border ${i < Math.max(0, max - used)
-                                  ? 'bg-purple-500 border-purple-400'
+                                  ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#d8b4fe)]'
                                   : 'bg-zinc-800 border-zinc-700'
                                   }`}
                               />
                             ))
                           )}
                           {max > 10 && (
-                            <span className="text-[10px] text-purple-300 font-mono font-bold">+{max - 10}</span>
+                            <span className="text-[10px] text-[var(--char-accent,#d8b4fe)] font-mono font-bold">+{max - 10}</span>
                           )}
                         </div>
                       </div>
@@ -2904,7 +2904,7 @@ export default function UnifiedCharacterSheet({
                             type="button"
                             onClick={() => handleSlotMaxChange(lvl, preset)}
                             className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer border ${max === preset
-                              ? 'bg-purple-600 border-purple-400 text-white font-bold'
+                              ? 'bg-[var(--char-primary,#a855f7)] border-[var(--char-accent,#d8b4fe)] text-white font-bold'
                               : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                               }`}
                           >
@@ -2927,7 +2927,7 @@ export default function UnifiedCharacterSheet({
                           max={20}
                           value={max}
                           onChange={(e) => handleSlotMaxChange(lvl, parseInt(e.target.value, 10) || 0)}
-                          className="w-12 h-7 bg-black/60 border border-zinc-700 rounded text-center text-xs font-mono font-bold text-white focus:border-purple-400"
+                          className="w-12 h-7 bg-black/60 border border-zinc-700 rounded text-center text-xs font-mono font-bold text-white focus:border-[var(--char-primary,#a855f7)]"
                         />
                         <button
                           type="button"
@@ -2954,7 +2954,7 @@ export default function UnifiedCharacterSheet({
               <button
                 type="button"
                 onClick={handleSaveSpellSlots}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
+                className="px-4 py-1.5 rounded-lg bg-[var(--char-primary,#a855f7)] hover:opacity-90 text-white text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
               >
                 <Check size={14} /> Save Slots
               </button>

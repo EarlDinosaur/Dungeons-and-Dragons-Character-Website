@@ -122,76 +122,76 @@ export function useCharacterTabs() {
     (Object.keys(customChar?.spellcasting?.slots || {}).length > 0) ||
     (character?.classes?.some((c) => ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard', 'Warlock', 'Paladin', 'Ranger', 'Artificer'].includes(c.className)));
 
-  // Character-specific tab definitions
+  // Character-specific tab definitions (standardized to unified labels)
   const vesperTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Character', icon: Shield },
+    { id: 'character', label: 'Overview', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
-    { id: 'artifact', label: 'Soul Harvester', icon: Gem },
+    { id: 'artifact', label: 'Artifact', icon: Gem },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Dossier', icon: BookOpen },
+    { id: 'dossier', label: 'Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
   const ariaTabs: CharacterTabItem[] = [
     { id: 'character', label: 'Overview', icon: Moon },
     { id: 'combat', label: 'Combat', icon: Swords },
-    { id: 'spells', label: 'Spellbook', icon: Wand2 },
-    { id: 'artifact', label: 'Lunar Tides', icon: Sparkles },
+    { id: 'spells', label: 'Spells', icon: Wand2 },
+    { id: 'artifact', label: 'Artifact', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Grimoire', icon: Scroll },
+    { id: 'dossier', label: 'Lore', icon: Scroll },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
   const cyrusTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Oracle Sheet', icon: Sparkles },
+    { id: 'character', label: 'Overview', icon: Sparkles },
     { id: 'combat', label: 'Combat', icon: Swords },
-    { id: 'spells', label: 'Solar Spells', icon: Wand2 },
-    { id: 'artifact', label: 'Solar Engine', icon: Flame },
+    { id: 'spells', label: 'Spells', icon: Wand2 },
+    { id: 'artifact', label: 'Artifact', icon: Flame },
     { id: 'progression', label: 'Feats', icon: Sparkles },
-    { id: 'inventory', label: 'Equipment', icon: Package },
+    { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Prophecies', icon: Scroll },
+    { id: 'dossier', label: 'Lore', icon: Scroll },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
   const wynelTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Stats & Heritage', icon: Shield },
+    { id: 'character', label: 'Overview', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
-    { id: 'spells', label: 'Pact Magic', icon: Wand2 },
-    { id: 'artifact', label: 'Crimson Tattoo', icon: Heart },
+    { id: 'spells', label: 'Spells', icon: Wand2 },
+    { id: 'artifact', label: 'Artifact', icon: Heart },
     { id: 'progression', label: 'Feats', icon: Sparkles },
-    { id: 'inventory', label: 'Treasury', icon: Package },
+    { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Grimoire & Lore', icon: BookOpen },
+    { id: 'dossier', label: 'Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
   const kastorielTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Starry Druid', icon: Shield },
+    { id: 'character', label: 'Overview', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
-    { id: 'spells', label: 'Star Spells', icon: Wand2 },
-    { id: 'artifact', label: 'Starry Forms', icon: Sparkles },
+    { id: 'spells', label: 'Spells', icon: Wand2 },
+    { id: 'artifact', label: 'Artifact', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
-    { id: 'inventory', label: 'Pendulum & Gear', icon: Package },
+    { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Starlight Lore', icon: BookOpen },
+    { id: 'dossier', label: 'Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
   const customTabs: CharacterTabItem[] = [
-    { id: 'character', label: 'Stats', icon: Shield },
+    { id: 'character', label: 'Overview', icon: Shield },
     { id: 'combat', label: 'Combat', icon: Swords },
     ...(hasSpells ? [{ id: 'spells' as TabId, label: 'Spells', icon: Wand2 }] : []),
-    { id: 'artifact', label: 'Heroic Powers', icon: Sparkles },
+    { id: 'artifact', label: 'Artifact', icon: Sparkles },
     { id: 'progression', label: 'Feats', icon: Sparkles },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'shop', label: 'Marketplace', icon: Store },
-    { id: 'dossier', label: 'Dossier', icon: BookOpen },
+    { id: 'dossier', label: 'Lore', icon: BookOpen },
     { id: 'chronicle', label: 'DM Notes', icon: Scroll },
   ];
 
@@ -263,8 +263,8 @@ export default function TabNavigation({
   const getPrimaryThemeColor = () => {
     if (isVesper) return '#dc2626';
     if (isCyrus) return '#f59e0b';
-    if (isWynel) return '#ef4444';
-    if (isKastoriel) return '#10b981';
+    if (isWynel) return '#ec4899';
+    if (isKastoriel) return '#14b8a6';
     if (isAria) return '#a992e8';
     return '#f59e0b';
   };
@@ -272,8 +272,8 @@ export default function TabNavigation({
   const getActiveStyle = () => {
     if (isVesper) return 'text-[var(--color-gold-400)] bg-[var(--color-surface-raised)] border border-[rgba(255,215,0,0.25)] shadow-[0_0_15px_rgba(255,215,0,0.15)]';
     if (isCyrus) return 'text-amber-300 bg-[#261d10] border border-[#f59e0b]/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
-    if (isWynel) return 'text-rose-200 bg-[#2b080f] border border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.35)]';
-    if (isKastoriel) return 'text-amber-200 bg-[#161208] border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.35)]';
+    if (isWynel) return 'text-pink-200 bg-[#2b081a] border border-pink-500/60 shadow-[0_0_15px_rgba(236,72,153,0.35)]';
+    if (isKastoriel) return 'text-teal-200 bg-[#081f21] border border-teal-500/60 shadow-[0_0_15px_rgba(20,184,166,0.35)]';
     if (isAria) return 'text-[#a992e8] bg-[#1d2249] border border-[#a992e8]/50 shadow-[0_0_15px_rgba(169,146,232,0.25)]';
     return 'text-amber-200 bg-zinc-900 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]';
   };
@@ -281,8 +281,8 @@ export default function TabNavigation({
   const getIconStyle = () => {
     if (isVesper) return 'text-[var(--color-gold-400)]';
     if (isCyrus) return 'text-amber-400';
-    if (isWynel) return 'text-red-400';
-    if (isKastoriel) return 'text-amber-400';
+    if (isWynel) return 'text-pink-400';
+    if (isKastoriel) return 'text-teal-400';
     if (isAria) return 'text-[#a992e8]';
     return 'text-amber-400';
   };
@@ -290,8 +290,8 @@ export default function TabNavigation({
   const getLineStyle = () => {
     if (isVesper) return 'bg-[var(--color-gold-bright)] shadow-[0_0_8px_rgba(255,215,0,0.8)]';
     if (isCyrus) return 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
-    if (isWynel) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
-    if (isKastoriel) return 'bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
+    if (isWynel) return 'bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.8)]';
+    if (isKastoriel) return 'bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-300 shadow-[0_0_8px_rgba(20,184,166,0.8)]';
     if (isAria) return 'bg-[#a992e8] shadow-[0_0_8px_rgba(169,146,232,0.8)]';
     return 'bg-amber-400';
   };
@@ -452,8 +452,8 @@ export function FloatingFantasyDock({
   const getPillActiveColor = () => {
     if (isVesper) return 'from-red-600 to-rose-900 border-red-400 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]';
     if (isCyrus) return 'from-amber-600 to-yellow-800 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]';
-    if (isWynel) return 'from-rose-600 to-red-950 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]';
-    if (isKastoriel) return 'from-emerald-600 to-teal-900 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]';
+    if (isWynel) return 'from-pink-600 to-rose-950 border-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]';
+    if (isKastoriel) return 'from-teal-600 to-emerald-950 border-teal-400 text-white shadow-[0_0_15px_rgba(20,184,166,0.5)]';
     if (isAria) return 'from-purple-600 to-indigo-900 border-purple-400 text-white shadow-[0_0_15px_rgba(168,85,247,0.5)]';
     return 'from-amber-600 to-amber-900 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]';
   };
