@@ -132,6 +132,17 @@ Shops in the campaign can carry diverse item collections organized into custom d
 
 ---
 
+## ☁️ Turso Cloud Database & Clean Campaign State
+
+- **Turso Cloud Integration**: Remote libSQL database connected via `@libsql/client` using credentials in `.env.local` (`DATABASE_URL="libsql://dnd-campaign-earldinosaur.aws-ap-northeast-1.turso.io"`).
+- **Clean Fallback Baseline**: Hardcoded fallback lists for DM campaign entities (`DEFAULT_CAMPAIGN_SHOPS`, `DEFAULT_CAMPAIGN_NPCS`, `DEFAULT_DM_NOTES`) start empty (`[]`) so the DM begins with a blank slate.
+- **State Synchronization (`src/app/providers.tsx` & `/api/sync`)**:
+  - `campaign_shops`, `custom_npcs`, `dm_notes`, `character_lore`, and `custom_roster` sync bidirectionally with Turso.
+  - Base party hero sheets (Vesper, Aria, Cyrus, Wyn'el, Kastoriel) remain preserved.
+- **Empty States**: Dedicated fantasy-styled empty state cards with direct call-to-actions guide users when no shops, NPCs, or notes are present yet.
+
+---
+
 ## 🔑 DM Clearances & Quick Commands
 
 - **Default DM Master Keys**: `nat20` or `ashenpact` (configurable via DM Sanctum header).

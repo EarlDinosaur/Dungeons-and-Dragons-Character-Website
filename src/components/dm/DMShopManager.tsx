@@ -764,7 +764,16 @@ export default function DMShopManager({
           </div>
         </div>
       ) : (
-        <div className="py-20 text-center text-zinc-500">No shops configured yet.</div>
+        <div className="py-20 text-center text-zinc-500 space-y-3">
+          <Store size={36} className="mx-auto opacity-30 text-amber-400" />
+          <p className="text-zinc-400">No merchant shops configured in this campaign yet.</p>
+          <button
+            onClick={openAddShopModal}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-md inline-flex items-center gap-1.5 transition-transform hover:scale-103"
+          >
+            <Plus size={14} /> Establish First Town Shop
+          </button>
+        </div>
       )}
 
       {/* 4. Shop Create / Edit Modal */}

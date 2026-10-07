@@ -42,73 +42,7 @@ const CUSTOM_NPCS_STORAGE_KEY = 'dnd_ashen_pact_custom_npcs';
 const CAMPAIGN_SHOPS_STORAGE_KEY = 'dnd_ashen_pact_campaign_shops';
 const CHARACTER_LORE_STORAGE_KEY = 'dnd_ashen_pact_character_lore';
 
-const DEFAULT_DM_NOTES: DMNote[] = [
-  {
-    id: 'note-starter-1',
-    title: 'The Starlight Conclave Directive',
-    content: 'Kastoriel, your pendulum vibrates with astral resonance when aligned with the zenith. A stellar rift approaches above the Sunken Spire. Seek the celestial coordinates before the blood moon rises.',
-    category: 'secret',
-    targetCharacterId: 'kastoriel',
-    isPlayerVisible: true,
-    pinned: true,
-    tags: ['#starry_coven', '#pendulum', '#vision'],
-    author: 'Dungeon Master',
-    createdAt: Date.now() - 3600000 * 24,
-    updatedAt: Date.now() - 3600000 * 24,
-  },
-  {
-    id: 'note-starter-2',
-    title: 'Bounty: The Ashen Inquisitors',
-    content: 'Public decree posted in the Guildhall tavern: A cell of rogue Inquisitors was spotted skulking near the lower catacombs. Beware shadowy ambushes. 500 GP reward upon delivery of their insignia.',
-    category: 'quest',
-    targetCharacterId: 'all',
-    isPlayerVisible: true,
-    pinned: true,
-    tags: ['#main_quest', '#bounty', '#catacombs'],
-    author: 'Dungeon Master',
-    createdAt: Date.now() - 3600000 * 12,
-    updatedAt: Date.now() - 3600000 * 12,
-  },
-  {
-    id: 'note-starter-3',
-    title: 'Lunar Anomaly at the Eclipse Sanctum',
-    content: 'Aria, the silver tides whisper of an ancient ritual that inverted the lunar weave. Your Lunar Sorcery will surge with wild potency when within 60 feet of the Obsidian Obelisk.',
-    category: 'secret',
-    targetCharacterId: 'aria',
-    isPlayerVisible: true,
-    pinned: false,
-    tags: ['#lunar_weave', '#obelisk'],
-    author: 'Dungeon Master',
-    createdAt: Date.now() - 3600000 * 6,
-    updatedAt: Date.now() - 3600000 * 6,
-  },
-  {
-    id: 'note-starter-4',
-    title: 'Shadow Guild Whisper: Contract on the Magistrate',
-    content: 'Vesper, the ravens brought a coded letter. The merchant guild is laundering counterfeit soul gems through the lower docks. A contact waits at midnight under the weeping gargoyle.',
-    category: 'secret',
-    targetCharacterId: 'vesper',
-    isPlayerVisible: true,
-    pinned: false,
-    tags: ['#thieves_guild', '#soul_gems', '#docks'],
-    author: 'Dungeon Master',
-    createdAt: Date.now() - 3600000 * 8,
-    updatedAt: Date.now() - 3600000 * 8,
-  },
-  {
-    id: 'note-starter-5',
-    title: 'DM Confidential: Crypt Trap Placements & Boss Tactics',
-    content: 'CONFIDENTIAL (DM EYES ONLY). The crypt bridge is rigged with a Glyph of Warding (DC 16 Investigation to detect; 5d8 Thunder). Inquisitor Malakor casts Shield and uses legendary action misty step.',
-    category: 'clue',
-    targetCharacterId: 'all',
-    isPlayerVisible: false,
-    pinned: true,
-    tags: ['#dm_secret', '#traps', '#boss_tactics'],
-    author: 'Dungeon Master',
-    createdAt: Date.now() - 3600000 * 2,
-    updatedAt: Date.now() - 3600000 * 2,
-  },
-];
+const DEFAULT_DM_NOTES: DMNote[] = [];
 
 export type ViewMode = 'menu' | 'character' | 'dm';
 
@@ -547,6 +481,28 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           }
         }
 
+        // Custom NPCs
+        const npcsRemote = res.campaign.custom_npcs;
+        if (npcsRemote && npcsRemote.updatedAt > customNPCsModifiedRef.current) {
+          if (Array.isArray(npcsRemote.data)) {
+            setCustomNPCsState(npcsRemote.data);
+            try {
+              localStorage.setItem(CUSTOM_NPCS_STORAGE_KEY, JSON.stringify(npcsRemote.data));
+            } catch {}
+          }
+        }
+
+        // Campaign Shops
+        const shopsRemote = res.campaign.campaign_shops;
+        if (shopsRemote && shopsRemote.updatedAt > campaignShopsModifiedRef.current) {
+          if (Array.isArray(shopsRemote.data)) {
+            setCampaignShopsState(shopsRemote.data);
+            try {
+              localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(shopsRemote.data));
+            } catch {}
+          }
+        }
+
         // Character Lore & Dossiers
         const loreRemote = res.campaign.character_lore;
         if (loreRemote && loreRemote.updatedAt > loreModifiedRef.current) {
@@ -557,6 +513,19 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
               localStorage.setItem(CHARACTER_LORE_STORAGE_KEY, JSON.stringify(loreRemote.data));
             } catch {}
           }
+        }
+
+        // Custom Character Themes
+        const themesRemote = res.campaign.custom_themes;
+        if (themesRemote && themesRemote.data && typeof themesRemote.data === 'object') {
+          setCustomThemesState((prev) => {
+            const next = { ...prev, ...themesRemote.data };
+            customThemesRef.current = next;
+            try {
+              localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
+            } catch {}
+            return next;
+          });
         }
       }
 
@@ -672,7 +641,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedDMNotesRaw) {
         try {
           const parsed = JSON.parse(savedDMNotesRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setDmNotesState(parsed);
           }
         } catch {}
@@ -682,7 +651,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedNPCsRaw) {
         try {
           const parsed = JSON.parse(savedNPCsRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setCustomNPCsState(parsed);
           }
         } catch {}
@@ -692,7 +661,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       if (savedShopsRaw) {
         try {
           const parsed = JSON.parse(savedShopsRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setCampaignShopsState(parsed);
           }
         } catch {}
@@ -818,6 +787,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         try {
           localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
         } catch {}
+        pushCampaignSync('custom_themes', next).catch(() => {});
         return next;
       });
 
@@ -849,6 +819,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         try {
           localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(next));
         } catch {}
+        pushCampaignSync('custom_themes', next).catch(() => {});
         return next;
       });
 
@@ -3229,6 +3200,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     addInvFn(newItem);
 
     if (item.stock > 0) {
+      campaignShopsModifiedRef.current = Date.now();
       setCampaignShopsState((prev) => {
         const next = prev.map((s) => {
           if (s.id !== shopId) return s;
@@ -3240,6 +3212,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         try {
           localStorage.setItem(CAMPAIGN_SHOPS_STORAGE_KEY, JSON.stringify(next));
         } catch {}
+        pushCampaignSync('campaign_shops', next).catch(() => {});
         return next;
       });
     }

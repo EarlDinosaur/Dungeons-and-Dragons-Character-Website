@@ -395,8 +395,10 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
           )}
         </div>
       ) : (
-        <div className="py-20 text-center text-zinc-500">
-          No merchant shops are currently open in town.
+        <div className="py-20 text-center text-zinc-500 space-y-2">
+          <Store size={36} className="mx-auto opacity-30 text-amber-400" />
+          <p className="text-zinc-400">No merchant shops are currently open in town.</p>
+          <p className="text-[11px] text-zinc-600">The Dungeon Master can establish and stock town shops from the DM Sanctum.</p>
         </div>
       )}
     </div>
