@@ -88,12 +88,14 @@ src/
 │       ├── shared/
 │       │   ├── UnifiedCharacterSheet.tsx  # Universal sheet used by all characters
 │       │   ├── BG3EquipmentPaperdoll.tsx  # Baldur's Gate 3 paperdoll equipment slots
-│       │   └── PlayerChronicleView.tsx    # Player view of DM dispatches
+│       │   ├── PlayerChronicleView.tsx    # Player view of DM dispatches
+│       │   └── PlayerMarketplaceView.tsx  # Player view of town shops with dynamic multi-catalogue filters
 │       └── vesper/
 │           ├── Dossier.tsx          # Narrative tab: Lore, Allies, Mysteries, Journal + DM Edit button
 │           └── SoulHarvester.tsx    # Vesper's artifact engine
 └── lib/
     ├── types.ts                     # Core D&D 5e type definitions (CharacterState, DossierData, etc.)
+    ├── shop-types.ts                # CampaignShop, ShopItem, catalogues, standard categories & helpers
     ├── character-stories.ts         # Canonical lore presets & getCharacterStory resolution
     ├── persistence.ts               # Recalculate level stats, default Vesper state, localStorage
     ├── sync-engine.ts               # Client-side SQLite synchronization engine
@@ -102,8 +104,37 @@ src/
 
 ---
 
+## 🛒 Multi-Catalogue Marketplace & Shop System
+
+Shops in the campaign can carry diverse item collections organized into custom department catalogues.
+
+### Data Model:
+- **`CampaignShop`** (`src/lib/shop-types.ts`):
+  - `catalogues?: string[]`: Defined department sections for the shop (e.g. `['Blades & Weapons', 'Suits of Armor', 'Shields & Bulwarks']`).
+  - `items: ShopItem[]`: Wares stocked in the shop.
+- **`ShopItem`** (`src/lib/shop-types.ts`):
+  - `category: ShopItemCategory`: 20 standard 5e classifications (`weapon`, `armor`, `shield`, `potion`, `scroll`, `consumable`, `wondrous`, `ring`, `amulet`, `gear`, `tool`, `poison`, `trinket`, `gem`, `clothing`, `book`, `mount`, `service`, `relic`, `custom`).
+  - `catalogue?: string`: Custom department section name (e.g., *"Rare Concoctions"*, *"Smuggled Relics"*). Defaults to category label if unset.
+- **Helper Functions** (`src/lib/shop-types.ts`):
+  - `getShopCatalogues(shop)`: Dynamically aggregates all unique catalogue sections present in the shop.
+  - `getItemCatalogue(item)`: Resolves an item's catalogue name.
+  - `mapShopCategoryToInventoryCategory(category)`: Maps any shop category safely to valid player `ItemCategory` on purchase.
+
+### DM Management & Player Browsing:
+1. **DM Command Sanctum (`DMShopManager.tsx`)**:
+   - **Add & Manage Catalogues**: Quick preset chips or custom names; rename or delete catalogues.
+   - **Catalogue Filtering**: Filter wares in DM view by department tab pills with count badges.
+   - **Item Stocking Modal**: Select from existing catalogues or type a new custom catalogue section on the fly.
+2. **Player Experience (`PlayerMarketplaceView.tsx`)**:
+   - **Dynamic Catalogue Tabs**: Displays only the catalogues that actually exist in the active shop with item count badges.
+   - **Section View vs Grid View**: Toggle to browse wares grouped under illuminated catalogue headers.
+   - **Safe Purchasing**: Deducts currency (GP/SP/CP/PP) and automatically creates `InventoryItem` with correct inventory slot mapping.
+
+---
+
 ## 🔑 DM Clearances & Quick Commands
 
 - **Default DM Master Keys**: `nat20` or `ashenpact` (configurable via DM Sanctum header).
 - **TypeScript Check**: `npx tsc --noEmit`
 - **Development Server**: `npm run dev` (runs at `http://localhost:3000`)
+

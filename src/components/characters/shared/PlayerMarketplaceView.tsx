@@ -15,9 +15,19 @@ import {
   Search,
   Zap,
   ShoppingBag,
+  Folder,
+  Layers,
+  LayoutGrid,
 } from 'lucide-react';
 import { useCharacter } from '@/app/providers';
-import type { CampaignShop, ShopItem } from '@/lib/shop-types';
+import {
+  type CampaignShop,
+  type ShopItem,
+  getShopCatalogues,
+  getItemCatalogue,
+  getCategoryEmoji,
+  getCategoryLabel,
+} from '@/lib/shop-types';
 
 interface PlayerMarketplaceViewProps {
   characterId: string;
@@ -94,30 +104,64 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
   }, [campaignShops]);
 
   const [selectedShopId, setSelectedShopId] = useState<string>(visibleShops[0]?.id || '');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeCatalogue, setActiveCatalogue] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isGroupedByCatalogue, setIsGroupedByCatalogue] = useState<boolean>(true);
   const [purchasingItemId, setPurchasingItemId] = useState<string | null>(null);
 
   const currentShop = visibleShops.find((s) => s.id === selectedShopId) || visibleShops[0];
 
+  // Dynamic catalogues for the active shop
+  const shopCatalogues = useMemo(() => {
+    if (!currentShop) return [];
+    return getShopCatalogues(currentShop);
+  }, [currentShop]);
+
+  // All visible items matching active catalogue & search
   const filteredItems = useMemo(() => {
     if (!currentShop) return [];
     return currentShop.items.filter((item) => {
       if (!item.visibleToPlayers) return false;
-      if (activeCategory !== 'all') {
-        if (activeCategory === 'potion' && item.category !== 'potion') return false;
-        if (activeCategory === 'weapon' && item.category !== 'weapon') return false;
-        if (activeCategory === 'armor' && item.category !== 'armor') return false;
-        if (activeCategory === 'wondrous' && item.category !== 'wondrous' && item.category !== 'scroll') return false;
-        if (activeCategory === 'gear' && item.category !== 'gear' && item.category !== 'tool' && item.category !== 'consumable') return false;
+
+      // Filter by catalogue section
+      if (activeCatalogue !== 'all') {
+        const itemCat = getItemCatalogue(item);
+        if (itemCat.toLowerCase() !== activeCatalogue.toLowerCase()) {
+          return false;
+        }
       }
+
+      // Filter by text search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        return item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
+        const itemCat = getItemCatalogue(item).toLowerCase();
+        return (
+          item.name.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          itemCat.includes(q) ||
+          item.category.toLowerCase().includes(q) ||
+          (item.effect && item.effect.toLowerCase().includes(q))
+        );
       }
+
       return true;
     });
-  }, [currentShop, activeCategory, searchQuery]);
+  }, [currentShop, activeCatalogue, searchQuery]);
+
+  // Grouped items by catalogue for structured catalogue view
+  const itemsByCatalogue = useMemo(() => {
+    const groups: Record<string, ShopItem[]> = {};
+
+    filteredItems.forEach((item) => {
+      const cat = getItemCatalogue(item);
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push(item);
+    });
+
+    return groups;
+  }, [filteredItems]);
 
   const handleBuy = (item: ShopItem) => {
     if (!currentShop) return;
@@ -172,10 +216,13 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
           return (
             <button
               key={shop.id}
-              onClick={() => setSelectedShopId(shop.id)}
+              onClick={() => {
+                setSelectedShopId(shop.id);
+                setActiveCatalogue('all');
+              }}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap border backdrop-blur-sm ${
                 isSelected
-                  ? 'bg-amber-500 text-black border-amber-400 shadow-md scale-102'
+                  ? 'bg-amber-500 text-black border-amber-400 shadow-md scale-102 font-bold'
                   : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
               }`}
             >
@@ -197,10 +244,13 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
           {/* Shopkeeper Banner */}
           <div className="p-4 rounded-2xl bg-[#090b10]/90 backdrop-blur-md border border-zinc-800/80 shadow-md flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
                   {currentShop.name}
                 </h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-purple-950/60 text-purple-300 border-purple-800">
+                  {shopCatalogues.length} Catalogues
+                </span>
                 {currentShop.discountPercent > 0 && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-800">
                     Town Discount: {currentShop.discountPercent}% Off All Wares
@@ -218,31 +268,74 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
                 &ldquo;{currentShop.description}&rdquo;
               </p>
             </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsGroupedByCatalogue(!isGroupedByCatalogue)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                  isGroupedByCatalogue
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/40'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
+                }`}
+                title="Toggle Catalogue Section Headers"
+              >
+                {isGroupedByCatalogue ? <Layers size={13} /> : <LayoutGrid size={13} />}
+                <span>{isGroupedByCatalogue ? 'Section View' : 'Grid View'}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Category Filter & Search Bar */}
+          {/* Dynamic Catalogue Filter & Search Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-              {[
-                { id: 'all', label: 'All Items' },
-                { id: 'potion', label: '🧪 Potions & Elixirs' },
-                { id: 'weapon', label: '⚔️ Weapons' },
-                { id: 'armor', label: '🛡️ Armor & Shields' },
-                { id: 'wondrous', label: '✨ Arcane Curios' },
-                { id: 'gear', label: '🎒 Gear & Survival' },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                    activeCategory === cat.id
-                      ? 'bg-amber-500 text-black shadow-xs'
-                      : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+            {/* Dynamic Catalogue Pills for this Shop */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs py-0.5">
+              <button
+                onClick={() => setActiveCatalogue('all')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                  activeCatalogue === 'all'
+                    ? 'bg-amber-500 text-black shadow-xs font-bold'
+                    : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                }`}
+              >
+                <Layers size={12} />
+                <span>All Wares</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.1 rounded-full ${
+                    activeCatalogue === 'all' ? 'bg-black/30 text-black' : 'bg-zinc-800 text-zinc-400'
                   }`}
                 >
-                  {cat.label}
-                </button>
-              ))}
+                  {currentShop.items.filter((i) => i.visibleToPlayers).length}
+                </span>
+              </button>
+
+              {shopCatalogues.map((catName) => {
+                const isSelected = activeCatalogue.toLowerCase() === catName.toLowerCase();
+                const count = currentShop.items.filter(
+                  (i) => i.visibleToPlayers && getItemCatalogue(i).toLowerCase() === catName.toLowerCase()
+                ).length;
+
+                return (
+                  <button
+                    key={catName}
+                    onClick={() => setActiveCatalogue(catName)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-amber-500 text-black shadow-xs font-bold'
+                        : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                    }`}
+                  >
+                    <Folder size={12} />
+                    <span>{catName}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.1 rounded-full ${
+                        isSelected ? 'bg-black/30 text-black' : 'bg-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="relative w-full sm:w-56">
@@ -251,104 +344,55 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search wares..."
+                placeholder="Search wares or categories..."
                 className="w-full pl-8 pr-2 py-1 bg-zinc-900/90 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
               />
             </div>
           </div>
 
-          {/* Item Catalog Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {filteredItems.map((item) => {
-              const rStyle = RARITY_THEMES[item.rarity] || RARITY_THEMES.Common;
-              const effectivePrice = Math.max(
-                1,
-                Math.round(item.price * (1 - currentShop.discountPercent / 100))
-              );
-              const canAfford = totalGPValue >= effectivePrice;
-              const isOutOfStock = item.stock === 0;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 backdrop-blur-md ${
-                    rStyle.border
-                  } ${rStyle.bg} ${rStyle.glow} bg-[#0c0e15]/85 gap-3 hover:border-amber-400/60 shadow-lg`}
+          {/* Item Catalog List */}
+          {filteredItems.length === 0 ? (
+            <div className="py-16 text-center text-zinc-500 space-y-2 bg-zinc-950/40 rounded-2xl border border-zinc-900">
+              <Package size={32} className="mx-auto opacity-30 text-amber-400" />
+              <p>No wares found matching current catalogue or search query.</p>
+              {activeCatalogue !== 'all' && (
+                <button
+                  onClick={() => setActiveCatalogue('all')}
+                  className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 text-xs font-bold hover:bg-zinc-800 cursor-pointer"
                 >
-                  <div>
-                    {/* Item Name & Rarity */}
-                    <div className="flex items-center justify-between gap-1 mb-1.5">
-                      <span className="font-bold text-zinc-100 text-xs truncate">
-                        {item.name}
-                      </span>
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${rStyle.border} ${rStyle.text} bg-black/40`}
-                      >
-                        {item.rarity}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-zinc-400 line-clamp-3 mb-2 leading-relaxed">
-                      {item.description}
-                    </p>
-
-                    {item.effect && (
-                      <div className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-[10px] text-emerald-400 font-medium mb-2">
-                        ⚡ {item.effect}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-                      <span>{item.weight || 0} lbs</span>
-                      {item.requiresAttunement && (
-                        <>
-                          <span>&bull;</span>
-                          <span className="text-purple-400">Requires Attunement</span>
-                        </>
-                      )}
-                      <span>&bull;</span>
-                      <span className={item.stock === 0 ? 'text-red-400 font-bold' : 'text-zinc-400'}>
-                        {item.stock < 0 ? 'Unlimited Stock' : `${item.stock} in stock`}
-                      </span>
-                    </div>
+                  View All Shop Catalogues
+                </button>
+              )}
+            </div>
+          ) : isGroupedByCatalogue && activeCatalogue === 'all' ? (
+            /* Grouped by Catalogue View */
+            <div className="space-y-6">
+              {Object.entries(itemsByCatalogue).map(([catalogName, itemsInCat]) => (
+                <div key={catalogName} className="space-y-3">
+                  {/* Catalogue Header Divider */}
+                  <div className="flex items-center gap-2.5 border-b border-zinc-800/80 pb-1.5">
+                    <Folder size={14} className="text-amber-400" />
+                    <h4 className="text-xs uppercase font-extrabold text-amber-300 tracking-wider">
+                      {catalogName}
+                    </h4>
+                    <span className="text-[10px] text-zinc-500 font-normal">
+                      ({itemsInCat.length} {itemsInCat.length === 1 ? 'ware' : 'wares'})
+                    </span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-zinc-800 to-transparent" />
                   </div>
 
-                  {/* Purchase Button Row */}
-                  <div className="pt-2.5 border-t border-zinc-800 flex items-center justify-between gap-2">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-zinc-500 uppercase">Price:</span>
-                      <div className="flex items-center gap-1.5 font-extrabold text-sm text-amber-400">
-                        <Coins size={14} />
-                        <span>{effectivePrice} GP</span>
-                        {currentShop.discountPercent > 0 && (
-                          <span className="text-[10px] text-zinc-500 line-through font-normal">
-                            {item.price} GP
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleBuy(item)}
-                      disabled={!canAfford || isOutOfStock}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs ${
-                        isOutOfStock
-                          ? 'bg-zinc-800 text-zinc-600 border border-zinc-700 cursor-not-allowed'
-                          : !canAfford
-                          ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed'
-                          : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer hover:scale-103 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
-                      }`}
-                    >
-                      <ShoppingBag size={13} />
-                      <span>
-                        {isOutOfStock ? 'Sold Out' : !canAfford ? 'Can’t Afford' : 'Purchase'}
-                      </span>
-                    </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {itemsInCat.map((item) => renderItemCard(item))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            /* Flat Grid View */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {filteredItems.map((item) => renderItemCard(item))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="py-20 text-center text-zinc-500">
@@ -357,4 +401,112 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
       )}
     </div>
   );
+
+  function renderItemCard(item: ShopItem) {
+    if (!currentShop) return null;
+    const rStyle = RARITY_THEMES[item.rarity] || RARITY_THEMES.Common;
+    const effectivePrice = Math.max(
+      1,
+      Math.round(item.price * (1 - currentShop.discountPercent / 100))
+    );
+    const canAfford = totalGPValue >= effectivePrice;
+    const isOutOfStock = item.stock === 0;
+    const itemCat = getItemCatalogue(item);
+    const catEmoji = getCategoryEmoji(item.category);
+
+    return (
+      <div
+        key={item.id}
+        className={`p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 backdrop-blur-md ${
+          rStyle.border
+        } ${rStyle.bg} ${rStyle.glow} bg-[#0c0e15]/85 gap-3 hover:border-amber-400/60 shadow-lg`}
+      >
+        <div>
+          {/* Item Badges: Catalogue, Category, Rarity */}
+          <div className="flex items-center justify-between gap-1 mb-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1">
+                <Folder size={10} />
+                <span>{itemCat}</span>
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-900/90 text-zinc-300 border border-zinc-800 font-medium capitalize flex items-center gap-1">
+                <span>{catEmoji}</span>
+                <span>{item.category}</span>
+              </span>
+            </div>
+
+            <span
+              className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${rStyle.border} ${rStyle.text} bg-black/40`}
+            >
+              {item.rarity}
+            </span>
+          </div>
+
+          <div className="mb-1">
+            <span className="font-bold text-zinc-100 text-xs line-clamp-1">
+              {item.name}
+            </span>
+          </div>
+
+          <p className="text-[11px] text-zinc-400 line-clamp-3 mb-2 leading-relaxed">
+            {item.description}
+          </p>
+
+          {item.effect && (
+            <div className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-[10px] text-emerald-400 font-medium mb-2">
+              ⚡ {item.effect}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+            <span>{item.weight || 0} lbs</span>
+            {item.requiresAttunement && (
+              <>
+                <span>&bull;</span>
+                <span className="text-purple-400">Requires Attunement</span>
+              </>
+            )}
+            <span>&bull;</span>
+            <span className={item.stock === 0 ? 'text-red-400 font-bold' : 'text-zinc-400'}>
+              {item.stock < 0 ? 'Unlimited Stock' : `${item.stock} in stock`}
+            </span>
+          </div>
+        </div>
+
+        {/* Purchase Button Row */}
+        <div className="pt-2.5 border-t border-zinc-800 flex items-center justify-between gap-2">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-zinc-500 uppercase">Price:</span>
+            <div className="flex items-center gap-1.5 font-extrabold text-sm text-amber-400">
+              <Coins size={14} />
+              <span>{effectivePrice} GP</span>
+              {currentShop.discountPercent > 0 && (
+                <span className="text-[10px] text-zinc-500 line-through font-normal">
+                  {item.price} GP
+                </span>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleBuy(item)}
+            disabled={!canAfford || isOutOfStock}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs ${
+              isOutOfStock
+                ? 'bg-zinc-800 text-zinc-600 border border-zinc-700 cursor-not-allowed'
+                : !canAfford
+                ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed'
+                : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer hover:scale-103 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+            }`}
+          >
+            <ShoppingBag size={13} />
+            <span>
+              {isOutOfStock ? 'Sold Out' : !canAfford ? 'Can’t Afford' : 'Purchase'}
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
+

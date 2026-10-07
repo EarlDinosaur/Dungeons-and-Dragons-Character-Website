@@ -1,17 +1,33 @@
+import type { ItemCategory } from '@/lib/types';
+
 export type ShopItemCategory =
   | 'weapon'
   | 'armor'
-  | 'consumable'
-  | 'gear'
-  | 'wondrous'
-  | 'scroll'
+  | 'shield'
   | 'potion'
-  | 'tool';
+  | 'scroll'
+  | 'consumable'
+  | 'wondrous'
+  | 'ring'
+  | 'amulet'
+  | 'gear'
+  | 'tool'
+  | 'poison'
+  | 'trinket'
+  | 'gem'
+  | 'clothing'
+  | 'book'
+  | 'mount'
+  | 'service'
+  | 'relic'
+  | 'custom'
+  | (string & {});
 
 export interface ShopItem {
   id: string;
   name: string;
   category: ShopItemCategory;
+  catalogue?: string; // Specific catalogue / department section in the shop
   price: number; // Cost in GP
   currencyType: 'gp' | 'sp' | 'cp' | 'pp';
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Legendary';
@@ -37,7 +53,102 @@ export interface CampaignShop {
   discountPercent: number; // e.g. 10 = 10% off, -20 = 20% markup
   isOpen: boolean;
   visibleToPlayers: boolean;
+  catalogues?: string[]; // Custom catalogue sections defined for this shop
   items: ShopItem[];
+}
+
+export interface ShopCategoryDefinition {
+  id: ShopItemCategory;
+  label: string;
+  icon: string;
+  emoji: string;
+  description: string;
+  defaultCatalogue: string;
+  inventoryCategory: ItemCategory;
+}
+
+export const STANDARD_SHOP_CATEGORIES: ShopCategoryDefinition[] = [
+  { id: 'weapon', label: 'Weapons', icon: 'Swords', emoji: '⚔️', description: 'Melee and ranged armaments', defaultCatalogue: 'Weapons & Armaments', inventoryCategory: 'weapon' },
+  { id: 'armor', label: 'Armor', icon: 'Shield', emoji: '🛡️', description: 'Body armor and protective mail', defaultCatalogue: 'Suits of Armor', inventoryCategory: 'armor' },
+  { id: 'shield', label: 'Shields', icon: 'Shield', emoji: '🔰', description: 'Defensive shields and bucklers', defaultCatalogue: 'Shields & Defenses', inventoryCategory: 'shield' },
+  { id: 'potion', label: 'Potions & Elixirs', icon: 'FlaskConical', emoji: '🧪', description: 'Magical draughts, oils, and elixirs', defaultCatalogue: 'Potions & Elixirs', inventoryCategory: 'consumable' },
+  { id: 'scroll', label: 'Spell Scrolls', icon: 'Scroll', emoji: '📜', description: 'Inscribed arcane and divine incantations', defaultCatalogue: 'Spell Scrolls', inventoryCategory: 'consumable' },
+  { id: 'consumable', label: 'Consumables', icon: 'Package', emoji: '🍞', description: 'Rations, alchemical flasks, and supplies', defaultCatalogue: 'Consumables & Supplies', inventoryCategory: 'consumable' },
+  { id: 'wondrous', label: 'Wondrous Items', icon: 'Sparkles', emoji: '✨', description: 'Enchanted curios and magical devices', defaultCatalogue: 'Wondrous Items', inventoryCategory: 'wondrous' },
+  { id: 'ring', label: 'Magic Rings', icon: 'CircleDot', emoji: '💍', description: 'Ensorcelled rings and signets', defaultCatalogue: 'Enchanted Rings', inventoryCategory: 'ring' },
+  { id: 'amulet', label: 'Amulets & Talismans', icon: 'Gem', emoji: '📿', description: 'Periapts, medallions, and talismans', defaultCatalogue: 'Amulets & Talismans', inventoryCategory: 'amulet' },
+  { id: 'gear', label: 'Adventuring Gear', icon: 'Package', emoji: '🎒', description: 'Ropes, lanterns, bedrolls, and kits', defaultCatalogue: 'Adventuring Gear', inventoryCategory: 'gear' },
+  { id: 'tool', label: 'Tools & Kits', icon: 'Sliders', emoji: '🔧', description: 'Artisan tools, thieves tools, and kits', defaultCatalogue: 'Tools of the Trade', inventoryCategory: 'tool' },
+  { id: 'poison', label: 'Poisons & Toxins', icon: 'Skull', emoji: '☠️', description: 'Venoms, neurotoxins, and acids', defaultCatalogue: 'Poisons & Toxins', inventoryCategory: 'consumable' },
+  { id: 'trinket', label: 'Trinkets & Curios', icon: 'Sparkles', emoji: '🔮', description: 'Oddities, luck charms, and tokens', defaultCatalogue: 'Trinkets & Curios', inventoryCategory: 'treasure' },
+  { id: 'gem', label: 'Gems & Valuables', icon: 'Gem', emoji: '💎', description: 'Precious cut gemstones and ingots', defaultCatalogue: 'Gems & Valuables', inventoryCategory: 'treasure' },
+  { id: 'clothing', label: 'Apparel & Cloaks', icon: 'Tag', emoji: '🥼', description: 'Fine garments, cloaks, and disguises', defaultCatalogue: 'Apparel & Cloaks', inventoryCategory: 'gear' },
+  { id: 'book', label: 'Books & Grimoires', icon: 'BookOpen', emoji: '📖', description: 'Tomes, spellbooks, maps, and lore', defaultCatalogue: 'Books & Grimoires', inventoryCategory: 'gear' },
+  { id: 'mount', label: 'Mounts & Transport', icon: 'Package', emoji: '🐎', description: 'Steeds, wagons, feed, and tack', defaultCatalogue: 'Mounts & Transport', inventoryCategory: 'gear' },
+  { id: 'service', label: 'Services & Bounties', icon: 'Coins', emoji: '🤝', description: 'Spellcasting services and contracts', defaultCatalogue: 'Services & Contracts', inventoryCategory: 'gear' },
+  { id: 'relic', label: 'Relics & Artifacts', icon: 'Sparkles', emoji: '🏛️', description: 'Sacred relics and forgotten lore', defaultCatalogue: 'Relics & Antiquities', inventoryCategory: 'wondrous' },
+  { id: 'custom', label: 'Custom Wares', icon: 'Tag', emoji: '📦', description: 'Specialized goods and wares', defaultCatalogue: 'Special Curios', inventoryCategory: 'gear' },
+];
+
+export function getCategoryDefinition(cat: string): ShopCategoryDefinition | undefined {
+  const normalized = (cat || '').toLowerCase().trim();
+  return STANDARD_SHOP_CATEGORIES.find((c) => c.id.toLowerCase() === normalized);
+}
+
+export function getCategoryLabel(cat: string): string {
+  const def = getCategoryDefinition(cat);
+  if (def) return def.label;
+  if (!cat) return 'General';
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+
+export function getCategoryEmoji(cat: string): string {
+  const def = getCategoryDefinition(cat);
+  return def ? def.emoji : '📦';
+}
+
+export function getItemCatalogue(item: ShopItem): string {
+  if (item.catalogue && item.catalogue.trim()) {
+    return item.catalogue.trim();
+  }
+  const def = getCategoryDefinition(item.category);
+  return def ? def.defaultCatalogue : getCategoryLabel(item.category);
+}
+
+export function getShopCatalogues(shop: CampaignShop): string[] {
+  const explicit = shop.catalogues || [];
+  const fromItems = (shop.items || []).map((i) => getItemCatalogue(i));
+  const seen = new Set<string>();
+  const list: string[] = [];
+
+  for (const cat of [...explicit, ...fromItems]) {
+    const trimmed = (cat || '').trim();
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      list.push(trimmed);
+    }
+  }
+
+  return list.length > 0 ? list : ['General Wares'];
+}
+
+export function mapShopCategoryToInventoryCategory(category: string): ItemCategory {
+  const def = getCategoryDefinition(category);
+  if (def) return def.inventoryCategory;
+
+  const lower = (category || '').toLowerCase().trim();
+  if (lower.includes('weapon') || lower.includes('blade') || lower.includes('bow')) return 'weapon';
+  if (lower.includes('armor') || lower.includes('mail') || lower.includes('plate')) return 'armor';
+  if (lower.includes('shield')) return 'shield';
+  if (lower.includes('ring')) return 'ring';
+  if (lower.includes('amulet') || lower.includes('necklace')) return 'amulet';
+  if (lower.includes('potion') || lower.includes('elixir') || lower.includes('poison') || lower.includes('scroll') || lower.includes('food')) return 'consumable';
+  if (lower.includes('wondrous') || lower.includes('relic') || lower.includes('magic')) return 'wondrous';
+  if (lower.includes('tool') || lower.includes('kit')) return 'tool';
+  if (lower.includes('gem') || lower.includes('treasure') || lower.includes('gold')) return 'treasure';
+  return 'gear';
 }
 
 export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
@@ -54,11 +165,13 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     discountPercent: 0,
     isOpen: true,
     visibleToPlayers: true,
+    catalogues: ['Potions & Elixirs', 'Alchemical Reagents', 'Rare Concoctions'],
     items: [
       {
         id: 'item-pot-heal',
         name: 'Potion of Healing',
         category: 'potion',
+        catalogue: 'Potions & Elixirs',
         price: 50,
         currencyType: 'gp',
         rarity: 'Common',
@@ -72,6 +185,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-pot-grheal',
         name: 'Potion of Greater Healing',
         category: 'potion',
+        catalogue: 'Potions & Elixirs',
         price: 150,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -85,6 +199,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-pot-invis',
         name: 'Potion of Invisibility',
         category: 'potion',
+        catalogue: 'Rare Concoctions',
         price: 800,
         currencyType: 'gp',
         rarity: 'Very Rare',
@@ -98,6 +213,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-pot-giant',
         name: 'Elixir of Hill Giant Strength',
         category: 'potion',
+        catalogue: 'Rare Concoctions',
         price: 400,
         currencyType: 'gp',
         rarity: 'Rare',
@@ -111,6 +227,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-antidote',
         name: 'Antitoxin Flask',
         category: 'consumable',
+        catalogue: 'Alchemical Reagents',
         price: 50,
         currencyType: 'gp',
         rarity: 'Common',
@@ -124,6 +241,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-alch-fire',
         name: 'Alchemist’s Fire (Flask)',
         category: 'consumable',
+        catalogue: 'Alchemical Reagents',
         price: 50,
         currencyType: 'gp',
         rarity: 'Common',
@@ -148,11 +266,13 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     discountPercent: 10, // 10% friendly clan discount!
     isOpen: true,
     visibleToPlayers: true,
+    catalogues: ['Blades & Weapons', 'Suits of Armor', 'Shields & Fortifications'],
     items: [
       {
         id: 'item-silv-longsword',
         name: 'Silvered Longsword',
         category: 'weapon',
+        catalogue: 'Blades & Weapons',
         price: 115,
         currencyType: 'gp',
         rarity: 'Common',
@@ -166,6 +286,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-mithral-shirt',
         name: 'Mithral Chain Shirt',
         category: 'armor',
+        catalogue: 'Suits of Armor',
         price: 450,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -179,6 +300,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-adamant-plate',
         name: 'Adamantine Breastplate',
         category: 'armor',
+        catalogue: 'Suits of Armor',
         price: 600,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -191,7 +313,8 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
       {
         id: 'item-shield-bashing',
         name: 'Reinforced Tower Shield',
-        category: 'armor',
+        category: 'shield',
+        catalogue: 'Shields & Fortifications',
         price: 65,
         currencyType: 'gp',
         rarity: 'Common',
@@ -205,6 +328,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-plus1-dagger',
         name: 'Masterwork Stiletto +1',
         category: 'weapon',
+        catalogue: 'Blades & Weapons',
         price: 350,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -229,11 +353,13 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     discountPercent: 0,
     isOpen: true,
     visibleToPlayers: true,
+    catalogues: ['Wondrous Talismans', 'Spell Scrolls', 'Enchanted Rings'],
     items: [
       {
         id: 'item-bag-holding',
         name: 'Bag of Holding',
         category: 'wondrous',
+        catalogue: 'Wondrous Talismans',
         price: 450,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -246,7 +372,8 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
       {
         id: 'item-ring-prot',
         name: 'Ring of Protection +1',
-        category: 'wondrous',
+        category: 'ring',
+        catalogue: 'Enchanted Rings',
         price: 1200,
         currencyType: 'gp',
         rarity: 'Rare',
@@ -261,6 +388,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-wand-mm',
         name: 'Wand of Magic Missiles',
         category: 'wondrous',
+        catalogue: 'Wondrous Talismans',
         price: 400,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -274,6 +402,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-scroll-counter',
         name: 'Spell Scroll: Counterspell (3rd Level)',
         category: 'scroll',
+        catalogue: 'Spell Scrolls',
         price: 300,
         currencyType: 'gp',
         rarity: 'Rare',
@@ -287,6 +416,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-pearl-power',
         name: 'Pearl of Power',
         category: 'wondrous',
+        catalogue: 'Wondrous Talismans',
         price: 550,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -312,11 +442,13 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     discountPercent: 0,
     isOpen: true,
     visibleToPlayers: true,
+    catalogues: ['Exploration Gear', 'Tools of the Trade', 'Survival & Rations'],
     items: [
       {
         id: 'item-thieves-tools',
         name: 'Thieves’ Tools',
         category: 'tool',
+        catalogue: 'Tools of the Trade',
         price: 25,
         currencyType: 'gp',
         rarity: 'Common',
@@ -330,6 +462,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-silk-rope',
         name: 'Silk Rope (50 ft.)',
         category: 'gear',
+        catalogue: 'Exploration Gear',
         price: 10,
         currencyType: 'gp',
         rarity: 'Common',
@@ -342,6 +475,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-rations',
         name: 'Trail Rations (10 Days)',
         category: 'consumable',
+        catalogue: 'Survival & Rations',
         price: 5,
         currencyType: 'gp',
         rarity: 'Common',
@@ -354,6 +488,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-lantern',
         name: 'Bullseye Lantern',
         category: 'gear',
+        catalogue: 'Exploration Gear',
         price: 12,
         currencyType: 'gp',
         rarity: 'Common',
@@ -377,11 +512,13 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     discountPercent: -15, // 15% black market markup!
     isOpen: true,
     visibleToPlayers: true,
+    catalogues: ['Contraband & Poisons', 'Underworld Tools', 'Smuggled Relics'],
     items: [
       {
         id: 'item-drow-poison',
         name: 'Drow Poison (Vial)',
-        category: 'consumable',
+        category: 'poison',
+        catalogue: 'Contraband & Poisons',
         price: 200,
         currencyType: 'gp',
         rarity: 'Rare',
@@ -395,6 +532,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-smokepowder',
         name: 'Smokepowder Keg (10 lbs)',
         category: 'consumable',
+        catalogue: 'Contraband & Poisons',
         price: 250,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -408,6 +546,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-false-papers',
         name: 'High Noble Forged Papers',
         category: 'gear',
+        catalogue: 'Underworld Tools',
         price: 125,
         currencyType: 'gp',
         rarity: 'Uncommon',
@@ -421,6 +560,7 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
         id: 'item-shadow-cloak',
         name: 'Cloak of the Shadow Guild',
         category: 'wondrous',
+        catalogue: 'Smuggled Relics',
         price: 650,
         currencyType: 'gp',
         rarity: 'Rare',
@@ -434,3 +574,4 @@ export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [
     ],
   },
 ];
+

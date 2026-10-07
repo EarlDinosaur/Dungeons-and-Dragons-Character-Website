@@ -23,7 +23,7 @@ import type { EquipmentSlotId } from '@/lib/types';
 import type { CustomNPC } from '@/lib/npc-types';
 import { DEFAULT_CAMPAIGN_NPCS } from '@/lib/npc-types';
 import type { CampaignShop, ShopItem } from '@/lib/shop-types';
-import { DEFAULT_CAMPAIGN_SHOPS } from '@/lib/shop-types';
+import { DEFAULT_CAMPAIGN_SHOPS, mapShopCategoryToInventoryCategory } from '@/lib/shop-types';
 import { isItemCompatibleWithSlot, getSlotTypeName } from '@/components/characters/shared/BG3EquipmentPaperdoll';
 import { getCharacterStory, getDefaultCharacterStory, type CharacterStoryData } from '@/lib/character-stories';
 
@@ -3222,7 +3222,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       weight: item.weight,
       description: item.description + (item.effect ? ` (${item.effect})` : ''),
       equipped: false,
-      category: item.category === 'potion' || item.category === 'scroll' ? 'consumable' : (item.category as any),
+      category: mapShopCategoryToInventoryCategory(item.category),
       rarity: item.rarity,
     };
 
