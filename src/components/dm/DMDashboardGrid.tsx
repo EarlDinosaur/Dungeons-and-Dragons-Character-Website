@@ -31,8 +31,10 @@ import DMAtmosphereBar from './DMAtmosphereBar';
 import DMNPCCodex from './DMNPCCodex';
 import DMShopManager from './DMShopManager';
 import DMPartyInventoryManager from './DMPartyInventoryManager';
+import DMLoreManager from './DMLoreManager';
+import DMLoreEditorModal from './DMLoreEditorModal';
 
-export type DMWorkspaceTab = 'roster' | 'combat' | 'npcs' | 'shops' | 'chronicle' | 'rules';
+export type DMWorkspaceTab = 'roster' | 'combat' | 'npcs' | 'shops' | 'chronicle' | 'lore' | 'rules';
 
 interface DMDashboardGridProps {
   partyMembers: PartyMemberHUDState[];
@@ -82,6 +84,9 @@ export default function DMDashboardGrid({
 
   // Party Inventory & Equipment Manager Modal State
   const [inventoryCharId, setInventoryCharId] = useState<string | null>(null);
+
+  // Quick Character Lore Editor Modal State
+  const [loreModalCharId, setLoreModalCharId] = useState<string | null>(null);
 
   // Combat queue for sending NPCs directly into encounter
   const [queuedCombatants, setQueuedCombatants] = useState<Combatant[]>([]);
@@ -163,9 +168,16 @@ export default function DMDashboardGrid({
       badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800/80',
     },
     {
+      id: 'lore',
+      label: 'Character Lore',
+      icon: BookOpen,
+      badge: partyMembers.length,
+      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
+    },
+    {
       id: 'rules',
       label: 'Rules SRD',
-      icon: BookOpen,
+      icon: Scroll,
     },
   ];
 
@@ -356,6 +368,7 @@ export default function DMDashboardGrid({
             onToggleInspiration={onToggleInspiration}
             onTriggerRest={onTriggerRest}
             onInspectCharacter={onInspectCharacter}
+            onOpenLoreEditor={(charId) => setLoreModalCharId(charId)}
           />
         )}
 
@@ -415,7 +428,14 @@ export default function DMDashboardGrid({
           </div>
         )}
 
-        {/* WORKSPACE 6: 5E RULES & CONDITIONS REFERENCE */}
+        {/* WORKSPACE 6: CHARACTER LORE & DOSSIERS CODEX */}
+        {activeTab === 'lore' && (
+          <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
+            <DMLoreManager />
+          </div>
+        )}
+
+        {/* WORKSPACE 7: 5E RULES & CONDITIONS REFERENCE */}
         {activeTab === 'rules' && (
           <div className="flex-1 min-h-[640px] h-[calc(100vh-9.5rem)] rounded-2xl bg-[#090b10] border border-zinc-800/80 shadow-md overflow-hidden">
             <DMRulesReference />
@@ -428,6 +448,15 @@ export default function DMDashboardGrid({
         <DMPartyInventoryManager
           initialCharacterId={inventoryCharId}
           onClose={() => setInventoryCharId(null)}
+        />
+      )}
+
+      {/* 4. DM Character Lore & Dossier Modal */}
+      {loreModalCharId && (
+        <DMLoreEditorModal
+          isOpen={true}
+          initialCharacterId={loreModalCharId}
+          onClose={() => setLoreModalCharId(null)}
         />
       )}
     </div>

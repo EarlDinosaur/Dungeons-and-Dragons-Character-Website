@@ -18,6 +18,7 @@ import {
   Check,
   Zap,
   Package,
+  BookOpen,
 } from 'lucide-react';
 import type { PartyMemberHUDState } from '@/lib/dm-types';
 import DMPartyInventoryManager from './DMPartyInventoryManager';
@@ -29,6 +30,7 @@ interface DMPartyRosterViewProps {
   onToggleInspiration: (charId: string) => void;
   onTriggerRest: (charId: string, type: 'short' | 'long') => void;
   onInspectCharacter?: (charId: string) => void;
+  onOpenLoreEditor?: (charId: string) => void;
 }
 
 const ALL_CONDITIONS = [
@@ -56,6 +58,7 @@ export default function DMPartyRosterView({
   onToggleInspiration,
   onTriggerRest,
   onInspectCharacter,
+  onOpenLoreEditor,
 }: DMPartyRosterViewProps) {
   const [viewMode, setViewMode] = useState<'matrix' | 'cards'>('matrix');
 
@@ -361,6 +364,15 @@ export default function DMPartyRosterView({
                           >
                             <Package size={12} />
                           </button>
+                          {onOpenLoreEditor && (
+                            <button
+                              onClick={() => onOpenLoreEditor(member.id)}
+                              className="p-1.5 rounded bg-zinc-900 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 cursor-pointer transition-colors"
+                              title="Edit Character Lore & Chronicles"
+                            >
+                              <BookOpen size={12} />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setActiveAdjustMember(member);
@@ -572,14 +584,24 @@ export default function DMPartyRosterView({
                 )}
 
                 {/* Actions Ribbon */}
-                <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2 mt-auto">
+                <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1.5 mt-auto">
                   <button
                     onClick={() => setInventoryCharId(member.id)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 text-[10px] font-bold transition-colors cursor-pointer"
                   >
                     <Package size={12} className="text-amber-400" />
-                    <span>Gear &amp; Bag</span>
+                    <span>Gear</span>
                   </button>
+                  {onOpenLoreEditor && (
+                    <button
+                      onClick={() => onOpenLoreEditor(member.id)}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1"
+                      title="Edit Character Lore"
+                    >
+                      <BookOpen size={11} className="text-amber-400" />
+                      <span>Lore</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setActiveAdjustMember(member);

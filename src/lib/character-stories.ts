@@ -1,10 +1,14 @@
-import type { BackstoryChapter, CharacterNPC, DossierData, CharacterState } from './types';
+import type { BackstoryChapter, CharacterNPC, CharacterState } from './types';
 
 export interface CharacterStoryData {
   title: string;
   subtitle: string;
   chapters: BackstoryChapter[];
   npcs: CharacterNPC[];
+  dmSecretLore?: string;
+  dmSecretRevealed?: boolean;
+  lastEditedAt?: number;
+  lastEditedBy?: string;
 }
 
 export const CHARACTER_STORIES: Record<string, CharacterStoryData> = {
@@ -434,13 +438,38 @@ Consumed by betrayal and rage, Poluxien became the coven's chief huntsman, track
 
 /**
  * Resolve canonical story data for any character ID or custom character state.
+ * Prioritizes: 1) DM custom lore overrides, 2) Character dossier chapters, 3) Canon default presets, 4) Generic fallback.
  */
 export function getCharacterStory(
   characterIdOrName: string,
-  character?: CharacterState
+  character?: CharacterState,
+  customLoreOverrides?: Record<string, CharacterStoryData>
 ): CharacterStoryData {
   const normalized = (characterIdOrName || '').toLowerCase().trim();
 
+  // 1. Check custom overrides from DM lore state
+  if (customLoreOverrides) {
+    const override = customLoreOverrides[characterIdOrName] || customLoreOverrides[normalized];
+    if (override && override.chapters && override.chapters.length > 0) {
+      return override;
+    }
+  }
+
+  // 2. If character object has explicit chapters defined, return them!
+  if (character?.dossier?.chapters && character.dossier.chapters.length > 0) {
+    return {
+      title: character.dossier.title || `The Story of ${character.name}`,
+      subtitle: character.dossier.subtitle || `${character.race} ${character.class} • Level ${character.level}`,
+      chapters: character.dossier.chapters,
+      npcs: character.dossier.npcs || [],
+      dmSecretLore: character.dossier.dmSecretLore,
+      dmSecretRevealed: character.dossier.dmSecretRevealed,
+      lastEditedAt: character.dossier.lastEditedAt,
+      lastEditedBy: character.dossier.lastEditedBy,
+    };
+  }
+
+  // 3. Fallback to canon presets
   if (normalized === 'vesper' || normalized === 'earl') {
     return CHARACTER_STORIES.vesper;
   }
@@ -457,17 +486,7 @@ export function getCharacterStory(
     return CHARACTER_STORIES.kastoriel;
   }
 
-  // If character object has explicit chapters defined, return them!
-  if (character?.dossier?.chapters && character.dossier.chapters.length > 0) {
-    return {
-      title: character.dossier.title || `The Story of ${character.name}`,
-      subtitle: character.dossier.subtitle || `${character.race} ${character.class} • Level ${character.level}`,
-      chapters: character.dossier.chapters,
-      npcs: character.dossier.npcs || [],
-    };
-  }
-
-  // Fallback for custom characters
+  // 4. Fallback for custom characters
   const charName = character?.name || characterIdOrName || 'Hero';
   const charClass = character?.class || 'Adventurer';
   const charRace = character?.race || 'Mortal';
@@ -525,4 +544,17 @@ export function getCharacterStory(
     ],
     npcs: character?.dossier?.npcs || [],
   };
+}
+
+/**
+ * Return a cloned default/canon story for a given character key.
+ */
+export function getDefaultCharacterStory(characterIdOrName: string): CharacterStoryData {
+  const normalized = (characterIdOrName || '').toLowerCase().trim();
+  if (normalized === 'vesper' || normalized === 'earl') return JSON.parse(JSON.stringify(CHARACTER_STORIES.vesper));
+  if (normalized === 'aria' || normalized.includes('aria')) return JSON.parse(JSON.stringify(CHARACTER_STORIES.aria));
+  if (normalized === 'cyrus' || normalized.includes('cyrus')) return JSON.parse(JSON.stringify(CHARACTER_STORIES.cyrus));
+  if (normalized === 'wynel' || normalized.includes('wyn')) return JSON.parse(JSON.stringify(CHARACTER_STORIES.wynel));
+  if (normalized === 'kastoriel' || normalized.includes('kastoriel')) return JSON.parse(JSON.stringify(CHARACTER_STORIES.kastoriel));
+  return JSON.parse(JSON.stringify(getCharacterStory(characterIdOrName)));
 }

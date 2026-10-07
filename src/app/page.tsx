@@ -171,6 +171,8 @@ export default function Home() {
     customThemes,
     updateCustomCharacter,
     toggleCharacterCondition,
+    characterLore,
+    updateCharacterLore,
     isLoaded,
   } = useCharacter();
 
@@ -310,7 +312,7 @@ export default function Home() {
         altarTraumaActive: false,
       },
       dossier: (() => {
-        const ariaStory = getCharacterStory('aria');
+        const ariaStory = getCharacterStory('aria', undefined, characterLore);
         return {
           title: ariaStory.title,
           subtitle: ariaStory.subtitle,
@@ -326,6 +328,8 @@ export default function Home() {
           mysteries: ariaState.mysteries,
           journal: ariaState.journal,
           playerNotes: ariaState.notes,
+          dmSecretLore: ariaStory.dmSecretLore,
+          dmSecretRevealed: ariaStory.dmSecretRevealed,
         };
       })(),
       version: 1,
@@ -457,7 +461,7 @@ export default function Home() {
         altarTraumaActive: false,
       },
       dossier: (() => {
-        const cyrusStory = getCharacterStory('cyrus');
+        const cyrusStory = getCharacterStory('cyrus', undefined, characterLore);
         return {
           title: cyrusStory.title,
           subtitle: cyrusStory.subtitle,
@@ -473,6 +477,8 @@ export default function Home() {
           mysteries: cyrusState.mysteries,
           journal: cyrusState.journal,
           playerNotes: cyrusState.notes,
+          dmSecretLore: cyrusStory.dmSecretLore,
+          dmSecretRevealed: cyrusStory.dmSecretRevealed,
         };
       })(),
       version: 1,
@@ -623,7 +629,7 @@ export default function Home() {
         altarTraumaActive: false,
       },
       dossier: (() => {
-        const wynelStory = getCharacterStory('wynel');
+        const wynelStory = getCharacterStory('wynel', undefined, characterLore);
         return {
           title: wynelStory.title,
           subtitle: wynelStory.subtitle,
@@ -639,6 +645,8 @@ export default function Home() {
           mysteries: wynelState.mysteries,
           journal: wynelState.journal,
           playerNotes: wynelState.notes,
+          dmSecretLore: wynelStory.dmSecretLore,
+          dmSecretRevealed: wynelStory.dmSecretRevealed,
         };
       })(),
       version: 1,
@@ -740,7 +748,7 @@ export default function Home() {
         altarTraumaActive: false,
       },
       dossier: (() => {
-        const kastorielStory = getCharacterStory('kastoriel');
+        const kastorielStory = getCharacterStory('kastoriel', undefined, characterLore);
         return {
           title: kastorielStory.title,
           subtitle: kastorielStory.subtitle,
@@ -756,6 +764,8 @@ export default function Home() {
           mysteries: kastorielState.mysteries,
           journal: kastorielState.journal,
           playerNotes: kastorielState.notes,
+          dmSecretLore: kastorielStory.dmSecretLore,
+          dmSecretRevealed: kastorielStory.dmSecretRevealed,
         };
       })(),
       version: 1,
@@ -765,7 +775,22 @@ export default function Home() {
 
   // Resolve Active Character State & Anchored Theme
   const activeCharState: CharacterState = isVesper
-    ? { ...character, id: 'vesper' }
+    ? (() => {
+        const vesperStory = getCharacterStory('vesper', character, characterLore);
+        return {
+          ...character,
+          id: 'vesper',
+          dossier: {
+            ...character.dossier,
+            title: vesperStory.title,
+            subtitle: vesperStory.subtitle,
+            chapters: vesperStory.chapters,
+            npcs: vesperStory.npcs,
+            dmSecretLore: vesperStory.dmSecretLore,
+            dmSecretRevealed: vesperStory.dmSecretRevealed,
+          },
+        };
+      })()
     : isCyrus
     ? { ...mapCyrusToCharacterState(cyrus), id: 'cyrus' }
     : isWynel
@@ -774,7 +799,24 @@ export default function Home() {
     ? { ...mapAriaToCharacterState(aria), id: 'aria' }
     : isKastoriel
     ? { ...mapKastorielToCharacterState(kastoriel), id: 'kastoriel' }
-    : (customCharacters[activeCharacterId] ? { ...customCharacters[activeCharacterId], id: activeCharacterId } : { ...character, id: 'vesper' });
+    : customCharacters[activeCharacterId]
+    ? (() => {
+        const customStory = getCharacterStory(activeCharacterId, customCharacters[activeCharacterId], characterLore);
+        return {
+          ...customCharacters[activeCharacterId],
+          id: activeCharacterId,
+          dossier: {
+            ...customCharacters[activeCharacterId].dossier,
+            title: customStory.title,
+            subtitle: customStory.subtitle,
+            chapters: customStory.chapters,
+            npcs: customStory.npcs,
+            dmSecretLore: customStory.dmSecretLore,
+            dmSecretRevealed: customStory.dmSecretRevealed,
+          },
+        };
+      })()
+    : { ...character, id: 'vesper' };
 
   const activeTheme = isVesper
     ? { primary: '#dc2626', accent: '#ffd700', portraitUrl: getPortraitUrl('vesper') }

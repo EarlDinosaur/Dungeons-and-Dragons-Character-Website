@@ -4,11 +4,14 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   BookOpen, ChevronDown, ChevronRight, Search, Plus,
   Trash2, Save, Clock, Scroll, Eye, Target, HelpCircle,
-  Users, Sparkles, Moon, Sun, Flame, Crown, Heart, Leaf, Shield
+  Users, Sparkles, Moon, Sun, Flame, Crown, Heart, Leaf, Shield,
+  Feather
 } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import type { CharacterState, JournalEntry, CampaignMystery } from '@/lib/types';
 import { getCharacterStory, type CharacterStoryData } from '@/lib/character-stories';
+import { useCharacter } from '@/app/providers';
+import DMLoreEditorModal from '@/components/dm/DMLoreEditorModal';
 import { cn } from '@/lib/utils';
 
 interface DossierProps {
@@ -24,10 +27,21 @@ export default function Dossier({
   onJournalChange,
   onMysteriesChange,
 }: DossierProps) {
+  const { characterLore } = useCharacter();
+
   // Resolve dynamic story & chapters matching the active character
   const story: CharacterStoryData = useMemo(() => {
-    return getCharacterStory(character.id || character.name, character);
-  }, [character]);
+    return getCharacterStory(character.id || character.name, character, characterLore);
+  }, [character, characterLore]);
+
+  const [isLoreEditorOpen, setIsLoreEditorOpen] = useState<boolean>(false);
+  const [isDMAuthenticated, setIsDMAuthenticated] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsDMAuthenticated(sessionStorage.getItem('dnd_ashen_pact_dm_auth') === 'true');
+    }
+  }, []);
 
   const hasNpcs = story.npcs && story.npcs.length > 0;
 
@@ -219,17 +233,62 @@ export default function Dossier({
       {/* ================= 1. BACKSTORY & LORE TAB ================= */}
       {activeSubTab === 'backstory' && (
         <div className="space-y-4">
-          <div className="pb-2 border-b border-white/10">
-            <h2 className="text-xl font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2.5">
-              <BookOpen size={20} />
-              {story.title}
-            </h2>
-            {story.subtitle && (
-              <p className="text-xs text-[var(--color-parchment-dim)] font-mono mt-1">
-                {story.subtitle}
-              </p>
-            )}
+          <div className="pb-2 border-b border-white/10 flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-xl font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2.5">
+                <BookOpen size={20} />
+                {story.title}
+              </h2>
+              {story.subtitle && (
+                <p className="text-xs text-[var(--color-parchment-dim)] font-mono mt-1">
+                  {story.subtitle}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (isDMAuthenticated) {
+                  setIsLoreEditorOpen(true);
+                } else {
+                  const pass = prompt('Enter Dungeon Master Passcode to edit character lore:');
+                  if (pass && (pass.toLowerCase() === 'nat20' || pass.toLowerCase() === 'ashenpact')) {
+                    sessionStorage.setItem('dnd_ashen_pact_dm_auth', 'true');
+                    setIsDMAuthenticated(true);
+                    setIsLoreEditorOpen(true);
+                  } else if (pass) {
+                    alert('Incorrect passcode. Sanctum remains sealed.');
+                  }
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold transition-all shadow-xs cursor-pointer shrink-0"
+              title="Edit Lore as Dungeon Master"
+            >
+              <Feather size={13} className="text-amber-400" />
+              <span>{isDMAuthenticated ? 'Edit Lore (DM)' : 'DM Edit Lore'}</span>
+            </button>
           </div>
+
+          {/* DM Arcane Chronicle Revelation (if revealed or viewer is DM) */}
+          {story.dmSecretLore && (story.dmSecretRevealed || isDMAuthenticated) && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-purple-950/40 via-[#120d1c] to-black border border-purple-500/40 shadow-md space-y-1.5 animate-fade-in">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                  <Sparkles size={13} className="text-purple-400" />
+                  Dungeon Master Revelation &bull; Arcane Chronicle
+                </span>
+                {!story.dmSecretRevealed && (
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-200 border border-purple-700 font-mono">
+                    DM Confidential (Visible to DM Only)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-purple-100/90 leading-relaxed italic whitespace-pre-line font-[family-name:var(--font-body)]">
+                {story.dmSecretLore}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             {story.chapters.map((chapter) => {
@@ -570,6 +629,15 @@ export default function Dossier({
             )}
           </div>
         </div>
+      )}
+
+      {/* DM Lore Editor Modal */}
+      {isLoreEditorOpen && (
+        <DMLoreEditorModal
+          isOpen={true}
+          onClose={() => setIsLoreEditorOpen(false)}
+          initialCharacterId={character.id || character.name.toLowerCase()}
+        />
       )}
     </div>
   );

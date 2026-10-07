@@ -89,6 +89,7 @@ export interface AriaState {
   attacks?: import('./types').AttackOption[];
   feats?: import('./types').CustomFeat[];
   proficiencies?: import('./types').NonStatProficiencies;
+  dossier?: import('./types').DossierData;
 }
 
 export function getProficiencyBonus(level: number): number {

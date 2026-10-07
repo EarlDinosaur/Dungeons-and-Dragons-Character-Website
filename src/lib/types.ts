@@ -204,6 +204,10 @@ export interface DossierData {
   mysteries: CampaignMystery[];
   journal: JournalEntry[];
   playerNotes: string;
+  dmSecretLore?: string;
+  dmSecretRevealed?: boolean;
+  lastEditedAt?: number;
+  lastEditedBy?: string;
 }
 
 export interface ClassLevel {

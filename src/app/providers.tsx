@@ -25,6 +25,7 @@ import { DEFAULT_CAMPAIGN_NPCS } from '@/lib/npc-types';
 import type { CampaignShop, ShopItem } from '@/lib/shop-types';
 import { DEFAULT_CAMPAIGN_SHOPS } from '@/lib/shop-types';
 import { isItemCompatibleWithSlot, getSlotTypeName } from '@/components/characters/shared/BG3EquipmentPaperdoll';
+import { getCharacterStory, getDefaultCharacterStory, type CharacterStoryData } from '@/lib/character-stories';
 
 const ARIA_STORAGE_KEY = 'dnd_char_aria';
 const CYRUS_STORAGE_KEY = 'dnd_char_cyrus';
@@ -39,6 +40,7 @@ const CUSTOM_THEMES_STORAGE_KEY = 'dnd_custom_themes';
 const DM_NOTES_STORAGE_KEY = 'dnd_ashen_pact_dm_notes';
 const CUSTOM_NPCS_STORAGE_KEY = 'dnd_ashen_pact_custom_npcs';
 const CAMPAIGN_SHOPS_STORAGE_KEY = 'dnd_ashen_pact_campaign_shops';
+const CHARACTER_LORE_STORAGE_KEY = 'dnd_ashen_pact_character_lore';
 
 const DEFAULT_DM_NOTES: DMNote[] = [
   {
@@ -333,6 +335,12 @@ interface CharacterContextType {
   getCharacterInventory: (charId: string) => InventoryItem[];
   updateCharacterInventory: (charId: string, inventory: InventoryItem[]) => void;
 
+  // DM Character Lore & Dossier System
+  characterLore: Record<string, CharacterStoryData>;
+  updateCharacterLore: (characterId: string, lore: CharacterStoryData) => void;
+  resetCharacterLoreToDefault: (characterId: string) => void;
+  getCharacterStoryWithOverrides: (characterId: string, characterState?: CharacterState) => CharacterStoryData;
+
   isLoaded: boolean;
 }
 
@@ -366,6 +374,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const [dmNotes, setDmNotesState] = useState<DMNote[]>(DEFAULT_DM_NOTES);
   const [customNPCs, setCustomNPCsState] = useState<CustomNPC[]>(DEFAULT_CAMPAIGN_NPCS);
   const [campaignShops, setCampaignShopsState] = useState<CampaignShop[]>(DEFAULT_CAMPAIGN_SHOPS);
+  const [characterLore, setCharacterLoreState] = useState<Record<string, CharacterStoryData>>({});
 
   const lastServerTimestampRef = useRef<number>(0);
   const vesperModifiedRef = useRef<number>(0);
@@ -378,6 +387,8 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   const dmNotesModifiedRef = useRef<number>(0);
   const customNPCsModifiedRef = useRef<number>(0);
   const campaignShopsModifiedRef = useRef<number>(0);
+  const loreModifiedRef = useRef<number>(0);
+  const characterLoreRef = useRef<Record<string, CharacterStoryData>>({});
   const customCharactersRef = useRef<Record<string, CharacterState>>({});
   const customThemesRef = useRef<Record<string, { primary: string; accent: string; portraitUrl: string }>>({});
   const isPollingRef = useRef<boolean>(false);
@@ -535,6 +546,18 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
             } catch {}
           }
         }
+
+        // Character Lore & Dossiers
+        const loreRemote = res.campaign.character_lore;
+        if (loreRemote && loreRemote.updatedAt > loreModifiedRef.current) {
+          if (loreRemote.data && typeof loreRemote.data === 'object') {
+            setCharacterLoreState(loreRemote.data);
+            characterLoreRef.current = loreRemote.data;
+            try {
+              localStorage.setItem(CHARACTER_LORE_STORAGE_KEY, JSON.stringify(loreRemote.data));
+            } catch {}
+          }
+        }
       }
 
       if (res.lastUpdated) {
@@ -671,6 +694,17 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           const parsed = JSON.parse(savedShopsRaw);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setCampaignShopsState(parsed);
+          }
+        } catch {}
+      }
+
+      const savedLoreRaw = localStorage.getItem(CHARACTER_LORE_STORAGE_KEY);
+      if (savedLoreRaw) {
+        try {
+          const parsed = JSON.parse(savedLoreRaw);
+          if (parsed && typeof parsed === 'object') {
+            setCharacterLoreState(parsed);
+            characterLoreRef.current = parsed;
           }
         } catch {}
       }
@@ -3214,6 +3248,186 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     return { success: true, message: `Purchased ${item.name} for ${finalPrice} GP` };
   }, [campaignShops, character, aria, cyrus, wynel, kastoriel, customCharacters, setCurrency, setAriaCurrency, setCyrusCurrency, setWynelCurrency, setKastorielCurrency, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter, showToast]);
 
+  const updateCharacterLore = useCallback(
+    (characterId: string, updatedLore: CharacterStoryData) => {
+      const cleanId = (characterId || '').toLowerCase().trim();
+      const now = Date.now();
+      loreModifiedRef.current = now;
+
+      const stampedLore: CharacterStoryData = {
+        ...updatedLore,
+        lastEditedAt: now,
+        lastEditedBy: 'Dungeon Master',
+      };
+
+      setCharacterLoreState((prev) => {
+        const next = { ...prev, [cleanId]: stampedLore };
+        characterLoreRef.current = next;
+        try {
+          localStorage.setItem(CHARACTER_LORE_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      // Push to SQLite campaign sync
+      pushCampaignSync(
+        'character_lore',
+        { ...characterLoreRef.current, [cleanId]: stampedLore },
+        now,
+        `DM updated lore for ${cleanId}`
+      );
+
+      // Synchronize into individual character state
+      if (cleanId === 'vesper' || cleanId === 'earl') {
+        updateCharacter((prev) => ({
+          ...prev,
+          dossier: {
+            ...prev.dossier,
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+          },
+        }));
+      } else if (cleanId === 'aria') {
+        updateAria((prev) => ({
+          ...prev,
+          dossier: {
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+            backstory: {
+              orphanageMassacre: prev.notes || '',
+              fatherMalachi: '',
+              apprenticeApothecary: '',
+              guildScoutVincent: '',
+              bossDexter: '',
+            },
+            mysteries: prev.mysteries || [],
+            journal: prev.journal || [],
+            playerNotes: prev.notes || '',
+          },
+        }));
+      } else if (cleanId === 'cyrus') {
+        updateCyrus((prev) => ({
+          ...prev,
+          dossier: {
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+            backstory: {
+              orphanageMassacre: prev.notes || '',
+              fatherMalachi: '',
+              apprenticeApothecary: '',
+              guildScoutVincent: '',
+              bossDexter: '',
+            },
+            mysteries: prev.mysteries || [],
+            journal: prev.journal || [],
+            playerNotes: prev.notes || '',
+          },
+        }));
+      } else if (cleanId === 'wynel') {
+        updateWynel((prev) => ({
+          ...prev,
+          dossier: {
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+            backstory: {
+              orphanageMassacre: prev.notes || '',
+              fatherMalachi: '',
+              apprenticeApothecary: '',
+              guildScoutVincent: '',
+              bossDexter: '',
+            },
+            mysteries: prev.mysteries || [],
+            journal: prev.journal || [],
+            playerNotes: prev.notes || '',
+          },
+        }));
+      } else if (cleanId === 'kastoriel') {
+        updateKastoriel((prev) => ({
+          ...prev,
+          dossier: {
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+            backstory: {
+              orphanageMassacre: prev.notes || '',
+              fatherMalachi: '',
+              apprenticeApothecary: '',
+              guildScoutVincent: '',
+              bossDexter: '',
+            },
+            mysteries: prev.mysteries || [],
+            journal: prev.journal || [],
+            playerNotes: prev.notes || '',
+          },
+        }));
+      } else if (customCharactersRef.current[characterId]) {
+        updateCustomCharacter(characterId, (prev) => ({
+          ...prev,
+          dossier: {
+            ...prev.dossier,
+            title: stampedLore.title,
+            subtitle: stampedLore.subtitle,
+            chapters: stampedLore.chapters,
+            npcs: stampedLore.npcs,
+            dmSecretLore: stampedLore.dmSecretLore,
+            dmSecretRevealed: stampedLore.dmSecretRevealed,
+            lastEditedAt: stampedLore.lastEditedAt,
+            lastEditedBy: stampedLore.lastEditedBy,
+          },
+        }));
+      }
+
+      showToast('Lore Updated', `Archived DM lore chronicles for ${stampedLore.title || characterId}`, 'power');
+    },
+    [showToast, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]
+  );
+
+  const resetCharacterLoreToDefault = useCallback(
+    (characterId: string) => {
+      const cleanId = (characterId || '').toLowerCase().trim();
+      const defaultLore = getDefaultCharacterStory(cleanId);
+      updateCharacterLore(cleanId, defaultLore);
+      showToast('Canon Restored', `Restored canonical backstory for ${defaultLore.title || characterId}`, 'info');
+    },
+    [updateCharacterLore, showToast]
+  );
+
+  const getCharacterStoryWithOverrides = useCallback(
+    (characterId: string, characterState?: CharacterState) => {
+      return getCharacterStory(characterId, characterState, characterLoreRef.current);
+    },
+    []
+  );
+
   return (
     <CharacterContext.Provider
       value={{
@@ -3370,6 +3584,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         unequipInventoryItem,
         getCharacterInventory,
         updateCharacterInventory,
+        characterLore,
+        updateCharacterLore,
+        resetCharacterLoreToDefault,
+        getCharacterStoryWithOverrides,
         isLoaded,
       }}
     >
