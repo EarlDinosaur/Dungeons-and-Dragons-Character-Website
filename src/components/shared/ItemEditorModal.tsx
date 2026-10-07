@@ -15,9 +15,11 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  Coins,
 } from 'lucide-react';
 import type { InventoryItem, ItemCategory, EquipmentSlotId } from '@/lib/types';
 import { getItemRarity, RARITY_COLORS } from '@/components/characters/shared/BG3EquipmentPaperdoll';
+import { getItemSellValue } from '@/lib/shop-types';
 
 export interface ItemEditorModalProps {
   isOpen: boolean;
@@ -212,6 +214,7 @@ export default function ItemEditorModal({
     name: '',
     category: 'gear',
     rarity: 'Common',
+    cost: undefined,
     quantity: 1,
     weight: 0,
     equipped: false,
@@ -234,6 +237,7 @@ export default function ItemEditorModal({
         ...initialItem,
         category: initialItem.category || 'gear',
         rarity: initialItem.rarity || 'Common',
+        cost: initialItem.cost !== undefined ? initialItem.cost : undefined,
         quantity: initialItem.quantity ?? 1,
         weight: initialItem.weight ?? 0,
         equipped: initialItem.equipped ?? false,
@@ -262,6 +266,7 @@ export default function ItemEditorModal({
         name: '',
         category: 'gear',
         rarity: 'Common',
+        cost: undefined,
         quantity: 1,
         weight: 1,
         equipped: false,
@@ -329,6 +334,7 @@ export default function ItemEditorModal({
       rarity: (form.rarity as InventoryItem['rarity']) || 'Common',
       quantity: Math.max(1, form.quantity || 1),
       weight: Math.max(0, form.weight || 0),
+      cost: form.cost !== undefined && form.cost !== null && !isNaN(Number(form.cost)) ? Math.max(0, Number(form.cost)) : undefined,
       equipped: !!form.equipped,
       description: form.description?.trim() || '',
       slot: form.slot && (form.slot as string) !== 'none' ? form.slot : undefined,
@@ -644,8 +650,8 @@ export default function ItemEditorModal({
             )}
           </div>
 
-          {/* Section 6: Quantity & Weight */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Section 6: Quantity, Weight & Value */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-zinc-400 text-[10px] mb-1 uppercase font-bold">
                 Stack Quantity
@@ -670,6 +676,30 @@ export default function ItemEditorModal({
                 value={form.weight || 0}
                 onChange={(e) => setForm({ ...form, weight: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-1.5 bg-black/70 border border-zinc-700 rounded-lg text-white text-xs focus:border-amber-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-amber-300/90 text-[10px] mb-1 uppercase font-bold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Coins size={11} className="text-amber-400" />
+                  Base Value (GP)
+                </span>
+                <span className="text-[9px] font-mono text-emerald-400">
+                  Sell: ~{getItemSellValue(form as any)} GP
+                </span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={form.cost ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                  setForm({ ...form, cost: val });
+                }}
+                placeholder={`Est: ${getItemSellValue(form as any) * 2} GP`}
+                className="w-full px-3 py-1.5 bg-black/70 border border-amber-500/40 rounded-lg text-amber-300 font-bold text-xs focus:border-amber-400"
               />
             </div>
           </div>

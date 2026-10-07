@@ -18,6 +18,7 @@ import {
   Folder,
   Layers,
   LayoutGrid,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useCharacter } from '@/app/providers';
 import {
@@ -106,6 +107,7 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
   const [selectedShopId, setSelectedShopId] = useState<string>(visibleShops[0]?.id || '');
   const [activeCatalogue, setActiveCatalogue] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortMode, setSortMode] = useState<'default' | 'price-asc' | 'price-desc' | 'rarity' | 'name'>('default');
   const [isGroupedByCatalogue, setIsGroupedByCatalogue] = useState<boolean>(true);
   const [purchasingItemId, setPurchasingItemId] = useState<string | null>(null);
 
@@ -117,10 +119,10 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
     return getShopCatalogues(currentShop);
   }, [currentShop]);
 
-  // All visible items matching active catalogue & search
+  // All visible items matching active catalogue & search & sort
   const filteredItems = useMemo(() => {
     if (!currentShop) return [];
-    return currentShop.items.filter((item) => {
+    const list = currentShop.items.filter((item) => {
       if (!item.visibleToPlayers) return false;
 
       // Filter by catalogue section
@@ -146,7 +148,29 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
 
       return true;
     });
-  }, [currentShop, activeCatalogue, searchQuery]);
+
+    if (sortMode === 'price-asc') {
+      return [...list].sort((a, b) => a.price - b.price);
+    }
+    if (sortMode === 'price-desc') {
+      return [...list].sort((a, b) => b.price - a.price);
+    }
+    if (sortMode === 'rarity') {
+      const order: Record<string, number> = {
+        Legendary: 5,
+        'Very Rare': 4,
+        Rare: 3,
+        Uncommon: 2,
+        Common: 1,
+      };
+      return [...list].sort((a, b) => (order[b.rarity] || 0) - (order[a.rarity] || 0));
+    }
+    if (sortMode === 'name') {
+      return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return list;
+  }, [currentShop, activeCatalogue, searchQuery, sortMode]);
 
   // Grouped items by catalogue for structured catalogue view
   const itemsByCatalogue = useMemo(() => {
@@ -338,15 +362,34 @@ export default function PlayerMarketplaceView({ characterId }: PlayerMarketplace
               })}
             </div>
 
-            <div className="relative w-full sm:w-56">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search wares or categories..."
-                className="w-full pl-8 pr-2 py-1 bg-zinc-900/90 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Sort Selector */}
+              <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs">
+                <ArrowUpDown size={12} className="text-amber-400 shrink-0" />
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as any)}
+                  className="bg-transparent text-zinc-300 text-xs font-mono focus:outline-none cursor-pointer"
+                  title="Sort shop items"
+                >
+                  <option value="default" className="bg-zinc-900 text-zinc-300">Sort: Default</option>
+                  <option value="price-asc" className="bg-zinc-900 text-emerald-400">Sort: Price (Low → High)</option>
+                  <option value="price-desc" className="bg-zinc-900 text-amber-300">Sort: Price (High → Low)</option>
+                  <option value="rarity" className="bg-zinc-900 text-purple-300">Sort: Rarity</option>
+                  <option value="name" className="bg-zinc-900 text-zinc-300">Sort: Name (A-Z)</option>
+                </select>
+              </div>
+
+              <div className="relative w-full sm:w-52">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search wares..."
+                  className="w-full pl-8 pr-2 py-1 bg-zinc-900/90 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
+                />
+              </div>
             </div>
           </div>
 

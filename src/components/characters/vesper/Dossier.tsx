@@ -5,7 +5,7 @@ import {
   BookOpen, ChevronDown, ChevronRight, Search, Plus,
   Trash2, Save, Clock, Scroll, Eye, Target, HelpCircle,
   Users, Sparkles, Moon, Sun, Flame, Crown, Heart, Leaf, Shield,
-  Feather
+  Feather, MapPin, Tag, ArrowUpDown, User
 } from 'lucide-react';
 import SpotlightCard from '../../ui/SpotlightCard';
 import type { CharacterState, JournalEntry, CampaignMystery } from '@/lib/types';
@@ -27,12 +27,20 @@ export default function Dossier({
   onJournalChange,
   onMysteriesChange,
 }: DossierProps) {
-  const { characterLore } = useCharacter();
+  const { characterLore, customNPCs } = useCharacter();
 
   // Resolve dynamic story & chapters matching the active character
   const story: CharacterStoryData = useMemo(() => {
     return getCharacterStory(character.id || character.name, character, characterLore);
   }, [character, characterLore]);
+
+  // World personas & Campaign NPCs shared by DM to players
+  const playerVisibleCustomNPCs = useMemo(() => {
+    return (customNPCs || []).filter((npc) => npc.sharedWithPlayers);
+  }, [customNPCs]);
+
+  const [npcSearch, setNpcSearch] = useState('');
+  const [npcSort, setNpcSort] = useState<'name' | 'role' | 'location'>('name');
 
   const [isLoreEditorOpen, setIsLoreEditorOpen] = useState<boolean>(false);
   const [isDMAuthenticated, setIsDMAuthenticated] = useState<boolean>(false);
@@ -43,7 +51,7 @@ export default function Dossier({
     }
   }, []);
 
-  const hasNpcs = story.npcs && story.npcs.length > 0;
+  const hasNpcs = (story.npcs && story.npcs.length > 0) || playerVisibleCustomNPCs.length > 0;
 
   // Initialize expanded chapters (open the first one by default)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
@@ -197,7 +205,7 @@ export default function Dossier({
             id="dossier-tab-npcs"
           >
             <Users size={13} />
-            Allies &amp; Bonds ({story.npcs.length})
+            Allies &amp; NPCs ({(story.npcs?.length || 0) + playerVisibleCustomNPCs.length})
           </button>
         )}
 
@@ -345,59 +353,225 @@ export default function Dossier({
 
       {/* ================= 2. ALLIES, BONDS & NPCS TAB ================= */}
       {activeSubTab === 'npcs' && hasNpcs && (
-        <div className="space-y-4">
-          <div className="pb-2 border-b border-white/10">
-            <h2 className="text-xl font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2.5">
-              <Users size={20} />
-              Allies, Rivals &amp; Connected Bonds
-            </h2>
-            <p className="text-xs text-[var(--color-parchment-dim)] font-mono mt-1">
-              Key figures bound to {character.name}&apos;s destiny across the realms.
-            </p>
+        <div className="space-y-6 animate-fade-in">
+          {/* Header & Search/Sort */}
+          <div className="pb-3 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-[family-name:var(--font-heading)] text-[var(--color-gold-400)] flex items-center gap-2.5">
+                <Users size={20} />
+                Allies, Rogues &amp; Campaign Codex
+              </h2>
+              <p className="text-xs text-[var(--color-parchment-dim)] font-mono mt-0.5">
+                Personas and allies shared by the Dungeon Master across the campaign realm.
+              </p>
+            </div>
+
+            {/* Search and Sort Toolbar */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Search personas..."
+                  value={npcSearch}
+                  onChange={(e) => setNpcSearch(e.target.value)}
+                  className="pl-8 pr-3 py-1 bg-black/60 border border-white/10 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 font-mono w-36 sm:w-44"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 bg-black/60 border border-white/10 rounded-lg px-2 py-1 text-xs text-zinc-300">
+                <ArrowUpDown size={11} className="text-amber-400 shrink-0" />
+                <select
+                  value={npcSort}
+                  onChange={(e) => setNpcSort(e.target.value as any)}
+                  className="bg-transparent text-xs text-zinc-300 font-mono focus:outline-none cursor-pointer"
+                >
+                  <option value="name" className="bg-zinc-900 text-zinc-300">Name (A-Z)</option>
+                  <option value="role" className="bg-zinc-900 text-zinc-300">Role / Title</option>
+                  <option value="location" className="bg-zinc-900 text-zinc-300">Location</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {story.npcs.map((npc, idx) => (
-              <SpotlightCard
-                key={idx}
-                className="p-5 border border-white/10 bg-[#121524]/80 rounded-2xl flex flex-col justify-between space-y-3"
-                spotlightColor="rgba(255, 215, 0, 0.05)"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <span className="p-2 rounded-xl bg-black/40 border border-white/10 shrink-0">
-                      {renderIcon(npc.icon || 'Users')}
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
-                        {npc.name}
-                      </h3>
-                      <span className="text-[11px] font-mono text-[var(--color-gold-400)] block">
-                        {npc.role}
-                      </span>
-                    </div>
-                  </div>
+          {/* SECTION A: CAMPAIGN LORE ARCHIVE (CUSTOM NPCS SHARED BY DM) */}
+          {playerVisibleCustomNPCs.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>Campaign Lore Archive &bull; Known Personas ({playerVisibleCustomNPCs.length})</span>
+              </div>
 
-                  {npc.relationship && (
-                    <div className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-300 inline-block">
-                      {npc.relationship}
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {playerVisibleCustomNPCs
+                  .filter((npc) => {
+                    if (!npcSearch.trim()) return true;
+                    const q = npcSearch.toLowerCase();
+                    return (
+                      npc.name.toLowerCase().includes(q) ||
+                      (npc.title || '').toLowerCase().includes(q) ||
+                      (npc.location || '').toLowerCase().includes(q) ||
+                      (npc.affiliation || '').toLowerCase().includes(q) ||
+                      (npc.personality || '').toLowerCase().includes(q) ||
+                      (npc.notes || '').toLowerCase().includes(q)
+                    );
+                  })
+                  .sort((a, b) => {
+                    if (npcSort === 'role') return (a.title || '').localeCompare(b.title || '');
+                    if (npcSort === 'location') return (a.location || '').localeCompare(b.location || '');
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map((npc) => (
+                    <SpotlightCard
+                      key={npc.id}
+                      className="p-5 border border-amber-500/30 bg-[#10121d]/90 rounded-2xl flex flex-col justify-between space-y-3 shadow-lg"
+                      spotlightColor="rgba(245, 158, 11, 0.08)"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-3.5">
+                          {npc.portraitUrl ? (
+                            <img
+                              src={npc.portraitUrl}
+                              alt={npc.name}
+                              className="w-12 h-12 rounded-xl object-cover border border-amber-500/40 shrink-0 bg-black/50"
+                            />
+                          ) : (
+                            <span className="w-12 h-12 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0 font-bold text-base">
+                              {npc.name.charAt(0)}
+                            </span>
+                          )}
 
-                  <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed pt-1">
-                    {npc.description}
-                  </p>
-                </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100 truncate">
+                              {npc.name}
+                            </h3>
+                            {npc.title && (
+                              <span className="text-[11px] font-mono text-amber-300/90 block truncate">
+                                {npc.title}
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                              {npc.category && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-950/40 border border-amber-500/40 text-amber-300 uppercase font-bold">
+                                  {npc.category}
+                                </span>
+                              )}
+                              {npc.location && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/60 border border-zinc-700 text-zinc-300 flex items-center gap-1">
+                                  <MapPin size={9} className="text-amber-400" />
+                                  {npc.location}
+                                </span>
+                              )}
+                              {npc.affiliation && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-950/40 border border-purple-500/40 text-purple-300">
+                                  {npc.affiliation}
+                                </span>
+                              )}
+                              {npc.alignment && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                  {npc.alignment}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-                {npc.status && (
-                  <div className="pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-[var(--color-parchment-dim)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-gold-400)]" />
-                    Status: <strong className="text-zinc-200">{npc.status}</strong>
-                  </div>
-                )}
-              </SpotlightCard>
-            ))}
-          </div>
+                        {(npc.personality || npc.questDescription) && (
+                          <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed font-sans line-clamp-3">
+                            {npc.personality || npc.questDescription}
+                          </p>
+                        )}
+
+                        {npc.notes && (
+                          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-zinc-300/90 italic font-serif">
+                            &ldquo;{npc.notes}&rdquo;
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Combat Snapshot Footer */}
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-[var(--color-parchment-dim)]">
+                        <span className="flex items-center gap-1">
+                          <Shield size={11} className="text-blue-400" />
+                          AC {npc.ac || 10} &bull; HP {npc.maxHP || npc.hp || 10}
+                        </span>
+                        <span className="text-amber-400/80">
+                          {npc.creatureType || 'NPC'} {npc.cr ? `(CR ${npc.cr})` : ''}
+                        </span>
+                      </div>
+                    </SpotlightCard>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION B: HERO BACKSTORY BONDS & ALLIES */}
+          {story.npcs && story.npcs.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-[var(--color-gold-400)] uppercase tracking-wider">
+                <Users size={14} className="text-amber-400" />
+                <span>Personal Hero Bonds &bull; {character.name}&apos;s Allies ({story.npcs.length})</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {story.npcs
+                  .filter((npc) => {
+                    if (!npcSearch.trim()) return true;
+                    const q = npcSearch.toLowerCase();
+                    return (
+                      npc.name.toLowerCase().includes(q) ||
+                      (npc.role || '').toLowerCase().includes(q) ||
+                      (npc.relationship || '').toLowerCase().includes(q) ||
+                      (npc.description || '').toLowerCase().includes(q)
+                    );
+                  })
+                  .sort((a, b) => {
+                    if (npcSort === 'role') return (a.role || '').localeCompare(b.role || '');
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map((npc, idx) => (
+                    <SpotlightCard
+                      key={idx}
+                      className="p-5 border border-white/10 bg-[#121524]/80 rounded-2xl flex flex-col justify-between space-y-3"
+                      spotlightColor="rgba(255, 215, 0, 0.05)"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <span className="p-2 rounded-xl bg-black/40 border border-white/10 shrink-0">
+                            {renderIcon(npc.icon || 'Users')}
+                          </span>
+                          <div>
+                            <h3 className="text-base font-bold font-[family-name:var(--font-heading)] text-zinc-100">
+                              {npc.name}
+                            </h3>
+                            <span className="text-[11px] font-mono text-[var(--color-gold-400)] block">
+                              {npc.role}
+                            </span>
+                          </div>
+                        </div>
+
+                        {npc.relationship && (
+                          <div className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-300 inline-block">
+                            {npc.relationship}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-[var(--color-parchment-muted)] leading-relaxed pt-1">
+                          {npc.description}
+                        </p>
+                      </div>
+
+                      {npc.status && (
+                        <div className="pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-[var(--color-parchment-dim)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-gold-400)]" />
+                          Status: <strong className="text-zinc-200">{npc.status}</strong>
+                        </div>
+                      )}
+                    </SpotlightCard>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

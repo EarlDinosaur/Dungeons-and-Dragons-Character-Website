@@ -151,5 +151,40 @@ export function mapShopCategoryToInventoryCategory(category: string): ItemCatego
   return 'gear';
 }
 
+/**
+ * Determine the estimated or explicit base value of an item in Gold Pieces (GP).
+ */
+export function getItemBaseValue(item: { cost?: number; price?: number; rarity?: string; category?: string; name?: string }): number {
+  if (typeof item.cost === 'number' && item.cost > 0) return Math.round(item.cost);
+  if (typeof item.price === 'number' && item.price > 0) return Math.round(item.price);
+
+  const rarity = (item.rarity || 'Common').toLowerCase();
+  if (rarity.includes('legendary') || rarity.includes('artifact')) return 10000;
+  if (rarity.includes('very rare')) return 2500;
+  if (rarity.includes('rare')) return 500;
+  if (rarity.includes('uncommon')) return 100;
+
+  const cat = (item.category || '').toLowerCase();
+  if (cat === 'treasure' || cat === 'gem') return 50;
+  if (cat === 'weapon') return 15;
+  if (cat === 'armor') return 30;
+  if (cat === 'shield') return 10;
+  if (cat === 'consumable' || cat === 'potion' || cat === 'scroll') return 25;
+  return 5;
+}
+
+/**
+ * Calculate the merchant trade-in / sell value for an item.
+ * Standard 5e D&D trade: Gems/art objects sell at 100% value; equipment/magic items sell at 50% value.
+ */
+export function getItemSellValue(item: { cost?: number; price?: number; rarity?: string; category?: string; name?: string }): number {
+  const baseValue = getItemBaseValue(item);
+  const cat = (item.category || '').toLowerCase();
+  if (cat === 'treasure' || cat === 'gem') {
+    return Math.max(1, baseValue);
+  }
+  return Math.max(1, Math.floor(baseValue * 0.5));
+}
+
 export const DEFAULT_CAMPAIGN_SHOPS: CampaignShop[] = [];
 

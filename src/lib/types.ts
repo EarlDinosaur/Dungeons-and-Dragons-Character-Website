@@ -122,6 +122,7 @@ export interface InventoryItem {
   category: ItemCategory;
   slot?: EquipmentSlotId;
   rarity?: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Legendary';
+  cost?: number; // Base value in GP
   damage?: string;
   damageType?: string;
   attackBonus?: number;

@@ -23,6 +23,8 @@ import {
   Clock,
   Camera,
   Pin,
+  Search,
+  ArrowUpDown,
 } from 'lucide-react';
 import SpotlightCard from '../ui/SpotlightCard';
 import GlowButton from '../ui/GlowButton';
@@ -65,6 +67,7 @@ export default function CampaignMainMenu() {
     addDMNote,
     updateDMNote,
     deleteDMNote,
+    customNPCs,
   } = useCharacter();
 
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -162,24 +165,68 @@ export default function CampaignMainMenu() {
   };
 
   // Tavern Quests Synchronized with DM Campaign Chronicle
+  // Strictly filter out hidden notes (isPlayerVisible !== true), secrets, and hero-specific personal directives
   const dmQuests = useMemo(() => {
     return (dmNotes || []).filter(
       (note) =>
-        note.category === 'quest' ||
-        (note.tags && note.tags.some((t) => t.toLowerCase().includes('quest')))
+        note.isPlayerVisible === true &&
+        note.category !== 'secret' &&
+        (!note.targetCharacterId || note.targetCharacterId.toLowerCase() === 'all') &&
+        (note.category === 'quest' || (note.tags && note.tags.some((t) => t.toLowerCase().includes('quest'))))
     );
   }, [dmNotes]);
 
-  // Priority sorting: Active first (pinned at top), then resolved at bottom
+  const [questSortMode, setQuestSortMode] = useState<'priority' | 'newest' | 'alphabetical'>('priority');
+
+  // Sorted Quests based on user selection
   const sortedQuests = useMemo(() => {
-    return [...dmQuests].sort((a, b) => {
+    const list = [...dmQuests];
+    if (questSortMode === 'alphabetical') {
+      return list.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (questSortMode === 'newest') {
+      return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    // Default: Priority (Active pinned first, then unpinned, resolved at bottom)
+    return list.sort((a, b) => {
       if (a.resolved && !b.resolved) return 1;
       if (!a.resolved && b.resolved) return -1;
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
-  }, [dmQuests]);
+  }, [dmQuests, questSortMode]);
+
+  // Campaign Lore Archive NPCs visible to players
+  const playerVisibleNPCs = useMemo(() => {
+    return (customNPCs || []).filter((npc) => npc.sharedWithPlayers);
+  }, [customNPCs]);
+
+  const [tavernNpcSearch, setTavernNpcSearch] = useState('');
+  const [tavernNpcSort, setTavernNpcSort] = useState<'name' | 'role' | 'location' | 'category'>('name');
+
+  const filteredTavernNPCs = useMemo(() => {
+    let list = playerVisibleNPCs;
+    if (tavernNpcSearch.trim()) {
+      const q = tavernNpcSearch.toLowerCase();
+      list = list.filter(
+        (npc) =>
+          npc.name.toLowerCase().includes(q) ||
+          (npc.title && npc.title.toLowerCase().includes(q)) ||
+          (npc.affiliation && npc.affiliation.toLowerCase().includes(q)) ||
+          (npc.location && npc.location.toLowerCase().includes(q)) ||
+          (npc.personality && npc.personality.toLowerCase().includes(q)) ||
+          (npc.questDescription && npc.questDescription.toLowerCase().includes(q)) ||
+          (npc.notes && npc.notes.toLowerCase().includes(q))
+      );
+    }
+    return [...list].sort((a, b) => {
+      if (tavernNpcSort === 'role') return (a.title || '').localeCompare(b.title || '');
+      if (tavernNpcSort === 'location') return (a.location || '').localeCompare(b.location || '');
+      if (tavernNpcSort === 'category') return (a.category || '').localeCompare(b.category || '');
+      return a.name.localeCompare(b.name);
+    });
+  }, [playerVisibleNPCs, tavernNpcSearch, tavernNpcSort]);
 
   const handleOpenQuestModal = (quest?: DMNote) => {
     if (quest) {
@@ -912,14 +959,31 @@ export default function CampaignMainMenu() {
                 </div>
               </div>
 
-              <button
-                onClick={() => handleOpenQuestModal()}
-                className="medieval-writ-btn flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold text-amber-200 transition-all cursor-pointer self-start sm:self-auto"
-              >
-                <Plus size={13} className="text-amber-300 shrink-0" />
-                <span className="sm:hidden">Post Quest</span>
-                <span className="hidden sm:inline">Post New Quest Scroll</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                {/* Quest Sort Selector */}
+                <div className="flex items-center gap-1.5 bg-black/60 border border-[#d9b872]/40 rounded-xl px-2.5 py-1 text-xs">
+                  <ArrowUpDown size={13} className="text-amber-400 shrink-0" />
+                  <select
+                    value={questSortMode}
+                    onChange={(e) => setQuestSortMode(e.target.value as any)}
+                    className="bg-transparent text-amber-200 text-xs font-mono focus:outline-none cursor-pointer"
+                    title="Sort quest scrolls"
+                  >
+                    <option value="priority" className="bg-[#181310] text-amber-200">Sort: Priority (Pinned First)</option>
+                    <option value="newest" className="bg-[#181310] text-amber-200">Sort: Newest</option>
+                    <option value="alphabetical" className="bg-[#181310] text-amber-200">Sort: Title (A-Z)</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => handleOpenQuestModal()}
+                  className="medieval-writ-btn flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold text-amber-200 transition-all cursor-pointer"
+                >
+                  <Plus size={13} className="text-amber-300 shrink-0" />
+                  <span className="sm:hidden">Post Quest</span>
+                  <span className="hidden sm:inline">Post New Quest Scroll</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3.5 max-h-[520px] overflow-y-auto pr-1">
@@ -1042,6 +1106,196 @@ export default function CampaignMainMenu() {
                 })
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ====================================================================
+         4. CAMPAIGN LORE ARCHIVE • KNOWN PERSONAS & ALLIES
+         ==================================================================== */}
+      <div>
+        <div className="medieval-card p-6 border-2 border-[#d9b872]/50 bg-[radial-gradient(ellipse_at_50%_0%,rgba(218,165,32,0.1)_0%,transparent_70%),linear-gradient(145deg,rgba(22,18,14,0.98)_0%,rgba(14,12,10,0.99)_100%)] shadow-[0_16px_45px_rgba(0,0,0,0.85)] rounded-2xl relative overflow-hidden">
+          {/* Corner Filigrees */}
+          <span className="medieval-corner tl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner tr text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner bl text-[#d9b872]/70">❖</span>
+          <span className="medieval-corner br text-[#d9b872]/70">❖</span>
+
+          {/* Inner Hairline Border */}
+          <div className="absolute inset-[5px] border border-[#d9b872]/20 rounded-xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-4">
+            {/* Header & Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#d9b872]/30">
+              <div className="flex items-center gap-2.5">
+                <Users size={20} className="text-amber-400 shrink-0" />
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-amber-200 font-['Cormorant_Garamond',serif] uppercase tracking-wide sm:tracking-wider leading-tight">
+                    <span>Campaign Lore Archive &bull; Known Personas</span>
+                  </h3>
+                  <p className="text-[11px] font-mono text-[var(--color-parchment-dim)] leading-snug mt-0.5">
+                    Shared Campaign Codex &bull; {playerVisibleNPCs.length} Revealed Personas Recorded by Dungeon Master
+                  </p>
+                </div>
+              </div>
+
+              {/* Search & Sort Controls */}
+              <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                <div className="relative">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={tavernNpcSearch}
+                    onChange={(e) => setTavernNpcSearch(e.target.value)}
+                    placeholder="Search lore archive..."
+                    className="pl-8 pr-2.5 py-1 bg-black/60 border border-[#d9b872]/40 rounded-xl text-xs font-mono text-amber-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#d9b872] w-40 sm:w-48"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-black/60 border border-[#d9b872]/40 rounded-xl px-2.5 py-1 text-xs">
+                  <ArrowUpDown size={13} className="text-amber-400 shrink-0" />
+                  <select
+                    value={tavernNpcSort}
+                    onChange={(e) => setTavernNpcSort(e.target.value as any)}
+                    className="bg-transparent text-amber-200 text-xs font-mono focus:outline-none cursor-pointer"
+                    title="Sort campaign lore personas"
+                  >
+                    <option value="name" className="bg-[#181310] text-amber-200">Sort: Name (A-Z)</option>
+                    <option value="role" className="bg-[#181310] text-amber-200">Sort: Role / Title</option>
+                    <option value="location" className="bg-[#181310] text-amber-200">Sort: Location</option>
+                    <option value="category" className="bg-[#181310] text-amber-200">Sort: Category</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Cards */}
+            {filteredTavernNPCs.length === 0 ? (
+              <div className="p-8 text-center text-xs text-[var(--color-parchment-muted)] italic bg-black/40 rounded-xl border border-white/5 space-y-1">
+                {playerVisibleNPCs.length === 0 ? (
+                  <>
+                    <p className="text-amber-200/90 font-serif text-sm">No personas currently revealed in the Lore Archive.</p>
+                    <p className="text-[11px] text-zinc-500">
+                      The Dungeon Master can share NPCs created in the DM Sanctum Codex by toggling &ldquo;Share this NPC with players&rdquo;.
+                    </p>
+                  </>
+                ) : (
+                  <p>No personas matched &ldquo;{tavernNpcSearch}&rdquo;.</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTavernNPCs.map((npc) => {
+                  const categoryColor =
+                    npc.category === 'friendly'
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
+                      : npc.category === 'quest'
+                      ? 'bg-purple-950/80 text-purple-300 border-purple-500/50'
+                      : npc.category === 'enemy' || npc.category === 'boss'
+                      ? 'bg-rose-950/80 text-rose-300 border-rose-500/50'
+                      : 'bg-zinc-900/80 text-zinc-300 border-zinc-700/50';
+
+                  return (
+                    <div
+                      key={npc.id}
+                      className="medieval-card p-4 border border-[#d9b872]/40 bg-black/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-[#d9b872] transition-colors"
+                    >
+                      <div className="space-y-2.5">
+                        {/* Header: Portrait & Identity */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-14 h-14 rounded-xl bg-zinc-900 border border-[#d9b872]/60 overflow-hidden shrink-0 flex items-center justify-center shadow-md">
+                            {npc.portraitUrl ? (
+                              <img src={npc.portraitUrl} alt={npc.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-2xl">👤</span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-base font-bold text-amber-200 font-['Cormorant_Garamond',serif] leading-tight truncate">
+                              {npc.name}
+                            </h4>
+                            {npc.title && (
+                              <p className="text-xs text-amber-300/80 italic font-serif truncate">
+                                {npc.title}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                              {npc.category && (
+                                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full uppercase font-bold border ${categoryColor}`}>
+                                  {npc.category}
+                                </span>
+                              )}
+                              {npc.creatureType && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-800">
+                                  {npc.creatureType}
+                                </span>
+                              )}
+                              {npc.alignment && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800">
+                                  {npc.alignment}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Location & Faction Tags */}
+                        {(npc.location || npc.affiliation) && (
+                          <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono text-zinc-400 pt-0.5">
+                            {npc.location && (
+                              <span className="flex items-center gap-1 text-amber-200/90">
+                                <MapPin size={11} className="text-amber-400 shrink-0" />
+                                <span className="truncate max-w-[140px]">{npc.location}</span>
+                              </span>
+                            )}
+                            {npc.affiliation && (
+                              <span className="text-purple-300/90 truncate max-w-[140px]">
+                                ⚑ {npc.affiliation}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Description or Personality */}
+                        {(npc.personality || npc.questDescription) && (
+                          <p className="text-[11px] text-[var(--color-parchment-muted)] italic leading-relaxed line-clamp-3">
+                            {npc.personality || npc.questDescription}
+                          </p>
+                        )}
+
+                        {/* Notes */}
+                        {npc.notes && (
+                          <div className="medieval-parchment-scroll p-2 rounded-lg border-l-2 border-l-[#d9b872] text-[10px] text-zinc-300/90 italic leading-relaxed line-clamp-2">
+                            &ldquo;{npc.notes}&rdquo;
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Combat Stats if available */}
+                      {(npc.ac || npc.hp || npc.cr) && (
+                        <div className="pt-2 border-t border-[#d9b872]/20 flex items-center justify-around text-center font-mono text-[10px]">
+                          <div>
+                            <span className="text-zinc-500 block text-[8px] uppercase">AC</span>
+                            <span className="font-bold text-amber-300">{npc.ac || 10}</span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block text-[8px] uppercase">HP</span>
+                            <span className="font-bold text-emerald-400">{npc.maxHP || npc.hp || 10}</span>
+                          </div>
+                          {npc.cr && (
+                            <div>
+                              <span className="text-zinc-500 block text-[8px] uppercase">CR</span>
+                              <span className="font-bold text-purple-300">{npc.cr}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

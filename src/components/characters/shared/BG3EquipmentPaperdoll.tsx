@@ -28,11 +28,13 @@ import {
   Zap,
   AlertCircle,
   Edit2,
+  ArrowUpDown,
 } from 'lucide-react';
 import type { CharacterState, InventoryItem, Currency, EquipmentSlotId } from '@/lib/types';
 import { useCharacter } from '@/app/providers';
 import { calculateACWithBreakdown } from '@/lib/calc-engine';
 import ItemEditorModal from '@/components/shared/ItemEditorModal';
+import { getItemBaseValue, getItemSellValue } from '@/lib/shop-types';
 
 interface BG3EquipmentPaperdollProps {
   character: CharacterState;
@@ -436,18 +438,29 @@ export function detectItemSlot(item: InventoryItem): EquipmentSlotId | null {
   return null;
 }
 
+export type ItemSortMode = 'default' | 'rarity' | 'name' | 'value' | 'weight' | 'equipped';
+
+const RARITY_WEIGHT: Record<string, number> = {
+  Legendary: 5,
+  'Very Rare': 4,
+  Rare: 3,
+  Uncommon: 2,
+  Common: 1,
+};
+
 export default function BG3EquipmentPaperdoll({
   character,
   characterId,
   onInventoryChange,
   onCurrencyChange,
 }: BG3EquipmentPaperdollProps) {
-  const { equipInventoryItem, unequipInventoryItem, getPortraitUrl } = useCharacter();
+  const { equipInventoryItem, unequipInventoryItem, getPortraitUrl, sellInventoryItem } = useCharacter();
 
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlotId | null>(null);
   const [inspectedItem, setInspectedItem] = useState<InventoryItem | null>(null);
   const [bagCategory, setBagCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortMode, setSortMode] = useState<ItemSortMode>('default');
 
   // Item Editor Modal State
   const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
@@ -522,9 +535,9 @@ export default function BG3EquipmentPaperdoll({
     Math.round((totalWeight / Math.max(1, maxCapacity)) * 100)
   );
 
-  // Filter bag items
+  // Filter & sort bag items
   const bagItems = useMemo(() => {
-    return character.inventory.filter((item) => {
+    const filtered = character.inventory.filter((item) => {
       if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
@@ -535,7 +548,30 @@ export default function BG3EquipmentPaperdoll({
       if (bagCategory === 'gear') return item.category === 'gear' || item.category === 'tool';
       return true;
     });
-  }, [character.inventory, bagCategory, searchQuery]);
+
+    if (sortMode === 'rarity') {
+      return [...filtered].sort((a, b) => {
+        const ra = RARITY_WEIGHT[getItemRarity(a)] || 0;
+        const rb = RARITY_WEIGHT[getItemRarity(b)] || 0;
+        if (rb !== ra) return rb - ra;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    if (sortMode === 'name') {
+      return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    if (sortMode === 'value') {
+      return [...filtered].sort((a, b) => getItemSellValue(b) - getItemSellValue(a));
+    }
+    if (sortMode === 'weight') {
+      return [...filtered].sort((a, b) => ((b.weight || 0) * (b.quantity || 1)) - ((a.weight || 0) * (a.quantity || 1)));
+    }
+    if (sortMode === 'equipped') {
+      return [...filtered].sort((a, b) => (b.equipped ? 1 : 0) - (a.equipped ? 1 : 0));
+    }
+
+    return filtered;
+  }, [character.inventory, bagCategory, searchQuery, sortMode]);
 
   // Attack & Damage estimation
   const meleeMain = equippedBySlot.melee_main;
@@ -890,7 +926,25 @@ export default function BG3EquipmentPaperdoll({
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-300">
+              <ArrowUpDown size={12} className="text-amber-400 shrink-0" />
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as ItemSortMode)}
+                className="bg-transparent text-xs text-zinc-200 font-mono focus:outline-none cursor-pointer pr-1"
+                title="Sort inventory items"
+              >
+                <option value="default" className="bg-zinc-900 text-zinc-300">Sort: Default</option>
+                <option value="rarity" className="bg-zinc-900 text-amber-300">Sort: Rarity</option>
+                <option value="value" className="bg-zinc-900 text-emerald-400">Sort: Value (GP)</option>
+                <option value="name" className="bg-zinc-900 text-zinc-300">Sort: Name (A-Z)</option>
+                <option value="weight" className="bg-zinc-900 text-zinc-300">Sort: Weight</option>
+                <option value="equipped" className="bg-zinc-900 text-sky-300">Sort: Equipped</option>
+              </select>
+            </div>
+
             <button
               onClick={handleOpenCreateModal}
               className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95 cursor-pointer shrink-0"
@@ -900,7 +954,7 @@ export default function BG3EquipmentPaperdoll({
               <span>Forge Item</span>
             </button>
 
-            <div className="relative w-40 sm:w-48">
+            <div className="relative w-36 sm:w-44">
               <Search
                 size={13}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
@@ -1001,6 +1055,11 @@ export default function BG3EquipmentPaperdoll({
                       <span className="text-[10px] text-zinc-500">
                         {inspectedItem.weight || 0} lbs &bull; Qty {inspectedItem.quantity}
                       </span>
+                      {/* Sell & Base Value Badge */}
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-300 border border-amber-500/40 font-mono flex items-center gap-1">
+                        <Coins size={10} className="text-amber-400" />
+                        Val: {getItemBaseValue(inspectedItem)} GP &bull; Sell: {getItemSellValue(inspectedItem)} GP
+                      </span>
                       {compatibleSlot && (
                         <span className="text-[10px] text-zinc-400 font-mono">
                           [{getSlotTypeName(compatibleSlot)}]
@@ -1045,7 +1104,28 @@ export default function BG3EquipmentPaperdoll({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Sell Button */}
+                    <button
+                      onClick={() => {
+                        const sellVal = getItemSellValue(inspectedItem);
+                        const qty = inspectedItem.quantity || 1;
+                        if (confirm(`Sell 1x "${inspectedItem.name}" for ${sellVal} GP?`)) {
+                          sellInventoryItem(characterId, inspectedItem.id, 1);
+                          if (qty <= 1) {
+                            setInspectedItem(null);
+                          } else {
+                            setInspectedItem({ ...inspectedItem, quantity: qty - 1 });
+                          }
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-emerald-200 border border-emerald-700/80 cursor-pointer flex items-center gap-1.5 transition-colors shadow-xs"
+                      title={`Sell 1x ${inspectedItem.name} for ${getItemSellValue(inspectedItem)} GP`}
+                    >
+                      <Coins size={12} className="text-emerald-400" />
+                      <span>Sell ({getItemSellValue(inspectedItem)} GP)</span>
+                    </button>
+
                     <button
                       onClick={() => handleOpenEditModal(inspectedItem)}
                       className="px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-700/80 cursor-pointer flex items-center gap-1.5 transition-colors"

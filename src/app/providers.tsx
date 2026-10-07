@@ -23,7 +23,7 @@ import type { EquipmentSlotId } from '@/lib/types';
 import type { CustomNPC } from '@/lib/npc-types';
 import { DEFAULT_CAMPAIGN_NPCS } from '@/lib/npc-types';
 import type { CampaignShop, ShopItem } from '@/lib/shop-types';
-import { DEFAULT_CAMPAIGN_SHOPS, mapShopCategoryToInventoryCategory } from '@/lib/shop-types';
+import { DEFAULT_CAMPAIGN_SHOPS, mapShopCategoryToInventoryCategory, getItemSellValue } from '@/lib/shop-types';
 import { isItemCompatibleWithSlot, getSlotTypeName } from '@/components/characters/shared/BG3EquipmentPaperdoll';
 import { getCharacterStory, getDefaultCharacterStory, type CharacterStoryData } from '@/lib/character-stories';
 
@@ -268,6 +268,7 @@ interface CharacterContextType {
   // Unified Character Inventory Management (Player & DM)
   getCharacterInventory: (charId: string) => InventoryItem[];
   updateCharacterInventory: (charId: string, inventory: InventoryItem[]) => void;
+  sellInventoryItem: (characterId: string, itemId: string, quantityToSell?: number) => { success: boolean; goldGained: number; message: string };
 
   // DM Character Lore & Dossier System
   characterLore: Record<string, CharacterStoryData>;
@@ -3102,6 +3103,80 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
     }
   }, [updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter]);
 
+  const sellInventoryItem = useCallback((characterId: string, itemId: string, quantityToSell = 1) => {
+    const cleanId = (characterId || '').toLowerCase();
+    const inventory = getCharacterInventory(cleanId);
+    const item = inventory.find((i) => i.id === itemId);
+    if (!item) return { success: false, goldGained: 0, message: 'Item not found in inventory' };
+
+    const sellEach = getItemSellValue(item);
+    const actualQty = Math.max(1, Math.min(quantityToSell, item.quantity || 1));
+    const totalGold = sellEach * actualQty;
+
+    // Update inventory (decrement quantity or remove item)
+    const nextInventory: InventoryItem[] = [];
+    for (const it of inventory) {
+      if (it.id === itemId) {
+        const remaining = (it.quantity || 1) - actualQty;
+        if (remaining > 0) {
+          nextInventory.push({ ...it, quantity: remaining });
+        }
+      } else {
+        nextInventory.push(it);
+      }
+    }
+
+    const addGoldToCurrency = (curr: Currency): Currency => ({
+      ...curr,
+      gp: (curr.gp || 0) + totalGold,
+    });
+
+    if (cleanId === 'vesper' || cleanId === 'earl') {
+      updateCharacter((prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    } else if (cleanId === 'aria') {
+      updateAria((prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    } else if (cleanId === 'cyrus') {
+      updateCyrus((prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    } else if (cleanId === 'wynel') {
+      updateWynel((prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    } else if (cleanId === 'kastoriel') {
+      updateKastoriel((prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    } else {
+      updateCustomCharacter(cleanId, (prev) => ({
+        ...prev,
+        inventory: nextInventory,
+        currency: addGoldToCurrency(prev.currency),
+      }));
+    }
+
+    showToast(
+      'Item Sold',
+      `Sold ${actualQty > 1 ? `${actualQty}x ` : ''}${item.name} for ${totalGold} GP (+${totalGold} GP)`,
+      'currency'
+    );
+    return { success: true, goldGained: totalGold, message: `Sold ${item.name} for ${totalGold} GP` };
+  }, [getCharacterInventory, updateCharacter, updateAria, updateCyrus, updateWynel, updateKastoriel, updateCustomCharacter, showToast]);
+
   // ----------------------------------------------------
   // Marketplace Purchasing
   // ----------------------------------------------------
@@ -3195,6 +3270,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
       equipped: false,
       category: mapShopCategoryToInventoryCategory(item.category),
       rarity: item.rarity,
+      cost: item.price,
     };
 
     addInvFn(newItem);
@@ -3557,6 +3633,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         unequipInventoryItem,
         getCharacterInventory,
         updateCharacterInventory,
+        sellInventoryItem,
         characterLore,
         updateCharacterLore,
         resetCharacterLoreToDefault,
