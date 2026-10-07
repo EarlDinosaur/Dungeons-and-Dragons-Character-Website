@@ -510,7 +510,7 @@ export default function DMPage() {
           )}
 
           {/* Main Console Canvas with Unified Single Header */}
-          <main className="relative z-10 w-full flex-1 flex flex-col">
+          <main className="relative w-full flex-1 flex flex-col">
             <DMDashboardGrid
               partyMembers={partyHUDMembers}
               onUpdatePartyHP={handleDMUpdateHP}
@@ -529,10 +529,10 @@ export default function DMPage() {
                 }
               }}
               customHeaderActions={
-                <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
+                <div className="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-2 border-l border-zinc-800 shrink-0">
                   <button
                     onClick={() => setIsChangingPasscode(!isChangingPasscode)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-200 border border-zinc-800 text-xs font-mono transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-200 border border-zinc-800 text-xs font-mono transition-colors cursor-pointer"
                     title="Change DM Passcode"
                   >
                     <KeyRound size={13} />
@@ -541,11 +541,11 @@ export default function DMPage() {
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 text-red-300 text-xs font-mono font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 text-red-300 text-xs font-mono font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                     title="Lock DM Session"
                   >
                     <Lock size={13} />
-                    <span>Lock Sanctum</span>
+                    <span className="hidden sm:inline">Lock Sanctum</span>
                   </button>
                 </div>
               }
@@ -555,7 +555,7 @@ export default function DMPage() {
       )}
 
       {/* Footer */}
-      <footer className="relative z-10 py-6 border-t border-zinc-900 text-center">
+      <footer className="relative py-6 border-t border-zinc-900 text-center">
         <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
           The Ashen Pact &bull; Dungeon Master Sanctum &bull; Level 10 Campaign
         </p>

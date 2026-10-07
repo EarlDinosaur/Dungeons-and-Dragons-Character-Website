@@ -24,6 +24,8 @@ import {
   Layers,
   Settings,
   Filter,
+  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   type CampaignShop,
@@ -85,6 +87,7 @@ export default function DMShopManager({
   const [selectedShopId, setSelectedShopId] = useState<string>(shops[0]?.id || '');
   const [selectedCatalogue, setSelectedCatalogue] = useState<string>('all');
   const [itemSearchQuery, setItemSearchQuery] = useState<string>('');
+  const [showMobileDetail, setShowMobileDetail] = useState<boolean>(false);
 
   // Shop Modal
   const [isShopModalOpen, setIsShopModalOpen] = useState(false);
@@ -288,15 +291,14 @@ export default function DMShopManager({
     setItemCategory(item.category);
     if (item.catalogue) {
       setItemCatalogueChoice(item.catalogue);
-      setCustomCatalogueInput('');
     } else {
       setItemCatalogueChoice('__auto__');
-      setCustomCatalogueInput('');
     }
+    setCustomCatalogueInput('');
     setItemPrice(item.price);
     setItemRarity(item.rarity);
     setItemStock(item.stock);
-    setItemWeight(item.weight);
+    setItemWeight(item.weight || 1);
     setItemDesc(item.description);
     setItemEffect(item.effect || '');
     setItemAttunement(!!item.requiresAttunement);
@@ -312,7 +314,6 @@ export default function DMShopManager({
       const trimmedCustom = customCatalogueInput.trim();
       if (trimmedCustom) {
         finalCatalogue = trimmedCustom;
-        // Also register in shop's catalogues list if new
         const existing = currentShop.catalogues || [];
         if (!existing.some((c) => c.toLowerCase() === trimmedCustom.toLowerCase())) {
           onUpdateShop(currentShop.id, {
@@ -378,405 +379,487 @@ export default function DMShopManager({
   }, [currentShop, selectedCatalogue, itemSearchQuery]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0c12] text-zinc-200 font-mono text-xs">
+    <div className="flex flex-col h-full bg-[#07080b] text-zinc-200 font-mono text-xs overflow-hidden">
       {/* 1. Header Toolbar */}
-      <div className="p-3 bg-[#0d0f17] border-b border-zinc-800 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+      <div className="p-3 bg-[#0c0d14] border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
             <Store size={16} />
           </div>
           <div>
             <h2 className="font-bold text-zinc-100 text-xs uppercase tracking-wider font-[family-name:var(--font-heading)] flex items-center gap-2">
-              Merchant Emporium &amp; Multi-Catalogue Shops
+              Merchant Emporium &amp; Department Catalogues
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 font-normal">
+                {shops.length} shops
+              </span>
             </h2>
             <p className="text-[10px] text-zinc-400">
-              Configure town shops, categorize wares into distinct department catalogues &amp; manage player marketplace
+              Split-pane merchant ledger with department sections, live markups &amp; player shop inventories
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openAddShopModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-700 font-bold text-xs cursor-pointer shadow-xs transition-colors"
-          >
-            <Plus size={13} />
-            <span>Establish New Shop</span>
-          </button>
-        </div>
+        <button
+          onClick={openAddShopModal}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-700 font-bold text-xs cursor-pointer shadow-sm transition-all active:scale-95"
+        >
+          <Plus size={13} />
+          <span>Establish New Shop</span>
+        </button>
       </div>
 
-      {/* 2. Shop Navigation Tabs */}
-      <div className="p-2.5 bg-[#08090d] border-b border-zinc-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {shops.map((shop) => {
-          const isSelected = (currentShop?.id || '') === shop.id;
-          return (
-            <button
-              key={shop.id}
-              onClick={() => {
-                setSelectedShopId(shop.id);
-                setSelectedCatalogue('all');
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap text-xs border ${
-                isSelected
-                  ? 'bg-amber-500 text-black border-amber-400 shadow-md font-bold'
-                  : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
-              }`}
-            >
-              <Store size={13} />
-              <span>{shop.name}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
-                  isSelected ? 'bg-black/40 text-black border-black/30' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                }`}
-              >
-                {shop.items.length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 3. Shop Content Area */}
-      {currentShop ? (
-        <div className="flex-1 p-4 overflow-y-auto space-y-4">
-          {/* Shop Header Card */}
-          <div className="p-4 rounded-2xl bg-[#0d0f17] border border-zinc-800/90 shadow-md flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
-                  {currentShop.name}
-                </h3>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                    currentShop.isOpen
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                      : 'bg-red-950 text-red-300 border-red-800'
-                  }`}
-                >
-                  {currentShop.isOpen ? 'Open for Trade' : 'Closed'}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                    currentShop.visibleToPlayers
-                      ? 'bg-sky-950 text-sky-300 border-sky-800'
-                      : 'bg-zinc-900 text-zinc-500 border-zinc-800'
-                  }`}
-                >
-                  {currentShop.visibleToPlayers ? 'Visible to Players' : 'Hidden from Players'}
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-purple-950/60 text-purple-300 border-purple-800">
-                  {currentCatalogues.length} Catalogue Sections
-                </span>
-                {currentShop.discountPercent !== 0 && (
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                      currentShop.discountPercent > 0
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                        : 'bg-amber-950 text-amber-300 border-amber-800'
-                    }`}
-                  >
-                    {currentShop.discountPercent > 0
-                      ? `${currentShop.discountPercent}% Discount Active`
-                      : `${Math.abs(currentShop.discountPercent)}% Markup`}
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-zinc-300 font-medium">
-                Proprietor: <span className="text-amber-300">{currentShop.shopkeeper}</span> ({currentShop.shopkeeperTitle})
-              </p>
-              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                <MapPin size={12} className="text-amber-400" />
-                <span>{currentShop.location}</span>
-              </div>
-              <p className="text-xs text-zinc-400 italic pt-1 max-w-2xl">
-                &ldquo;{currentShop.description}&rdquo;
-              </p>
-            </div>
-
-            {/* Shop DM Quick Actions */}
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <button
-                onClick={() =>
-                  onUpdateShop(currentShop.id, { isOpen: !currentShop.isOpen })
-                }
-                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-bold cursor-pointer"
-              >
-                {currentShop.isOpen ? 'Close Shop' : 'Open Shop'}
-              </button>
-
-              <button
-                onClick={() =>
-                  onUpdateShop(currentShop.id, {
-                    visibleToPlayers: !currentShop.visibleToPlayers,
-                  })
-                }
-                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-bold cursor-pointer"
-              >
-                {currentShop.visibleToPlayers ? 'Hide from Players' : 'Show to Players'}
-              </button>
-
-              <button
-                onClick={() => openEditShopModal(currentShop)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-700 text-xs font-bold cursor-pointer"
-              >
-                <Edit2 size={12} className="inline mr-1" /> Edit Shop
-              </button>
-
-              <button
-                onClick={openAddItemModal}
-                className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-xs"
-              >
-                <Plus size={13} className="inline mr-1" /> Stock New Item
-              </button>
-            </div>
+      {/* 2. Master-Detail Split Pane */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* LEFT COLUMN: Shops & Department Sections Directory */}
+        <div
+          className={`w-full lg:w-88 xl:w-96 flex flex-col border-r border-zinc-800 bg-[#090a10] shrink-0 ${
+            showMobileDetail ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          {/* Shops List Header */}
+          <div className="p-2.5 border-b border-zinc-800/80 bg-[#0c0d14]/70 flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
+              Settlement Markets
+            </span>
+            <span className="text-[10px] text-zinc-500">{shops.length} Active</span>
           </div>
 
-          {/* Shop Catalogues Section Navigation & Management Bar */}
-          <div className="p-3.5 rounded-2xl bg-[#0d0f17] border border-zinc-800/90 shadow-md space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-zinc-800/70">
-              <div className="flex items-center gap-2">
-                <Folder size={14} className="text-amber-400" />
-                <span className="text-xs uppercase font-bold text-zinc-200 tracking-wider">
-                  Shop Catalogues &amp; Department Sections
-                </span>
-                <span className="text-[10px] text-zinc-500 font-normal">
-                  (Allows shops to carry distinct item collections)
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setNewCatalogueInput('');
-                    setIsAddCatalogueModalOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold cursor-pointer transition-colors"
-                >
-                  <FolderPlus size={13} />
-                  <span>+ Add Catalogue</span>
-                </button>
-
-                <button
-                  onClick={() => setIsManageCataloguesModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs font-medium cursor-pointer transition-colors"
-                  title="Rename or Delete Catalogues"
-                >
-                  <Settings size={12} />
-                  <span>Manage Catalogues</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Catalogue Filter Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-              <button
-                onClick={() => setSelectedCatalogue('all')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap text-xs border ${
-                  selectedCatalogue === 'all'
-                    ? 'bg-amber-500 text-black border-amber-400 shadow-md font-bold'
-                    : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <Layers size={13} />
-                <span>All Wares</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
-                    selectedCatalogue === 'all'
-                      ? 'bg-black/30 text-black border-black/20'
-                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                  }`}
-                >
-                  {currentShop.items.length}
-                </span>
-              </button>
-
-              {currentCatalogues.map((catName) => {
-                const isSelected = selectedCatalogue.toLowerCase() === catName.toLowerCase();
-                const count = currentShop.items.filter(
-                  (it) => getItemCatalogue(it).toLowerCase() === catName.toLowerCase()
-                ).length;
-
+          {/* Shops List */}
+          <div className="p-2 space-y-1.5 max-h-52 overflow-y-auto border-b border-zinc-800/80">
+            {shops.length === 0 ? (
+              <div className="py-6 text-center text-zinc-500 text-xs">No shops created yet.</div>
+            ) : (
+              shops.map((shop) => {
+                const isSelected = (currentShop?.id || '') === shop.id;
                 return (
                   <button
-                    key={catName}
-                    onClick={() => setSelectedCatalogue(catName)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap text-xs border ${
+                    key={shop.id}
+                    onClick={() => {
+                      setSelectedShopId(shop.id);
+                      setSelectedCatalogue('all');
+                      setShowMobileDetail(true);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${
                       isSelected
-                        ? 'bg-amber-500 text-black border-amber-400 shadow-md font-bold'
-                        : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border-zinc-800 hover:border-zinc-700'
+                        ? 'bg-amber-500/10 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.08)]'
+                        : 'bg-[#0d0e16]/60 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800'
                     }`}
                   >
-                    <Folder size={12} />
-                    <span>{catName}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
-                        isSelected
-                          ? 'bg-black/30 text-black border-black/20'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Item Catalog List */}
-          <div className="p-4 rounded-2xl bg-[#0d0f17] border border-zinc-800/90 shadow-md space-y-3">
-            <div className="flex flex-wrap items-center justify-between pb-2 border-b border-zinc-800 gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase font-bold text-zinc-200 tracking-wider">
-                  {selectedCatalogue === 'all' ? 'All Catalogues' : selectedCatalogue}
-                </span>
-                <span className="text-[10px] text-zinc-500">
-                  ({filteredItems.length} {filteredItems.length === 1 ? 'ware' : 'wares'} listed)
-                </span>
-              </div>
-
-              <div className="relative w-full sm:w-56">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                <input
-                  type="text"
-                  value={itemSearchQuery}
-                  onChange={(e) => setItemSearchQuery(e.target.value)}
-                  placeholder="Search item, category, effect..."
-                  className="w-full pl-7 pr-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            </div>
-
-            {filteredItems.length === 0 ? (
-              <div className="py-12 text-center text-zinc-500 space-y-2">
-                <Package size={28} className="mx-auto opacity-30 text-amber-400" />
-                <p>No wares found matching current catalogue or search filter.</p>
-                <button
-                  onClick={openAddItemModal}
-                  className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-amber-300 text-xs font-bold hover:bg-zinc-800 cursor-pointer"
-                >
-                  Stock Item into {selectedCatalogue === 'all' ? 'this Shop' : `"${selectedCatalogue}"`}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredItems.map((item) => {
-                  const rStyle = RARITY_COLORS[item.rarity] || RARITY_COLORS.Common;
-                  const itemCat = getItemCatalogue(item);
-                  const catEmoji = getCategoryEmoji(item.category);
-                  const effectivePrice = Math.max(
-                    1,
-                    Math.round(item.price * (1 - currentShop.discountPercent / 100))
-                  );
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-3.5 rounded-xl border flex flex-col justify-between bg-[#0a0c12] ${rStyle.border} gap-2.5 hover:border-amber-500/50 transition-colors`}
-                    >
-                      <div>
-                        {/* Badges: Catalogue, Category, Rarity */}
-                        <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1">
-                              <Folder size={10} />
-                              <span>{itemCat}</span>
-                            </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-900 text-zinc-300 border border-zinc-800 font-medium capitalize flex items-center gap-1">
-                              <span>{catEmoji}</span>
-                              <span>{item.category}</span>
-                            </span>
-                          </div>
-
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${rStyle.border} ${rStyle.text} ${rStyle.bg}`}
-                          >
-                            {item.rarity}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Store
+                          size={13}
+                          className={isSelected ? 'text-amber-400' : 'text-zinc-500'}
+                        />
+                        <span
+                          className={`font-bold truncate text-xs font-[family-name:var(--font-heading)] ${
+                            isSelected ? 'text-amber-300' : 'text-zinc-200'
+                          }`}
+                        >
+                          {shop.name}
+                        </span>
+                        {shop.visibleToPlayers ? (
+                          <span title="Visible to players">
+                            <Eye size={11} className="text-emerald-400 shrink-0" />
                           </span>
-                        </div>
-
-                        <div className="mb-1">
-                          <span className="font-bold text-zinc-100 text-xs line-clamp-1">
-                            {item.name}
+                        ) : (
+                          <span title="Hidden from players">
+                            <EyeOff size={11} className="text-zinc-600 shrink-0" />
                           </span>
-                        </div>
-
-                        <p className="text-[11px] text-zinc-400 line-clamp-2 mb-1.5 leading-relaxed">
-                          {item.description}
-                        </p>
-
-                        {item.effect && (
-                          <p className="text-[10px] text-emerald-400 font-medium mb-1 line-clamp-2">
-                            ⚡ {item.effect}
-                          </p>
                         )}
-
-                        <div className="flex items-center gap-2 text-[10px] text-zinc-500 pt-0.5">
-                          <span>{item.weight || 0} lbs</span>
-                          {item.requiresAttunement && (
-                            <>
-                              <span>&bull;</span>
-                              <span className="text-purple-400">Attunement</span>
-                            </>
-                          )}
-                        </div>
                       </div>
 
-                      <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-amber-400 flex items-center gap-1">
-                            <Coins size={12} /> {effectivePrice} GP
-                            {currentShop.discountPercent !== 0 && (
-                              <span className="text-[10px] text-zinc-500 line-through">
-                                {item.price} GP
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-[10px] text-zinc-500">
-                            Stock: {item.stock < 0 ? '∞' : item.stock}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEditItemModal(item)}
-                            className="p-1 text-zinc-400 hover:text-amber-300 cursor-pointer"
-                            title="Edit Item"
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                          <button
-                            onClick={() => onDeleteItem(currentShop.id, item.id)}
-                            className="p-1 text-zinc-500 hover:text-red-400 cursor-pointer"
-                            title="Delete Item"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-400">
+                        <span className="truncate">{shop.shopkeeper}</span>
+                        <span className="text-zinc-600">&bull;</span>
+                        <span className="text-zinc-500 truncate">{shop.location}</span>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold">
+                        {shop.items?.length || 0}
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        className={isSelected ? 'text-amber-400' : 'text-zinc-600'}
+                      />
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {/* Department Catalogues for Current Shop */}
+          {currentShop && (
+            <div className="flex-1 flex flex-col p-2.5 overflow-hidden">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800/70 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Folder size={12} className="text-amber-400" />
+                  <span className="text-[10px] uppercase font-bold text-zinc-300 tracking-wider">
+                    Catalogues
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setNewCatalogueInput('');
+                      setIsAddCatalogueModalOpen(true);
+                    }}
+                    className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 text-[10px] cursor-pointer"
+                    title="Add new catalogue section"
+                  >
+                    <FolderPlus size={12} />
+                  </button>
+                  <button
+                    onClick={() => setIsManageCataloguesModalOpen(true)}
+                    className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-[10px] cursor-pointer"
+                    title="Manage / Rename catalogues"
+                  >
+                    <Settings size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Catalogues list */}
+              <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+                <button
+                  onClick={() => setSelectedCatalogue('all')}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all border ${
+                    selectedCatalogue === 'all'
+                      ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-xs'
+                      : 'bg-zinc-950/60 text-zinc-400 hover:text-zinc-200 border-zinc-800/80 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Layers size={12} />
+                    <span>All Wares</span>
+                  </div>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                      selectedCatalogue === 'all'
+                        ? 'bg-black/30 text-black border-black/20'
+                        : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+                    }`}
+                  >
+                    {currentShop.items?.length || 0}
+                  </span>
+                </button>
+
+                {currentCatalogues.map((catName) => {
+                  const isSelected = selectedCatalogue.toLowerCase() === catName.toLowerCase();
+                  const count = currentShop.items.filter(
+                    (it) => getItemCatalogue(it).toLowerCase() === catName.toLowerCase()
+                  ).length;
+
+                  return (
+                    <button
+                      key={catName}
+                      onClick={() => setSelectedCatalogue(catName)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all border ${
+                        isSelected
+                          ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-xs'
+                          : 'bg-zinc-950/60 text-zinc-400 hover:text-zinc-200 border-zinc-800/80 hover:border-zinc-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Folder size={11} className={isSelected ? 'text-black' : 'text-amber-400/80'} />
+                        <span className="truncate">{catName}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full border shrink-0 ${
+                          isSelected
+                            ? 'bg-black/30 text-black border-black/20'
+                            : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="py-20 text-center text-zinc-500 space-y-3">
-          <Store size={36} className="mx-auto opacity-30 text-amber-400" />
-          <p className="text-zinc-400">No merchant shops configured in this campaign yet.</p>
-          <button
-            onClick={openAddShopModal}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-md inline-flex items-center gap-1.5 transition-transform hover:scale-103"
-          >
-            <Plus size={14} /> Establish First Town Shop
-          </button>
-        </div>
-      )}
 
-      {/* 4. Shop Create / Edit Modal */}
+        {/* RIGHT COLUMN: Merchant Ledger & Wares Inventory */}
+        <div
+          className={`flex-1 flex flex-col bg-[#07080b] min-w-0 overflow-y-auto ${
+            showMobileDetail ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
+          {currentShop ? (
+            <div className="p-3 sm:p-5 lg:p-6 space-y-4 max-w-5xl mx-auto w-full">
+              {/* Back to Directory Button (for mobile & portrait tablets) */}
+              <div className="lg:hidden">
+                <button
+                  onClick={() => setShowMobileDetail(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold cursor-pointer transition-colors active:scale-95 mb-2"
+                >
+                  <ArrowLeft size={13} />
+                  <span>&larr; Back to Settlement Shops</span>
+                </button>
+              </div>
+
+              {/* Shop Proprietor Header Banner */}
+              <div className="p-4 rounded-2xl bg-[#0d0f17] border border-zinc-800 shadow-xl space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg md:text-xl font-bold text-zinc-100 font-[family-name:var(--font-heading)]">
+                        {currentShop.name}
+                      </h3>
+                      <button
+                        onClick={() =>
+                          onUpdateShop(currentShop.id, { isOpen: !currentShop.isOpen })
+                        }
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border cursor-pointer transition-colors ${
+                          currentShop.isOpen
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800 hover:bg-emerald-900'
+                            : 'bg-red-950 text-red-300 border-red-800 hover:bg-red-900'
+                        }`}
+                      >
+                        {currentShop.isOpen ? '✓ Open for Trade' : '✕ Closed'}
+                      </button>
+                      <button
+                        onClick={() =>
+                          onUpdateShop(currentShop.id, {
+                            visibleToPlayers: !currentShop.visibleToPlayers,
+                          })
+                        }
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border cursor-pointer transition-colors ${
+                          currentShop.visibleToPlayers
+                            ? 'bg-sky-950 text-sky-300 border-sky-800 hover:bg-sky-900'
+                            : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-200'
+                        }`}
+                      >
+                        {currentShop.visibleToPlayers ? 'Visible to Party' : 'DM Eyes Only'}
+                      </button>
+                      {currentShop.discountPercent !== 0 && (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            currentShop.discountPercent > 0
+                              ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                              : 'bg-amber-950 text-amber-300 border-amber-800'
+                          }`}
+                        >
+                          {currentShop.discountPercent > 0
+                            ? `${currentShop.discountPercent}% Discount Active`
+                            : `${Math.abs(currentShop.discountPercent)}% Markup`}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-zinc-300 flex-wrap">
+                      <span>
+                        Proprietor: <strong className="text-amber-300">{currentShop.shopkeeper}</strong>
+                        {currentShop.shopkeeperTitle && ` (${currentShop.shopkeeperTitle})`}
+                      </span>
+                      {currentShop.location && (
+                        <>
+                          <span className="text-zinc-600">&bull;</span>
+                          <span className="flex items-center gap-1 text-zinc-400">
+                            <MapPin size={11} className="text-amber-400" />
+                            {currentShop.location}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditShopModal(currentShop)}
+                      className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-300 border border-zinc-800 cursor-pointer transition-colors"
+                      title="Edit Shop Details"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete shop "${currentShop.name}" and all its inventory?`)) {
+                          onDeleteShop(currentShop.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-xl bg-zinc-900 hover:bg-red-950 text-zinc-500 hover:text-red-400 border border-zinc-800 cursor-pointer transition-colors"
+                      title="Delete Shop"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <button
+                      onClick={openAddItemModal}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs cursor-pointer shadow-sm transition-all active:scale-95"
+                    >
+                      <Plus size={13} />
+                      <span>Stock New Ware</span>
+                    </button>
+                  </div>
+                </div>
+
+                {currentShop.description && (
+                  <p className="text-xs text-zinc-400 italic pt-1 border-t border-zinc-800/80 font-sans">
+                    &ldquo;{currentShop.description}&rdquo;
+                  </p>
+                )}
+              </div>
+
+              {/* Items Inventory Ledger */}
+              <div className="p-4 rounded-2xl bg-[#0c0d15] border border-zinc-800 shadow-xl space-y-3">
+                {/* Search & Section Filter Bar */}
+                <div className="flex flex-wrap items-center justify-between pb-2 border-b border-zinc-800 gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase font-bold text-zinc-200 tracking-wider">
+                      {selectedCatalogue === 'all' ? 'All Wares' : selectedCatalogue}
+                    </span>
+                    <span className="text-[10px] text-zinc-500">
+                      ({filteredItems.length} {filteredItems.length === 1 ? 'ware' : 'wares'} listed)
+                    </span>
+                  </div>
+
+                  <div className="relative w-full sm:w-60">
+                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={itemSearchQuery}
+                      onChange={(e) => setItemSearchQuery(e.target.value)}
+                      placeholder="Search name, category, rules..."
+                      className="w-full pl-7 pr-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Items Grid */}
+                {filteredItems.length === 0 ? (
+                  <div className="py-12 text-center text-zinc-500 space-y-2">
+                    <Package size={28} className="mx-auto opacity-30 text-amber-400" />
+                    <p className="text-xs">No wares found matching current filters.</p>
+                    <button
+                      onClick={openAddItemModal}
+                      className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-amber-300 text-xs font-bold hover:bg-zinc-800 cursor-pointer"
+                    >
+                      + Stock Item into {selectedCatalogue === 'all' ? 'this Shop' : `"${selectedCatalogue}"`}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {filteredItems.map((item) => {
+                      const rStyle = RARITY_COLORS[item.rarity] || RARITY_COLORS.Common;
+                      const itemCat = getItemCatalogue(item);
+                      const catEmoji = getCategoryEmoji(item.category);
+                      const effectivePrice = Math.max(
+                        1,
+                        Math.round(item.price * (1 - currentShop.discountPercent / 100))
+                      );
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={`p-3 rounded-xl border flex flex-col justify-between bg-[#0a0c12] ${rStyle.border} gap-2 hover:border-amber-500/50 transition-colors`}
+                        >
+                          <div>
+                            {/* Badges: Catalogue, Category, Rarity */}
+                            <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1">
+                                  <Folder size={9} />
+                                  <span>{itemCat}</span>
+                                </span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-300 border border-zinc-800 font-medium capitalize flex items-center gap-1">
+                                  <span>{catEmoji}</span>
+                                  <span>{item.category}</span>
+                                </span>
+                              </div>
+
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${rStyle.border} ${rStyle.text} ${rStyle.bg}`}
+                              >
+                                {item.rarity}
+                              </span>
+                            </div>
+
+                            <h4 className="font-bold text-zinc-100 text-xs line-clamp-1 mb-1">
+                              {item.name}
+                            </h4>
+
+                            <p className="text-[11px] text-zinc-400 line-clamp-2 mb-1 leading-relaxed font-sans">
+                              {item.description}
+                            </p>
+
+                            {item.effect && (
+                              <p className="text-[10px] text-emerald-400 font-medium mb-1 line-clamp-2">
+                                ⚡ {item.effect}
+                              </p>
+                            )}
+
+                            <div className="flex items-center gap-2 text-[10px] text-zinc-500 pt-0.5">
+                              <span>{item.weight || 0} lbs</span>
+                              {item.requiresAttunement && (
+                                <>
+                                  <span>&bull;</span>
+                                  <span className="text-purple-400 font-bold">Attunement</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-amber-400 flex items-center gap-1">
+                                <Coins size={12} /> {effectivePrice} GP
+                                {currentShop.discountPercent !== 0 && (
+                                  <span className="text-[10px] text-zinc-500 line-through">
+                                    {item.price} GP
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-[10px] text-zinc-500">
+                                Stock: {item.stock < 0 ? '∞' : item.stock}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => openEditItemModal(item)}
+                                className="p-1 text-zinc-400 hover:text-amber-300 cursor-pointer"
+                                title="Edit Item"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => onDeleteItem(currentShop.id, item.id)}
+                                className="p-1 text-zinc-500 hover:text-red-400 cursor-pointer"
+                                title="Delete Item"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="py-20 text-center text-zinc-500 space-y-3">
+              <Store size={36} className="mx-auto opacity-30 text-amber-400" />
+              <p className="text-zinc-400">No merchant shops configured in this campaign yet.</p>
+              <button
+                onClick={openAddShopModal}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-md inline-flex items-center gap-1.5"
+              >
+                <Plus size={14} /> Establish First Town Shop
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Shop Create / Edit Modal */}
       {isShopModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-lg bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
@@ -784,7 +867,7 @@ export default function DMShopManager({
               <span className="font-bold text-amber-300 text-xs uppercase">
                 {editingShopId ? 'Edit Shop Properties' : 'Establish New Town Shop'}
               </span>
-              <button onClick={() => setIsShopModalOpen(false)} className="p-1 text-zinc-500 hover:text-white">
+              <button onClick={() => setIsShopModalOpen(false)} className="p-1 text-zinc-500 hover:text-white cursor-pointer">
                 <X size={14} />
               </button>
             </div>
@@ -873,13 +956,13 @@ export default function DMShopManager({
                 <button
                   type="button"
                   onClick={() => setIsShopModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white"
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold shadow-xs cursor-pointer"
                 >
                   Save Shop
                 </button>
@@ -889,7 +972,7 @@ export default function DMShopManager({
         </div>
       )}
 
-      {/* 5. Add Catalogue Modal */}
+      {/* 4. Add Catalogue Modal */}
       {isAddCatalogueModalOpen && currentShop && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-md bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
@@ -976,7 +1059,7 @@ export default function DMShopManager({
         </div>
       )}
 
-      {/* 6. Manage Catalogues Modal */}
+      {/* 5. Manage Catalogues Modal */}
       {isManageCataloguesModalOpen && currentShop && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-md bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
@@ -1113,7 +1196,7 @@ export default function DMShopManager({
         </div>
       )}
 
-      {/* 7. Item Create / Edit Modal */}
+      {/* 6. Item Create / Edit Modal */}
       {isItemModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-lg bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3 max-h-[90vh] overflow-y-auto">
@@ -1294,4 +1377,3 @@ export default function DMShopManager({
     </div>
   );
 }
-

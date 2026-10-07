@@ -358,8 +358,8 @@ export default function ItemEditorModal({
   const rarityStyle = RARITY_COLORS[activeRarity] || RARITY_COLORS.Common;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in font-mono">
-      <div className="bg-[#0f1118] border-2 border-amber-500/40 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-[0_0_60px_rgba(245,158,11,0.25)] space-y-4 my-auto relative">
+    <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in font-mono">
+      <div className="bg-[#0f1118] border-2 border-amber-500/40 rounded-2xl max-w-2xl w-full p-4 sm:p-6 shadow-[0_0_60px_rgba(245,158,11,0.25)] space-y-4 my-auto relative">
         {/* Ambient Top Glow */}
         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
           <div
@@ -369,30 +369,30 @@ export default function ItemEditorModal({
         </div>
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-start sm:items-center justify-between pb-3 border-b border-zinc-800 gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center text-lg shadow-sm ${rarityStyle.border} ${rarityStyle.bg}`}
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center text-lg shadow-sm shrink-0 ${rarityStyle.border} ${rarityStyle.bg}`}
             >
               {ITEM_CATEGORIES.find((c) => c.id === form.category)?.icon || '📦'}
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider flex items-center gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-lg font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider flex items-center gap-2 flex-wrap">
                 <span>{mode === 'edit' ? 'Edit Equipment & Stats' : 'Forge New Inventory Item'}</span>
                 <span
-                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${rarityStyle.badgeBg} ${rarityStyle.badgeText}`}
+                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${rarityStyle.badgeBg} ${rarityStyle.badgeText} shrink-0`}
                 >
                   {activeRarity}
                 </span>
               </h3>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
                 {characterName ? `Equipped & carried by ${characterName}` : 'Configure item statistics, category, and combat bonuses'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
           >
             <X size={18} />
           </button>

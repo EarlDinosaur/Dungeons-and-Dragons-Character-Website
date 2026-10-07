@@ -285,6 +285,42 @@ code, pre, .font-mono {
   animation: soul-orbit 6s linear infinite;
 }
 
+/* DM Sanctum micro-animations (fade, drawer slide, popover pop) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.14s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in-right,
+  .animate-pop-in {
+    animation: none;
+  }
+}
+
 /* ============================================================================
    Stat Diamond Shape
    ============================================================================ */

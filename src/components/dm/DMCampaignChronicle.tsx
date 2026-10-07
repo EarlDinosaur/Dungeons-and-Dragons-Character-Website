@@ -23,6 +23,9 @@ import {
   FileText,
   Send,
   CheckCircle2,
+  ChevronRight,
+  ArrowLeft,
+  Calendar,
 } from 'lucide-react';
 import type { DMNote, DMNoteCategory } from '@/lib/dm-types';
 
@@ -94,8 +97,10 @@ export default function DMCampaignChronicle({
   const [searchQuery, setSearchQuery] = useState('');
   const [targetFilter, setTargetFilter] = useState<string>('all_filter');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(notes[0]?.id || null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -104,64 +109,6 @@ export default function DMCampaignChronicle({
   const [formTarget, setFormTarget] = useState<string>('all');
   const [formIsPlayerVisible, setFormIsPlayerVisible] = useState<boolean>(true);
   const [formTags, setFormTags] = useState<string>('');
-
-  const handleOpenCreate = (prefillTarget?: string) => {
-    setFormTitle('');
-    setFormContent('');
-    setFormCategory('quest');
-    setFormTarget(prefillTarget || 'all');
-    setFormIsPlayerVisible(true);
-    setFormTags('');
-    setEditingId(null);
-    setIsCreating(true);
-  };
-
-  const handleOpenEdit = (note: DMNote) => {
-    setFormTitle(note.title);
-    setFormContent(note.content);
-    setFormCategory(note.category);
-    setFormTarget(note.targetCharacterId);
-    setFormIsPlayerVisible(note.isPlayerVisible);
-    setFormTags(note.tags.join(', '));
-    setEditingId(note.id);
-    setIsCreating(true);
-  };
-
-  const handleSaveNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTitle.trim()) return;
-
-    const parsedTags = formTags
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0)
-      .map((t) => (t.startsWith('#') ? t : `#${t}`));
-
-    if (editingId) {
-      onUpdateNote(editingId, {
-        title: formTitle.trim(),
-        content: formContent.trim(),
-        category: formCategory,
-        targetCharacterId: formTarget,
-        isPlayerVisible: formIsPlayerVisible,
-        tags: parsedTags,
-      });
-    } else {
-      onAddNote({
-        title: formTitle.trim(),
-        content: formContent.trim(),
-        category: formCategory,
-        targetCharacterId: formTarget,
-        isPlayerVisible: formIsPlayerVisible,
-        pinned: false,
-        tags: parsedTags,
-        author: 'Dungeon Master',
-      });
-    }
-
-    setIsCreating(false);
-    setEditingId(null);
-  };
 
   // Filter and sort notes (pinned first, then latest)
   const filteredNotes = useMemo(() => {
@@ -194,404 +141,634 @@ export default function DMCampaignChronicle({
       });
   }, [notes, targetFilter, categoryFilter, searchQuery]);
 
+  const selectedNote = useMemo(() => {
+    if (selectedNoteId) {
+      const match = notes.find((n) => n.id === selectedNoteId);
+      if (match) return match;
+    }
+    return filteredNotes[0] || notes[0] || null;
+  }, [notes, filteredNotes, selectedNoteId]);
+
+  const handleOpenCreate = (prefillTarget?: string) => {
+    setFormTitle('');
+    setFormContent('');
+    setFormCategory('quest');
+    setFormTarget(prefillTarget || 'all');
+    setFormIsPlayerVisible(true);
+    setFormTags('');
+    setIsCreatingNew(true);
+    setIsEditing(false);
+    setShowMobileDetail(true);
+  };
+
+  const handleOpenEdit = (note: DMNote) => {
+    setFormTitle(note.title);
+    setFormContent(note.content);
+    setFormCategory(note.category);
+    setFormTarget(note.targetCharacterId);
+    setFormIsPlayerVisible(note.isPlayerVisible);
+    setFormTags(note.tags.join(', '));
+    setIsEditing(true);
+    setIsCreatingNew(false);
+    setShowMobileDetail(true);
+  };
+
+  const handleSaveNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim()) return;
+
+    const parsedTags = formTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+      .map((t) => (t.startsWith('#') ? t : `#${t}`));
+
+    if (isEditing && selectedNote) {
+      onUpdateNote(selectedNote.id, {
+        title: formTitle.trim(),
+        content: formContent.trim(),
+        category: formCategory,
+        targetCharacterId: formTarget,
+        isPlayerVisible: formIsPlayerVisible,
+        tags: parsedTags,
+      });
+      setIsEditing(false);
+    } else {
+      onAddNote({
+        title: formTitle.trim(),
+        content: formContent.trim(),
+        category: formCategory,
+        targetCharacterId: formTarget,
+        isPlayerVisible: formIsPlayerVisible,
+        pinned: false,
+        tags: parsedTags,
+        author: 'Dungeon Master',
+      });
+      setIsCreatingNew(false);
+    }
+  };
+
   const getTargetName = (targetId: string) => {
     if (targetId === 'all') return 'All Party (Public)';
     const member = partyMembers.find(
-      (m) => m.id.toLowerCase() === targetId.toLowerCase() || m.name.toLowerCase().includes(targetId.toLowerCase())
+      (m) =>
+        m.id.toLowerCase() === targetId.toLowerCase() ||
+        m.name.toLowerCase().includes(targetId.toLowerCase())
     );
     return member ? member.name : targetId.toUpperCase();
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0c12] text-zinc-200 font-mono text-xs">
+    <div className="flex flex-col h-full bg-[#07080b] text-zinc-200 font-mono text-xs overflow-hidden">
       {/* 1. Header Toolbar */}
-      <div className="p-3 bg-[#0d0f17] border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300">
-            <Scroll size={15} />
+      <div className="p-3 bg-[#0c0d14] border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.15)]">
+            <Scroll size={16} />
           </div>
           <div>
-            <h3 className="font-bold text-zinc-100 text-xs uppercase tracking-wider font-[family-name:var(--font-heading)]">
+            <h2 className="font-bold text-zinc-100 text-xs uppercase tracking-wider font-[family-name:var(--font-heading)] flex items-center gap-2">
               Campaign Chronicle &amp; Character Dispatches
-            </h3>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 font-normal">
+                {notes.length} dispatches
+              </span>
+            </h2>
             <p className="text-[10px] text-zinc-400">
-              Create secrets, visions &amp; quest handouts linked directly to player sheets
+              Split-pane secret lore, player handouts, vision dispatches &amp; quest directive reader
             </p>
           </div>
         </div>
 
         <button
           onClick={() => handleOpenCreate()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors cursor-pointer shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs transition-all cursor-pointer shadow-sm active:scale-95"
         >
           <Plus size={13} />
-          <span>New Note</span>
+          <span>New Dispatch</span>
         </button>
       </div>
 
-      {/* 2. Filters Bar */}
-      <div className="p-3 bg-[#08090d] border-b border-zinc-800/80 space-y-2">
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search title, lore keywords, #tags..."
-              className="w-full pl-8 pr-3 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
-            />
-          </div>
-
-          {/* Quick Clear */}
-          {(searchQuery || targetFilter !== 'all_filter' || categoryFilter !== 'all') && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setTargetFilter('all_filter');
-                setCategoryFilter('all');
-              }}
-              className="px-2 py-1 text-[10px] text-zinc-400 hover:text-white rounded bg-zinc-900 border border-zinc-800"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-
-        {/* Target Character Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-thin">
-          <span className="text-[10px] text-zinc-500 uppercase shrink-0 mr-1">Target:</span>
-          <button
-            onClick={() => setTargetFilter('all_filter')}
-            className={`px-2 py-0.5 rounded-md border transition-colors cursor-pointer shrink-0 ${
-              targetFilter === 'all_filter'
-                ? 'bg-amber-500 text-black font-bold border-amber-400'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            All ({notes.length})
-          </button>
-          <button
-            onClick={() => setTargetFilter('all')}
-            className={`px-2 py-0.5 rounded-md border transition-colors cursor-pointer shrink-0 ${
-              targetFilter === 'all'
-                ? 'bg-amber-500 text-black font-bold border-amber-400'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            Party-wide
-          </button>
-          {partyMembers.map((pm) => (
-            <button
-              key={pm.id}
-              onClick={() => setTargetFilter(pm.id)}
-              className={`px-2 py-0.5 rounded-md border transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
-                targetFilter === pm.id
-                  ? 'bg-purple-600 text-white font-bold border-purple-400'
-                  : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: pm.primaryColor || '#a855f7' }} />
-              <span>{pm.name.split(' ')[0]}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setTargetFilter('dm_only')}
-            className={`px-2 py-0.5 rounded-md border transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
-              targetFilter === 'dm_only'
-                ? 'bg-red-900 text-red-100 font-bold border-red-500'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            <Lock size={10} />
-            <span>DM Only</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Create / Edit Note Slide-out or Modal Form */}
-      {isCreating && (
-        <div className="p-3.5 bg-zinc-950/95 border-b border-amber-500/40 animate-fade-in space-y-3">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-            <h4 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
-              <Edit3 size={13} />
-              <span>{editingId ? 'Edit Chronicle Note' : 'Draft New Campaign Note'}</span>
-            </h4>
-            <button
-              onClick={() => setIsCreating(false)}
-              className="text-zinc-400 hover:text-white cursor-pointer"
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSaveNote} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className="sm:col-span-2">
-                <label className="text-[10px] uppercase text-zinc-400 block mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="E.g., The Midnight Prophecy / Catacomb Map"
-                  required
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-white text-xs focus:border-amber-400 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase text-zinc-400 block mb-1">Category</label>
-                <select
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as DMNoteCategory)}
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-white text-xs focus:border-amber-400 focus:outline-none"
-                >
-                  <option value="quest">⚡ Quest Directive</option>
-                  <option value="secret">🔮 Secret Vision</option>
-                  <option value="lore">📜 Ancient Lore</option>
-                  <option value="handout">✉️ DM Handout</option>
-                  <option value="clue">🔍 Mystery Clue</option>
-                  <option value="combat">⚔️ Tactical Intel</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] uppercase text-zinc-400 block mb-1">Target Hero / Recipient</label>
-                <select
-                  value={formTarget}
-                  onChange={(e) => setFormTarget(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-white text-xs focus:border-amber-400 focus:outline-none"
-                >
-                  <option value="all">👥 All Party (Public to everyone)</option>
-                  {partyMembers.map((pm) => (
-                    <option key={pm.id} value={pm.id}>
-                      👤 {pm.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase text-zinc-400 block mb-1">Player Visibility</label>
-                <button
-                  type="button"
-                  onClick={() => setFormIsPlayerVisible(!formIsPlayerVisible)}
-                  className={`w-full px-3 py-1.5 rounded border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                    formIsPlayerVisible
-                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/70 hover:bg-emerald-900/80'
-                      : 'bg-red-950/60 text-red-300 border-red-800/70 hover:bg-red-900/80'
-                  }`}
-                >
-                  {formIsPlayerVisible ? (
-                    <>
-                      <Eye size={13} />
-                      <span>Shared to Player (Visible on Sheet)</span>
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff size={13} />
-                      <span>DM Eyes Only (Confidential)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] uppercase text-zinc-400 block mb-1">Note Content (Markdown supported)</label>
-              <textarea
-                value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                rows={4}
-                placeholder="Write the lore, vision, dream, secret whisper or quest instructions..."
-                required
-                className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded text-white text-xs font-mono leading-relaxed focus:border-amber-400 focus:outline-none resize-y"
-              />
-            </div>
-
-            <div>
-              <label className="text-[10px] uppercase text-zinc-400 block mb-1">Tags (comma-separated)</label>
+      {/* 2. Split-Pane Layout */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* LEFT COLUMN: Dispatch Directory & Filter Center */}
+        <div
+          className={`w-full lg:w-88 xl:w-96 flex flex-col border-r border-zinc-800 bg-[#090a10] shrink-0 ${
+            showMobileDetail ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          {/* Filters Bar */}
+          <div className="p-2.5 border-b border-zinc-800/80 bg-[#0c0d14]/70 space-y-2">
+            {/* Search */}
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
-                value={formTags}
-                onChange={(e) => setFormTags(e.target.value)}
-                placeholder="#boss, #clue, #docks, #prophecy"
-                className="w-full px-2.5 py-1 bg-zinc-900 border border-zinc-700 rounded text-white text-xs focus:border-amber-400 focus:outline-none"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search lore, keywords, #tags..."
+                className="w-full pl-8 pr-2.5 py-1.5 bg-zinc-950/80 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/80"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-1">
+            {/* Target Character Filter Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-thin">
               <button
-                type="button"
-                onClick={() => setIsCreating(false)}
-                className="px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs border border-zinc-700 cursor-pointer"
+                onClick={() => setTargetFilter('all_filter')}
+                className={`px-2 py-0.5 rounded-md font-bold transition-colors cursor-pointer shrink-0 border ${
+                  targetFilter === 'all_filter'
+                    ? 'bg-amber-500 text-black border-amber-400'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                }`}
               >
-                Cancel
+                All ({notes.length})
               </button>
               <button
-                type="submit"
-                className="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                onClick={() => setTargetFilter('all')}
+                className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer shrink-0 border ${
+                  targetFilter === 'all'
+                    ? 'bg-amber-500 text-black border-amber-400 font-bold'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                }`}
               >
-                <Check size={13} />
-                <span>{editingId ? 'Update Entry' : 'Publish Note'}</span>
+                Party
               </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* 4. Notes List Grid */}
-      <div className="p-3 flex-1 overflow-y-auto space-y-3">
-        {filteredNotes.length === 0 ? (
-          <div className="py-12 text-center text-zinc-500 font-mono space-y-2">
-            <Scroll size={28} className="mx-auto text-zinc-600 opacity-60" />
-            <p className="text-xs">No campaign notes match the active filter.</p>
-            <button
-              onClick={() => handleOpenCreate()}
-              className="px-3 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-amber-400 text-xs cursor-pointer inline-flex items-center gap-1"
-            >
-              <Plus size={12} /> Create Note
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredNotes.map((note) => {
-              const meta = CATEGORY_META[note.category] || CATEGORY_META.quest;
-              const isPartyWide = note.targetCharacterId === 'all';
-
-              return (
-                <div
-                  key={note.id}
-                  className={`flex flex-col rounded-xl border p-3 bg-[#0d0f17]/90 transition-all ${
-                    note.pinned
-                      ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
-                      : 'border-zinc-800 hover:border-zinc-700'
+              {partyMembers.map((pm) => (
+                <button
+                  key={pm.id}
+                  onClick={() => setTargetFilter(pm.id)}
+                  className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer shrink-0 flex items-center gap-1 border ${
+                    targetFilter === pm.id
+                      ? 'bg-purple-600 text-white font-bold border-purple-400'
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
                   }`}
                 >
-                  {/* Top Bar: Target & Category & Pin */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                      {/* Category Badge */}
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 ${meta.bg} ${meta.text} ${meta.border}`}
-                      >
-                        <span>{meta.icon}</span>
-                        <span>{meta.label}</span>
-                      </span>
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: pm.primaryColor || '#a855f7' }}
+                  />
+                  <span>{pm.name.split(' ')[0]}</span>
+                </button>
+              ))}
+              <button
+                onClick={() => setTargetFilter('dm_only')}
+                className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer shrink-0 flex items-center gap-1 border ${
+                  targetFilter === 'dm_only'
+                    ? 'bg-red-950 text-red-200 font-bold border-red-700'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                }`}
+              >
+                <Lock size={10} />
+                <span>DM Only</span>
+              </button>
+            </div>
 
-                      {/* Recipient Target Pill */}
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          isPartyWide
-                            ? 'bg-zinc-900 text-amber-300 border-zinc-700'
-                            : 'bg-purple-950/60 text-purple-200 border-purple-800/60'
-                        }`}
-                      >
-                        🎯 {getTargetName(note.targetCharacterId)}
-                      </span>
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px] scrollbar-thin">
+              <button
+                onClick={() => setCategoryFilter('all')}
+                className={`px-1.5 py-0.2 rounded transition-colors cursor-pointer shrink-0 ${
+                  categoryFilter === 'all'
+                    ? 'text-amber-400 font-bold underline'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                All Types
+              </button>
+              {(Object.keys(CATEGORY_META) as DMNoteCategory[]).map((cat) => {
+                const meta = CATEGORY_META[cat];
+                const isActive = categoryFilter === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-1.5 py-0.2 rounded transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
+                      isActive
+                        ? `${meta.text} font-bold underline`
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <span>{meta.icon}</span>
+                    <span>{meta.label.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                      {/* Resolved Badge */}
-                      {note.resolved && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-zinc-900 text-zinc-400 border-zinc-700 flex items-center gap-1">
-                          <span>✓</span>
-                          <span>RESOLVED</span>
+          {/* Notes Scannable List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60 p-1.5 space-y-1">
+            {filteredNotes.length === 0 ? (
+              <div className="py-12 text-center text-zinc-500 space-y-2">
+                <Scroll size={28} className="mx-auto text-zinc-600 opacity-60" />
+                <p className="text-xs">No dispatches match the active filters.</p>
+                <button
+                  onClick={() => handleOpenCreate()}
+                  className="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-amber-400 text-xs cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Plus size={12} /> Draft Note
+                </button>
+              </div>
+            ) : (
+              filteredNotes.map((note) => {
+                const meta = CATEGORY_META[note.category] || CATEGORY_META.quest;
+                const isSelected = selectedNote?.id === note.id && !isCreatingNew;
+
+                return (
+                  <button
+                    key={note.id}
+                    onClick={() => {
+                      setSelectedNoteId(note.id);
+                      setIsCreatingNew(false);
+                      setIsEditing(false);
+                      setShowMobileDetail(true);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2.5 border ${
+                      isSelected
+                        ? 'bg-purple-500/10 border-purple-500/60 shadow-[0_0_12px_rgba(168,85,247,0.08)]'
+                        : 'bg-[#0d0e16]/60 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs shrink-0">{meta.icon}</span>
+                        <span
+                          className={`font-bold truncate text-xs font-[family-name:var(--font-heading)] ${
+                            note.resolved
+                              ? 'line-through text-zinc-500'
+                              : isSelected
+                              ? 'text-purple-300'
+                              : 'text-zinc-200'
+                          }`}
+                        >
+                          {note.title}
                         </span>
-                      )}
+
+                        {note.pinned && (
+                          <Pin size={10} className="text-amber-400 fill-amber-400 shrink-0" />
+                        )}
+
+                        {note.isPlayerVisible ? (
+                          <span title="Visible to players">
+                            <Eye size={10} className="text-emerald-400 shrink-0" />
+                          </span>
+                        ) : (
+                          <span title="DM Eyes Only">
+                            <Lock size={10} className="text-red-400 shrink-0" />
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] text-zinc-400 line-clamp-1 mb-1 font-sans">
+                        {note.content}
+                      </p>
+
+                      <div className="flex items-center gap-2 text-[9px] text-zinc-500">
+                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 font-medium">
+                          {getTargetName(note.targetCharacterId).split(' ')[0]}
+                        </span>
+
+                        {note.tags && note.tags.length > 0 && (
+                          <span className="text-purple-400 truncate">
+                            {note.tags[0]}
+                            {note.tags.length > 1 && ` +${note.tags.length - 1}`}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Quick Pin Toggle */}
-                    <button
-                      onClick={() => onUpdateNote(note.id, { pinned: !note.pinned })}
-                      className={`p-1 rounded transition-colors cursor-pointer ${
-                        note.pinned
-                          ? 'text-amber-400 hover:text-amber-300'
-                          : 'text-zinc-600 hover:text-zinc-400'
+                    <ChevronRight
+                      size={14}
+                      className={`shrink-0 transition-transform ${
+                        isSelected ? 'text-purple-400 translate-x-0.5' : 'text-zinc-600'
                       }`}
-                      title={note.pinned ? 'Unpin note' : 'Pin note to top'}
+                    />
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Dispatch Reader & Editor Pane */}
+        <div
+          className={`flex-1 flex flex-col bg-[#07080b] min-w-0 overflow-y-auto ${
+            showMobileDetail ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
+          {isCreatingNew || isEditing ? (
+            /* EDITOR PANE */
+            <div className="p-3 sm:p-5 lg:p-6 space-y-4 max-w-3xl mx-auto w-full">
+              {/* Back Button (for mobile & portrait tablets) */}
+              <div className="lg:hidden">
+                <button
+                  onClick={() => {
+                    setIsCreatingNew(false);
+                    setIsEditing(false);
+                    setShowMobileDetail(false);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold cursor-pointer transition-colors active:scale-95 mb-2"
+                >
+                  <ArrowLeft size={13} />
+                  <span>&larr; Cancel and Return to Chronicle</span>
+                </button>
+              </div>
+
+              <div className="p-4 md:p-5 rounded-2xl bg-[#0d0f17] border border-amber-500/40 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                  <h3 className="font-bold text-amber-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Edit3 size={14} />
+                    <span>{isEditing ? 'Edit Dispatch Note' : 'Draft New Campaign Dispatch'}</span>
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setIsCreatingNew(false);
+                      setIsEditing(false);
+                    }}
+                    className="p-1 text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveNote} className="space-y-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] uppercase text-zinc-400 block mb-1">
+                        Dispatch Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        placeholder="E.g., The Midnight Prophecy / Catacomb Map"
+                        className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase text-zinc-400 block mb-1">Category</label>
+                      <select
+                        value={formCategory}
+                        onChange={(e) => setFormCategory(e.target.value as DMNoteCategory)}
+                        className="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-amber-400 capitalize cursor-pointer"
+                      >
+                        <option value="quest">⚡ Quest Directive</option>
+                        <option value="secret">🔮 Secret Vision</option>
+                        <option value="lore">📜 Ancient Lore</option>
+                        <option value="handout">✉️ DM Handout</option>
+                        <option value="clue">🔍 Mystery Clue</option>
+                        <option value="combat">⚔️ Tactical Intel</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase text-zinc-400 block mb-1">
+                        Target Recipient
+                      </label>
+                      <select
+                        value={formTarget}
+                        onChange={(e) => setFormTarget(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-amber-400 cursor-pointer"
+                      >
+                        <option value="all">👥 All Party (Public Knowledge)</option>
+                        {partyMembers.map((pm) => (
+                          <option key={pm.id} value={pm.id}>
+                            👤 {pm.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col justify-end">
+                      <label className="flex items-center gap-2 p-2 rounded-lg bg-zinc-950 border border-zinc-800 cursor-pointer text-zinc-300">
+                        <input
+                          type="checkbox"
+                          checked={formIsPlayerVisible}
+                          onChange={(e) => setFormIsPlayerVisible(e.target.checked)}
+                          className="rounded border-zinc-700 text-amber-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="text-xs select-none">
+                          Make Visible to Players on their Character Sheet
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] uppercase text-zinc-400 block mb-1">
+                      Dispatch Text (Markdown &amp; Rich Notes) *
+                    </label>
+                    <textarea
+                      rows={8}
+                      required
+                      value={formContent}
+                      onChange={(e) => setFormContent(e.target.value)}
+                      placeholder="Write the lore description, whisper, mysterious riddle, or tactical orders..."
+                      className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-lg text-white font-mono text-xs leading-relaxed focus:outline-none focus:border-amber-400 resize-y"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] uppercase text-zinc-400 block mb-1">
+                      Tags (Comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={formTags}
+                      onChange={(e) => setFormTags(e.target.value)}
+                      placeholder="#prophecy, #clue, #docks, #boss"
+                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingNew(false);
+                        setIsEditing(false);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
                     >
-                      <Pin size={13} className={note.pinned ? 'fill-amber-400' : ''} />
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-sm"
+                    >
+                      {isEditing ? 'Save Dispatch' : 'Publish Dispatch'}
                     </button>
                   </div>
+                </form>
+              </div>
+            </div>
+          ) : selectedNote ? (
+            /* DISPATCH READER PANE */
+            <div className="p-3 sm:p-5 lg:p-6 space-y-4 max-w-4xl mx-auto w-full">
+              {/* Back to Dispatches Button (for mobile & portrait tablets) */}
+              <div className="lg:hidden">
+                <button
+                  onClick={() => setShowMobileDetail(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold cursor-pointer transition-colors active:scale-95 mb-2"
+                >
+                  <ArrowLeft size={13} />
+                  <span>&larr; Back to Dispatches</span>
+                </button>
+              </div>
 
-                  {/* Note Title */}
-                  <h4 className={`font-bold text-xs mb-1.5 font-[family-name:var(--font-heading)] flex items-center gap-1.5 ${
-                    note.resolved ? 'line-through text-zinc-400' : 'text-zinc-100'
-                  }`}>
-                    <span>{note.title}</span>
-                  </h4>
+              {/* Reader Header & Quick Controls */}
+              <div className="p-4 rounded-2xl bg-[#0d0f17] border border-zinc-800 shadow-xl flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                        CATEGORY_META[selectedNote.category]?.bg || CATEGORY_META.quest.bg
+                      } ${CATEGORY_META[selectedNote.category]?.text || CATEGORY_META.quest.text} ${
+                        CATEGORY_META[selectedNote.category]?.border || CATEGORY_META.quest.border
+                      }`}
+                    >
+                      <span>{CATEGORY_META[selectedNote.category]?.icon || '⚡'}</span>
+                      <span>{CATEGORY_META[selectedNote.category]?.label || 'Dispatch'}</span>
+                    </span>
 
-                  {/* Content Body */}
-                  <div className="text-zinc-300 text-[11px] leading-relaxed mb-3 whitespace-pre-wrap flex-1">
-                    {note.content}
-                  </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-purple-950/60 text-purple-200 border-purple-800/60">
+                      🎯 Recipient: {getTargetName(selectedNote.targetCharacterId)}
+                    </span>
 
-                  {/* Tags */}
-                  {note.tags && note.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2.5">
-                      {note.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="px-1.5 py-0.2 rounded bg-zinc-950 text-zinc-400 border border-zinc-800/80 text-[9px]"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Bottom Footer: Visibility Switch & Action Buttons */}
-                  <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] text-zinc-500">
                     <button
-                      onClick={() => onToggleVisibility(note.id)}
-                      className={`px-2 py-0.8 rounded text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-colors ${
-                        note.isPlayerVisible
-                          ? 'bg-emerald-950/70 text-emerald-300 border-emerald-700/60 hover:bg-emerald-900/80 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                      onClick={() =>
+                        onUpdateNote(selectedNote.id, {
+                          resolved: !selectedNote.resolved,
+                        })
+                      }
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border cursor-pointer transition-colors ${
+                        selectedNote.resolved
+                          ? 'bg-emerald-950 text-emerald-300 border-emerald-800 hover:bg-emerald-900'
                           : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
                       }`}
-                      title="Click to toggle visibility on player character sheet"
                     >
-                      {note.isPlayerVisible ? <Eye size={11} /> : <EyeOff size={11} />}
-                      <span>{note.isPlayerVisible ? 'Visible on Sheet' : 'DM Eyes Only'}</span>
+                      {selectedNote.resolved ? '✓ Completed / Resolved' : 'Mark as Resolved'}
                     </button>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => onUpdateNote(note.id, { resolved: !note.resolved })}
-                        className={`p-1 rounded transition-colors cursor-pointer ${
-                          note.resolved ? 'text-zinc-500 hover:text-amber-400' : 'text-zinc-500 hover:text-emerald-400'
-                        }`}
-                        title={note.resolved ? 'Reactivate quest/note' : 'Mark quest/note resolved'}
-                      >
-                        <CheckCircle2 size={12} className={note.resolved ? 'text-zinc-500' : 'text-emerald-500'} />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(note)}
-                        className="p-1 rounded text-zinc-500 hover:text-amber-300 transition-colors cursor-pointer"
-                        title="Edit note"
-                      >
-                        <Edit3 size={12} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete chronicle note "${note.title}"?`)) {
-                            onDeleteNote(note.id);
-                          }
-                        }}
-                        className="p-1 rounded text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
-                        title="Delete note"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
                   </div>
+
+                  <h3
+                    className={`text-lg md:text-xl font-bold font-[family-name:var(--font-heading)] ${
+                      selectedNote.resolved ? 'line-through text-zinc-500' : 'text-zinc-100'
+                    }`}
+                  >
+                    {selectedNote.title}
+                  </h3>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {/* Tactical Actions */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() =>
+                      onUpdateNote(selectedNote.id, { pinned: !selectedNote.pinned })
+                    }
+                    className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      selectedNote.pinned
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                    }`}
+                    title={selectedNote.pinned ? 'Unpin note' : 'Pin note to top'}
+                  >
+                    <Pin size={14} className={selectedNote.pinned ? 'fill-amber-400' : ''} />
+                  </button>
+
+                  <button
+                    onClick={() => onToggleVisibility(selectedNote.id)}
+                    className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      selectedNote.isPlayerVisible
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                        : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                    }`}
+                    title={
+                      selectedNote.isPlayerVisible
+                        ? 'Visible to players. Click to hide.'
+                        : 'Hidden from players (DM Eyes Only). Click to reveal.'
+                    }
+                  >
+                    {selectedNote.isPlayerVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEdit(selectedNote)}
+                    className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-300 border border-zinc-800 cursor-pointer transition-colors"
+                    title="Edit Dispatch"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete dispatch "${selectedNote.title}"?`)) {
+                        onDeleteNote(selectedNote.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-xl bg-zinc-900 hover:bg-red-950 text-zinc-500 hover:text-red-400 border border-zinc-800 cursor-pointer transition-colors"
+                    title="Delete Dispatch"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Parchment Dispatch Body */}
+              <div className="p-5 md:p-6 rounded-2xl bg-[#0c0d15] border border-purple-500/30 shadow-2xl space-y-4">
+                <div className="text-zinc-200 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-sans font-normal">
+                  {selectedNote.content}
+                </div>
+
+                {selectedNote.tags && selectedNote.tags.length > 0 && (
+                  <div className="pt-3 border-t border-zinc-800 flex flex-wrap gap-1.5">
+                    {selectedNote.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="px-2 py-0.5 rounded-md bg-zinc-950 text-purple-300 border border-purple-500/30 text-[10px] font-mono"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Player Synchronization Status */}
+              <div className="p-3 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between text-[11px] text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    Synchronized with character sheet of:{' '}
+                    <strong className="text-zinc-200">
+                      {getTargetName(selectedNote.targetCharacterId)}
+                    </strong>
+                  </span>
+                </div>
+                <span className="text-[10px] text-zinc-500">
+                  {selectedNote.isPlayerVisible ? 'Published to Player' : 'Staged (DM Only)'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-zinc-500 space-y-3">
+              <Scroll size={36} className="text-zinc-600 opacity-60" />
+              <p className="text-sm font-bold text-zinc-300">No Dispatch Selected</p>
+              <p className="text-xs max-w-sm">
+                Choose a campaign note from the directory or draft a new secret dispatch for your players.
+              </p>
+              <button
+                onClick={() => handleOpenCreate()}
+                className="mt-2 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer shadow-sm"
+              >
+                + New Dispatch
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

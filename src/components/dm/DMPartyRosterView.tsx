@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import type { PartyMemberHUDState } from '@/lib/dm-types';
 import DMPartyInventoryManager from './DMPartyInventoryManager';
+import DMHPPopover, { anchorFromElement, type HPPopoverAnchor } from './DMHPPopover';
+import { hpBand, hpPercent, HP_BAND_STYLES } from '@/lib/dm-hp';
 
 interface DMPartyRosterViewProps {
   partyMembers: PartyMemberHUDState[];
@@ -32,24 +34,6 @@ interface DMPartyRosterViewProps {
   onInspectCharacter?: (charId: string) => void;
   onOpenLoreEditor?: (charId: string) => void;
 }
-
-const ALL_CONDITIONS = [
-  'Blinded',
-  'Charmed',
-  'Deafened',
-  'Frightened',
-  'Grappled',
-  'Incapacitated',
-  'Invisible',
-  'Paralyzed',
-  'Petrified',
-  'Poisoned',
-  'Prone',
-  'Restrained',
-  'Stunned',
-  'Unconscious',
-  'Exhaustion',
-] as const;
 
 export default function DMPartyRosterView({
   partyMembers,
@@ -62,61 +46,21 @@ export default function DMPartyRosterView({
 }: DMPartyRosterViewProps) {
   const [viewMode, setViewMode] = useState<'matrix' | 'cards'>('matrix');
 
-  // Active HP Adjustment Modal / Popover State
-  const [activeAdjustMember, setActiveAdjustMember] = useState<PartyMemberHUDState | null>(null);
-  const [adjustAmt, setAdjustAmt] = useState<string>('');
+  // Default to cards on tablet and mobile viewports for optimal layout
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setViewMode('cards');
+    }
+  }, []);
 
-  // Active Condition Modal State
-  const [activeConditionMember, setActiveConditionMember] = useState<PartyMemberHUDState | null>(null);
+  // Active HP & Condition Popover State (non-blocking)
+  const [activePopover, setActivePopover] = useState<{
+    member: PartyMemberHUDState;
+    anchor: HPPopoverAnchor;
+  } | null>(null);
 
   // Active Inventory & Equipment Manager State
   const [inventoryCharId, setInventoryCharId] = useState<string | null>(null);
-
-  const handleApplyDamage = () => {
-    if (!activeAdjustMember) return;
-    const val = parseInt(adjustAmt, 10);
-    if (isNaN(val) || val <= 0) return;
-
-    let newCurrent = activeAdjustMember.currentHP;
-    let newTemp = activeAdjustMember.tempHP;
-
-    if (newTemp > 0) {
-      if (val <= newTemp) {
-        newTemp -= val;
-      } else {
-        const overflow = val - newTemp;
-        newTemp = 0;
-        newCurrent = Math.max(0, newCurrent - overflow);
-      }
-    } else {
-      newCurrent = Math.max(0, newCurrent - val);
-    }
-
-    onUpdatePartyHP(activeAdjustMember.id, newCurrent, newTemp);
-    setActiveAdjustMember(null);
-    setAdjustAmt('');
-  };
-
-  const handleApplyHeal = () => {
-    if (!activeAdjustMember) return;
-    const val = parseInt(adjustAmt, 10);
-    if (isNaN(val) || val <= 0) return;
-
-    const newCurrent = Math.min(activeAdjustMember.maxHP, activeAdjustMember.currentHP + val);
-    onUpdatePartyHP(activeAdjustMember.id, newCurrent, activeAdjustMember.tempHP);
-    setActiveAdjustMember(null);
-    setAdjustAmt('');
-  };
-
-  const handleApplyTemp = () => {
-    if (!activeAdjustMember) return;
-    const val = parseInt(adjustAmt, 10);
-    if (isNaN(val) || val < 0) return;
-
-    onUpdatePartyHP(activeAdjustMember.id, activeAdjustMember.currentHP, val);
-    setActiveAdjustMember(null);
-    setAdjustAmt('');
-  };
 
   return (
     <div className="w-full space-y-4 animate-fade-in font-mono text-xs">
@@ -246,10 +190,12 @@ export default function DMPartyRosterView({
                       {/* HP Bar & Quick Adjust */}
                       <td className="py-3 px-3">
                         <div
-                          onClick={() => {
-                            setActiveAdjustMember(member);
-                            setAdjustAmt('');
-                          }}
+                          onClick={(e) =>
+                            setActivePopover({
+                              member,
+                              anchor: anchorFromElement(e.currentTarget),
+                            })
+                          }
                           className="cursor-pointer group/hp"
                           title="Click to adjust HP"
                         >
@@ -263,10 +209,10 @@ export default function DMPartyRosterView({
                             <span
                               className={`text-[10px] font-bold ${
                                 isUnconscious
-                                  ? 'text-red-500 animate-pulse'
-                                  : isCritical
-                                  ? 'text-amber-400'
-                                  : 'text-emerald-400'
+                                    ? 'text-red-500 animate-pulse'
+                                    : isCritical
+                                    ? 'text-amber-400'
+                                    : 'text-emerald-400'
                               }`}
                             >
                               {isUnconscious ? '0 HP' : `${hpPercent}%`}
@@ -345,7 +291,12 @@ export default function DMPartyRosterView({
                             <span className="text-[10px] text-zinc-600 italic">None</span>
                           )}
                           <button
-                            onClick={() => setActiveConditionMember(member)}
+                            onClick={(e) =>
+                              setActivePopover({
+                                member,
+                                anchor: anchorFromElement(e.currentTarget),
+                              })
+                            }
                             className="p-1 rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
                             title="Add / override conditions"
                           >
@@ -374,10 +325,12 @@ export default function DMPartyRosterView({
                             </button>
                           )}
                           <button
-                            onClick={() => {
-                              setActiveAdjustMember(member);
-                              setAdjustAmt('');
-                            }}
+                            onClick={(e) =>
+                              setActivePopover({
+                                member,
+                                anchor: anchorFromElement(e.currentTarget),
+                              })
+                            }
                             className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-[10px] cursor-pointer"
                           >
                             HP &plusmn;
@@ -528,10 +481,12 @@ export default function DMPartyRosterView({
 
                 {/* Hit Points Bar & Quick Edit */}
                 <div
-                  onClick={() => {
-                    setActiveAdjustMember(member);
-                    setAdjustAmt('');
-                  }}
+                  onClick={(e) =>
+                    setActivePopover({
+                      member,
+                      anchor: anchorFromElement(e.currentTarget),
+                    })
+                  }
                   className="p-2.5 rounded-xl bg-zinc-950/40 border border-zinc-800/60 cursor-pointer hover:border-amber-500/50 transition-colors"
                 >
                   <div className="flex items-center justify-between text-xs mb-1">
@@ -603,10 +558,12 @@ export default function DMPartyRosterView({
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      setActiveAdjustMember(member);
-                      setAdjustAmt('');
-                    }}
+                    onClick={(e) =>
+                      setActivePopover({
+                        member,
+                        anchor: anchorFromElement(e.currentTarget),
+                      })
+                    }
                     className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-[10px] font-bold cursor-pointer"
                   >
                     HP &plusmn;
@@ -618,117 +575,28 @@ export default function DMPartyRosterView({
         </div>
       )}
 
-      {/* 4. HP Adjustment Popover / Modal */}
-      {activeAdjustMember && (
-        <div
-          onClick={() => setActiveAdjustMember(null)}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl bg-[#0e1017] border border-amber-500/40 p-5 shadow-2xl space-y-4 font-mono text-xs"
-          >
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-              <div>
-                <h3 className="font-bold text-zinc-100 text-sm">{activeAdjustMember.name}</h3>
-                <p className="text-[10px] text-zinc-400">
-                  Current HP: {activeAdjustMember.currentHP} / {activeAdjustMember.maxHP}
-                  {activeAdjustMember.tempHP > 0 && ` (+${activeAdjustMember.tempHP} THP)`}
-                </p>
-              </div>
-              <button
-                onClick={() => setActiveAdjustMember(null)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div>
-              <label className="text-[10px] uppercase text-zinc-400 block mb-1">HP Amount</label>
-              <input
-                type="number"
-                min={1}
-                value={adjustAmt}
-                onChange={(e) => setAdjustAmt(e.target.value)}
-                placeholder="Enter points..."
-                autoFocus
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-base font-bold text-center focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={handleApplyDamage}
-                className="py-2 rounded-lg bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 font-bold text-xs cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-              >
-                <Minus size={13} /> Damage
-              </button>
-              <button
-                onClick={handleApplyHeal}
-                className="py-2 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 font-bold text-xs cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-              >
-                <Plus size={13} /> Heal
-              </button>
-              <button
-                onClick={handleApplyTemp}
-                className="py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold text-xs cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-              >
-                Set THP
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 4. Non-Blocking DM HP & Condition Popover */}
+      {activePopover && (
+        <DMHPPopover
+          anchor={activePopover.anchor}
+          title={activePopover.member.name}
+          subtitle={`Lv ${activePopover.member.level} ${activePopover.member.characterClass}`}
+          ac={activePopover.member.ac}
+          hp={{
+            currentHP: activePopover.member.currentHP,
+            maxHP: activePopover.member.maxHP,
+            tempHP: activePopover.member.tempHP,
+          }}
+          onChange={(nextHP) =>
+            onUpdatePartyHP(activePopover.member.id, nextHP.currentHP, nextHP.tempHP)
+          }
+          onClose={() => setActivePopover(null)}
+          conditions={activePopover.member.conditions}
+          onToggleCondition={(cond) => onTogglePartyCondition(activePopover.member.id, cond)}
+        />
       )}
 
-      {/* 5. Condition Picker Modal */}
-      {activeConditionMember && (
-        <div
-          onClick={() => setActiveConditionMember(null)}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-[#0e1017] border border-zinc-800 p-5 shadow-2xl space-y-3 font-mono text-xs"
-          >
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <h3 className="font-bold text-zinc-100 text-xs flex items-center gap-1.5">
-                <AlertTriangle size={13} className="text-amber-400" />
-                <span>Afflictions &bull; {activeConditionMember.name}</span>
-              </h3>
-              <button
-                onClick={() => setActiveConditionMember(null)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <p className="text-[10px] text-zinc-400">Click a condition to toggle it on or off for this hero:</p>
-
-            <div className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
-              {ALL_CONDITIONS.map((cond) => {
-                const active = activeConditionMember.conditions.includes(cond);
-                return (
-                  <button
-                    key={cond}
-                    onClick={() => onTogglePartyCondition(activeConditionMember.id, cond)}
-                    className={`px-2 py-1.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer ${
-                      active
-                        ? 'bg-red-900/80 text-red-200 border-red-600'
-                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-800'
-                    }`}
-                  >
-                    {cond}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. DM Party Inventory & Equipment Modal */}
+      {/* 5. DM Party Inventory & Equipment Modal */}
       {inventoryCharId && (
         <DMPartyInventoryManager
           initialCharacterId={inventoryCharId}

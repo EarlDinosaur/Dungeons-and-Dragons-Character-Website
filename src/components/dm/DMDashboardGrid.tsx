@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Users,
   Swords,
@@ -27,12 +27,14 @@ import DMPartyRosterView from './DMPartyRosterView';
 import DMCombatEngine from './DMCombatEngine';
 import DMCampaignChronicle from './DMCampaignChronicle';
 import DMRulesReference from './DMRulesReference';
-import DMAtmosphereBar from './DMAtmosphereBar';
 import DMNPCCodex from './DMNPCCodex';
 import DMShopManager from './DMShopManager';
 import DMPartyInventoryManager from './DMPartyInventoryManager';
 import DMLoreManager from './DMLoreManager';
 import DMLoreEditorModal from './DMLoreEditorModal';
+import DMPartyVitalsDock from './DMPartyVitalsDock';
+import DMSlideOverTools from './DMSlideOverTools';
+import { npcToCombatant } from '@/lib/dm-combat';
 
 export type DMWorkspaceTab = 'roster' | 'combat' | 'npcs' | 'shops' | 'chronicle' | 'lore' | 'rules';
 
@@ -92,29 +94,12 @@ export default function DMDashboardGrid({
   const [queuedCombatants, setQueuedCombatants] = useState<Combatant[]>([]);
 
   const handleSendNPCToCombat = (npc: CustomNPC) => {
-    const initBonus = npc.initiativeBonus ?? Math.floor((npc.stats.dex - 10) / 2);
-    const rolledInit = Math.floor(Math.random() * 20) + 1 + initBonus;
-    const newCombatant: Combatant = {
-      id: `npc-${npc.id}-${Date.now()}`,
-      name: npc.name,
-      isPlayer: false,
-      avatarUrl: npc.portraitUrl,
-      initiative: rolledInit,
-      initiativeModifier: initBonus,
-      ac: npc.ac,
-      currentHP: npc.hp,
-      maxHP: npc.maxHP,
-      tempHP: 0,
-      conditions: [],
-      crOrLevel: npc.cr ? `CR ${npc.cr}` : (npc.category === 'boss' ? 'Boss' : 'NPC'),
-      notes: `${npc.creatureType}${npc.alignment ? ` • ${npc.alignment}` : ''}`,
-    };
-
+    const newCombatant = npcToCombatant(npc);
     setQueuedCombatants((prev) => [...prev, newCombatant]);
     setActiveTab('combat');
   };
 
-  // Atmosphere & Secret Dice Drawer/Panel State
+  // Atmosphere & Secret Dice Drawer State
   const [isToolsOpen, setIsToolsOpen] = useState<boolean>(false);
   const [atmosphere, setAtmosphere] = useState<AtmosphereState>({
     sessionNumber: 12,
@@ -127,235 +112,267 @@ export default function DMDashboardGrid({
   // Bulk Rest Dropdown
   const [isRestMenuOpen, setIsRestMenuOpen] = useState<boolean>(false);
 
+  // Keyboard shortcuts: 'D' for tools drawer, '1'-'7' for tabs
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+      if (isInput) return;
+
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setIsToolsOpen((prev) => !prev);
+      } else if (['1', '2', '3', '4', '5', '6', '7'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tabIndex = parseInt(e.key, 10) - 1;
+        const tabIds: DMWorkspaceTab[] = ['roster', 'combat', 'npcs', 'shops', 'chronicle', 'lore', 'rules'];
+        if (tabIds[tabIndex]) {
+          e.preventDefault();
+          setActiveTab(tabIds[tabIndex]);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const TABS: Array<{
     id: DMWorkspaceTab;
     label: string;
+    shortLabel: string;
     icon: React.ElementType;
     badge?: number | string;
     badgeColor?: string;
   }> = [
-    {
-      id: 'roster',
-      label: 'Party Roster',
-      icon: Users,
-      badge: partyMembers.length,
-      badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-700',
-    },
-    {
-      id: 'combat',
-      label: 'Combat',
-      icon: Swords,
-    },
-    {
-      id: 'npcs',
-      label: 'NPCs & Monsters',
-      icon: Skull,
-      badge: customNPCs.length,
-      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800/80',
-    },
-    {
-      id: 'shops',
-      label: 'Shops & Markets',
-      icon: Store,
-      badge: campaignShops.length,
-      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
-    },
-    {
-      id: 'chronicle',
-      label: 'Chronicle',
-      icon: Scroll,
-      badge: dmNotes.length,
-      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800/80',
-    },
-    {
-      id: 'lore',
-      label: 'Character Lore',
-      icon: BookOpen,
-      badge: partyMembers.length,
-      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
-    },
-    {
-      id: 'rules',
-      label: 'Rules SRD',
-      icon: Scroll,
-    },
-  ];
+      {
+        id: 'roster',
+        label: 'Party Roster',
+        shortLabel: 'Party',
+        icon: Users,
+        badge: partyMembers.length,
+        badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+      },
+      {
+        id: 'combat',
+        label: 'Tactical Combat',
+        shortLabel: 'Combat',
+        icon: Swords,
+      },
+      {
+        id: 'npcs',
+        label: 'NPCs & Monsters',
+        shortLabel: 'NPCs',
+        icon: Skull,
+        badge: customNPCs.length,
+        badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800/80',
+      },
+      {
+        id: 'shops',
+        label: 'Shops & Markets',
+        shortLabel: 'Shops',
+        icon: Store,
+        badge: campaignShops.length,
+        badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
+      },
+      {
+        id: 'chronicle',
+        label: 'Campaign Chronicle',
+        shortLabel: 'Notes',
+        icon: Scroll,
+        badge: dmNotes.length,
+        badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800/80',
+      },
+      {
+        id: 'lore',
+        label: 'Character Lore',
+        shortLabel: 'Lore',
+        icon: BookOpen,
+        badge: partyMembers.length,
+        badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
+      },
+      {
+        id: 'rules',
+        label: 'Rules SRD',
+        shortLabel: 'Rules',
+        icon: Scroll,
+      },
+    ];
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] flex flex-col bg-[#07080b] text-zinc-200">
-      {/* 1. Primary DM Command Header Bar */}
-      <header className="px-4 py-2.5 bg-[#08090d]/95 border-b border-amber-500/20 backdrop-blur-md sticky top-0 z-40 shadow-lg">
-        <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
-          {/* Left: Brand & Navigation */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            {onBackToMenu && (
-              <button
-                onClick={onBackToMenu}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs shrink-0"
-                title="Return to Hero Vault"
-              >
-                <span>&larr;</span>
-                <span className="hidden sm:inline">Guildhall</span>
-              </button>
-            )}
+      {/* 1. Refactored 2-Tier Command Header */}
+      <header className="bg-[#08090d]/95 border-b border-amber-500/20 backdrop-blur-md sticky top-0 z-40 shadow-lg font-mono">
+        {/* Tier 1: Brand, Status, Quick Tools & Actions */}
+        <div className="px-3 sm:px-5 py-2 border-b border-zinc-800/60">
+          <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between gap-2 sm:gap-3">
+            {/* Left: Navigation & Campaign Status */}
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+              {onBackToMenu && (
+                <button
+                  onClick={onBackToMenu}
+                  className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-medium transition-colors cursor-pointer shadow-xs shrink-0"
+                  title="Return to Guildhall"
+                >
+                  <span>&larr;</span>
+                  <span className="hidden sm:inline">Guildhall</span>
+                </button>
+              )}
 
-            <div className="flex items-center gap-2 pr-2 border-r border-zinc-800/80 shrink-0">
-              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-xs">
-                <Shield size={15} />
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-xs">
+                  <Shield size={14} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="hidden sm:inline text-xs font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider whitespace-nowrap">
+                    DM Sanctum
+                  </h1>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xs font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider whitespace-nowrap">
-                  DM Sanctum
-                </h1>
-                <p className="text-[9px] text-zinc-400 font-mono hidden xl:block whitespace-nowrap">
-                  Session {atmosphere.sessionNumber} &bull; Day {atmosphere.inGameDay}
-                </p>
+
+              {/* Status capsule - shown on xl desktop to preserve space for controls on tablets & mobile */}
+              <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 truncate">
+                <span className="text-amber-300 font-bold">Session {atmosphere.sessionNumber}</span>
+                <span className="text-zinc-600">&bull;</span>
+                <span>Day {atmosphere.inGameDay}</span>
+                <span className="text-zinc-600">&bull;</span>
+                <span className="text-zinc-300 truncate">{atmosphere.timeOfDay}, {atmosphere.weather}</span>
               </div>
             </div>
 
-            {/* Focused Workspace Switcher Tabs */}
-            <nav className="flex items-center gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800/90 font-mono text-xs shadow-inner shrink-0">
-              {TABS.map((tab) => {
+            {/* Right: Quick Tools, Rest, Custom Actions */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* Quick Party Gear & Inventory Manager */}
+              <button
+                onClick={() => setInventoryCharId(partyMembers[0]?.id || 'vesper')}
+                className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-medium transition-colors cursor-pointer"
+                title="Inspect and edit equipment and inventory for party members"
+              >
+                <Package size={13} className="text-amber-400" />
+                <span className="hidden md:inline">Gear</span>
+              </button>
+
+              {/* Secret Dice & Atmosphere Slide-Over Drawer Toggle */}
+              <button
+                onClick={() => setIsToolsOpen(!isToolsOpen)}
+                className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg border text-xs transition-all cursor-pointer ${isToolsOpen
+                    ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                title="Toggle Secret Dice Roller & Atmosphere (Hotkey: D)"
+              >
+                <Dices size={13} className={isToolsOpen ? 'text-black' : 'text-amber-400'} />
+                <span className="hidden sm:inline font-bold">Tools</span>
+                <kbd className="hidden lg:inline text-[9px] px-1 py-0.2 rounded bg-black/40 border border-white/10 opacity-75">
+                  D
+                </kbd>
+              </button>
+
+              {/* Quick Bulk Rest Trigger */}
+              {onBulkRest && (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsRestMenuOpen(!isRestMenuOpen)}
+                    className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-medium transition-colors cursor-pointer"
+                    title="Trigger Party Rest"
+                  >
+                    <Sparkles size={12} className="text-amber-400" />
+                    <span className="hidden sm:inline">Rest</span>
+                    <ChevronDown
+                      size={11}
+                      className={`transition-transform text-zinc-500 ${isRestMenuOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {isRestMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-20"
+                        onClick={() => setIsRestMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#0d0f17] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-30 font-mono text-xs space-y-1 animate-pop-in">
+                        <button
+                          onClick={() => {
+                            onBulkRest('short');
+                            setIsRestMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 cursor-pointer transition-colors text-left"
+                        >
+                          <span className="font-bold">Party Short Rest</span>
+                          <span className="text-[10px] text-zinc-500">1 Hr</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            onBulkRest('long');
+                            setIsRestMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-amber-500/10 text-zinc-300 hover:text-amber-400 cursor-pointer transition-colors text-left"
+                        >
+                          <span className="font-bold">Party Long Rest</span>
+                          <span className="text-[10px] text-zinc-500">8 Hr</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Injected Actions (Sync Status, Change Passcode, Lock Sanctum) */}
+              {customHeaderActions}
+            </div>
+          </div>
+        </div>
+
+        {/* Tier 2: Symmetrical Workspace Navigation Bar */}
+        <div className="px-3 sm:px-5 py-1.5 overflow-x-auto no-scrollbar bg-black/40">
+          <div className="w-full max-w-[1720px] mx-auto flex items-center gap-1">
+            <nav className="flex items-center gap-1 font-mono text-xs w-full">
+              {TABS.map((tab, idx) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap ${
-                      isActive
-                        ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/15 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.15)] font-bold'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/70 border border-transparent'
-                    }`}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap text-xs ${isActive
+                        ? 'bg-amber-500 text-black border border-amber-400 font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent'
+                      }`}
                   >
-                    <Icon size={13} className={isActive ? 'text-amber-400' : 'text-zinc-500'} />
-                    <span>{tab.label}</span>
+                    <Icon size={13} className={isActive ? 'text-black' : 'text-zinc-400'} />
+                    <span className="hidden md:inline">{tab.label}</span>
+                    <span className="md:hidden">{tab.shortLabel}</span>
                     {tab.badge !== undefined && (
                       <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
-                          isActive
-                            ? 'bg-amber-500/30 text-amber-200 border-amber-400/50 font-bold'
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full border ${isActive
+                            ? 'bg-black/30 text-black border-black/30 font-bold'
                             : tab.badgeColor || 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                        }`}
+                          }`}
                       >
                         {tab.badge}
                       </span>
                     )}
+                    <span className="hidden xl:inline text-[9px] opacity-40">
+                      ({idx + 1})
+                    </span>
                   </button>
                 );
               })}
             </nav>
           </div>
-
-          {/* Right: Tools Toggle, Rest Actions & Injected Page Controls */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Quick Party Gear & Inventory Manager */}
-            <button
-              onClick={() => setInventoryCharId(partyMembers[0]?.id || 'vesper')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer"
-              title="Inspect and edit equipment and inventory for any party member"
-            >
-              <Package size={13} className="text-amber-400" />
-              <span className="font-bold hidden sm:inline">Party Gear</span>
-            </button>
-
-            {/* Atmosphere & Secret Dice Drawer Toggle */}
-            <button
-              onClick={() => setIsToolsOpen(!isToolsOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                isToolsOpen
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.15)] font-bold'
-                  : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border-zinc-800 hover:border-zinc-700'
-              }`}
-              title="Toggle Environment Atmosphere & Quick Secret Dice Roller"
-            >
-              <Dices size={13} className="text-amber-400" />
-              <span className="font-bold">Tools</span>
-              <span className="hidden 2xl:inline text-zinc-400 text-[10px]">
-                {atmosphere.timeOfDay} &bull; {atmosphere.weather}
-              </span>
-              <span
-                className={`text-[9px] px-1 py-0.2 rounded bg-zinc-800/80 border border-zinc-700/80 text-zinc-400 transition-transform ${
-                  isToolsOpen ? 'rotate-180' : ''
-                }`}
-              >
-                &darr;
-              </span>
-            </button>
-
-            {/* Quick Bulk Rest Trigger */}
-            {onBulkRest && (
-              <div className="relative">
-                <button
-                  onClick={() => setIsRestMenuOpen(!isRestMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border border-zinc-800 text-xs font-mono font-medium transition-colors cursor-pointer"
-                  title="Trigger Party Rest"
-                >
-                  <Sparkles size={13} className="text-amber-400" />
-                  <span>Rest</span>
-                  <ChevronDown
-                    size={12}
-                    className={`transition-transform text-zinc-500 ${isRestMenuOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-
-                {isRestMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-20"
-                      onClick={() => setIsRestMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#0d0f17] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-30 font-mono text-xs space-y-1">
-                      <button
-                        onClick={() => {
-                          onBulkRest('short');
-                          setIsRestMenuOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 cursor-pointer transition-colors text-left"
-                      >
-                        <span className="font-bold">Party Short Rest</span>
-                        <span className="text-[10px] text-zinc-500">1 Hr</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          onBulkRest('long');
-                          setIsRestMenuOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-amber-500/10 text-zinc-300 hover:text-amber-400 cursor-pointer transition-colors text-left"
-                      >
-                        <span className="font-bold">Party Long Rest</span>
-                        <span className="text-[10px] text-zinc-500">8 Hr</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Injected Actions (Sync Status, Change Passcode, Lock Sanctum) */}
-            {customHeaderActions}
-          </div>
         </div>
-
-        {/* Collapsible Atmosphere & Quick Secret Dice Drawer */}
-        {isToolsOpen && (
-          <div className="w-full max-w-[1720px] mx-auto mt-2.5 pt-2.5 border-t border-zinc-800/80 animate-fade-in">
-            <div className="relative">
-              <DMAtmosphereBar
-                atmosphere={atmosphere}
-                onUpdateAtmosphere={(updates) => setAtmosphere((prev) => ({ ...prev, ...updates }))}
-              />
-              <button
-                onClick={() => setIsToolsOpen(false)}
-                className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
-                title="Collapse Tools"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-        )}
       </header>
+
+      {/* Persistent Party Vitals Mini-Dock (visible across all tabs for instant HP/AC/senses access) */}
+      <DMPartyVitalsDock
+        partyMembers={partyMembers}
+        onUpdatePartyHP={onUpdatePartyHP}
+        onTogglePartyCondition={onTogglePartyCondition}
+        onToggleInspiration={onToggleInspiration}
+      />
 
       {/* 2. Main Workspace: Render Only the Active Tab for Neat, Spacious Layout */}
       <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 flex flex-col min-h-0">
@@ -381,6 +398,7 @@ export default function DMDashboardGrid({
               onTogglePartyCondition={onTogglePartyCondition}
               externalCombatants={queuedCombatants}
               onClearExternalCombatants={() => setQueuedCombatants([])}
+              customNPCs={customNPCs}
             />
           </div>
         )}
@@ -459,6 +477,14 @@ export default function DMDashboardGrid({
           onClose={() => setLoreModalCharId(null)}
         />
       )}
+
+      {/* 5. Secret Dice & Atmosphere Slide-Over Drawer */}
+      <DMSlideOverTools
+        open={isToolsOpen}
+        onClose={() => setIsToolsOpen(false)}
+        atmosphere={atmosphere}
+        onUpdateAtmosphere={(updates) => setAtmosphere((prev) => ({ ...prev, ...updates }))}
+      />
     </div>
   );
 }

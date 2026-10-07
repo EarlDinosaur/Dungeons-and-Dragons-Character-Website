@@ -229,46 +229,63 @@ export default function DMPartyInventoryManager({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in font-mono text-xs">
-      <div className="bg-[#0b0d14] border-2 border-amber-500/50 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-[0_0_60px_rgba(0,0,0,0.95)] flex flex-col max-h-[92vh] relative overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-5 overflow-y-auto animate-fade-in font-mono text-xs">
+      <div className="bg-[#0b0d14] border-2 border-amber-500/50 rounded-2xl max-w-5xl w-full p-3.5 sm:p-6 shadow-[0_0_60px_rgba(0,0,0,0.95)] flex flex-col max-h-[94vh] sm:max-h-[92vh] relative overflow-hidden my-auto">
         {/* Top Arcane Accent Glow */}
         <div className="absolute -top-24 -left-24 w-52 h-52 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
 
         {/* 1. Header Toolbar */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800 gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Package size={20} />
+        <div className="pb-3 border-b border-zinc-800 space-y-2.5">
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+                <Package size={18} className="sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xs sm:text-base font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider truncate">
+                    Party Equipment &amp; Inventory
+                  </h2>
+                  <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 shrink-0">
+                    Live Sync
+                  </span>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-zinc-400 hidden sm:block truncate">
+                  Directly inspect, edit statistics, grant items, and equip gear for any party member
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-zinc-100 font-[family-name:var(--font-heading)] uppercase tracking-wider flex items-center gap-2">
-                <span>Dungeon Master: Party Equipment &amp; Inventory</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40">
-                  Live Sync
-                </span>
-              </h2>
-              <p className="text-[11px] text-zinc-400">
-                Directly inspect, edit statistics, grant items, and equip gear for any party member
-              </p>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleOpenCreateItem}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all whitespace-nowrap"
+              >
+                <Plus size={14} />
+                <span>Forge Item for {activeChar.name.split(' ')[0]}</span>
+              </button>
+
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="p-1.5 sm:p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                  title="Close Gear Manager"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Mobile-only full-width Forge button */}
+          <div className="sm:hidden">
             <button
               onClick={handleOpenCreateItem}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
             >
               <Plus size={14} />
               <span>Forge Item for {activeChar.name.split(' ')[0]}</span>
             </button>
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            )}
           </div>
         </div>
 
@@ -299,54 +316,54 @@ export default function DMPartyInventoryManager({
         </div>
 
         {/* 3. Selected Hero Stat Strip (Instant Stat Feedback) */}
-        <div className="py-3 px-3.5 my-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
+        <div className="py-2.5 sm:py-3 px-3 sm:px-3.5 my-2 sm:my-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <img
               src={activeChar.portrait}
               alt={activeChar.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow-md"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-amber-400 shadow-md shrink-0"
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-zinc-100 text-sm">{activeChar.name}</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="font-bold text-zinc-100 text-xs sm:text-sm">{activeChar.name}</span>
                 <span className="text-[10px] text-zinc-400 font-mono">({activeChar.characterClass})</span>
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-0.5">
-                <span className="flex items-center gap-1 text-red-400 font-bold">
-                  <Heart size={12} /> {activeChar.hp.current}/{activeChar.hp.max} HP
+              <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 flex-wrap">
+                <span className="flex items-center gap-1 text-red-400 font-bold whitespace-nowrap">
+                  <Heart size={11} className="sm:w-3 sm:h-3" /> {activeChar.hp.current}/{activeChar.hp.max} HP
                 </span>
-                <span>&bull;</span>
-                <span className="text-zinc-300 font-mono">
-                  {inventory.length} Total Items ({inventory.filter((i) => i.equipped).length} Equipped)
+                <span className="hidden xs:inline">&bull;</span>
+                <span className="text-zinc-300 font-mono whitespace-nowrap">
+                  {inventory.length} Items ({inventory.filter((i) => i.equipped).length} Eq)
                 </span>
-                <span>&bull;</span>
-                <span className="flex items-center gap-1 text-zinc-300">
-                  <Weight size={12} className="text-zinc-400" /> {totalWeight.toFixed(1)} lbs
+                <span className="hidden xs:inline">&bull;</span>
+                <span className="flex items-center gap-1 text-zinc-300 whitespace-nowrap">
+                  <Weight size={11} className="sm:w-3 sm:h-3 text-zinc-400" /> {totalWeight.toFixed(1)} lbs
                 </span>
               </div>
             </div>
           </div>
 
           {/* Armor Class Plaque with breakdown */}
-          <div className="flex items-center gap-3 bg-black/60 px-3.5 py-1.5 rounded-xl border border-amber-500/30">
-            <Shield size={16} className="text-amber-400" />
+          <div className="flex items-center gap-2.5 sm:gap-3 bg-black/60 px-3 py-1 sm:py-1.5 rounded-xl border border-amber-500/30 shrink-0">
+            <Shield size={15} className="text-amber-400" />
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-zinc-400 block font-bold">
+              <span className="text-[8px] sm:text-[9px] uppercase tracking-wider text-zinc-400 block font-bold leading-tight">
                 Calculated AC
               </span>
-              <span className="text-base font-black text-amber-300 font-mono leading-none">
+              <span className="text-sm sm:text-base font-black text-amber-300 font-mono leading-none">
                 {liveACBreakdown.total}
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500 italic hidden sm:inline max-w-xs truncate">
+            <span className="text-[10px] text-zinc-500 italic hidden md:inline max-w-xs truncate">
               {liveACBreakdown.formula}
             </span>
           </div>
         </div>
 
         {/* 4. Filter Toolbar & Search */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-zinc-800">
-          <div className="flex items-center gap-1 overflow-x-auto text-[11px]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-zinc-800">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px] pb-1 sm:pb-0">
             {[
               { id: 'all', label: 'All Items' },
               { id: 'weapon', label: 'Weapons ⚔️' },
@@ -359,7 +376,7 @@ export default function DMPartyInventoryManager({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-medium ${
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-medium whitespace-nowrap shrink-0 ${
                   selectedCategory === cat.id
                     ? 'bg-amber-500 text-black font-bold shadow-xs'
                     : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
@@ -370,7 +387,7 @@ export default function DMPartyInventoryManager({
             ))}
           </div>
 
-          <div className="relative w-full sm:w-56">
+          <div className="relative w-full sm:w-56 shrink-0">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
@@ -383,7 +400,7 @@ export default function DMPartyInventoryManager({
         </div>
 
         {/* 5. Inventory Item Cards Grid */}
-        <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 min-h-[220px]">
+        <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 pb-4 min-h-[180px]">
           {filteredItems.length === 0 ? (
             <div className="py-12 text-center text-zinc-500 font-mono space-y-2">
               <Package size={30} className="mx-auto text-zinc-600 opacity-60" />
