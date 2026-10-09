@@ -260,7 +260,7 @@ export function getDefaultInventory(): import('./types').InventoryItem[] {
   return [
     {
       id: 'orphans-tithe',
-      name: "The Orphan's Tithe",
+      name: 'Obsidian Dagger',
       quantity: 1,
       weight: 1,
       description: 'A scaling vestige dagger bound with tormented souls.',
@@ -358,7 +358,7 @@ export function getDefaultAttacks(): import('./types').AttackOption[] {
   return [
     {
       id: 'orphans-tithe-attack',
-      name: "The Orphan's Tithe",
+      name: 'Obsidian Dagger',
       attackBonus: 7,
       damage: '1d4 + 4',
       damageType: 'Piercing',

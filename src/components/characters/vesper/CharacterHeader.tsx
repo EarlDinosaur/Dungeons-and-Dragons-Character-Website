@@ -159,7 +159,7 @@ export default function CharacterHeader({
         </button>
 
         <div className="text-[11px] font-mono text-rose-300/80 uppercase tracking-widest hidden sm:block">
-          The Ashen Pact &bull; Shadow Guild &amp; Orphan&apos;s Tithe
+          The Ashen Pact &bull; Shadow Guild &amp; Obsidian Dagger
         </div>
       </div>
 
@@ -222,11 +222,11 @@ export default function CharacterHeader({
           </div>
         </div>
 
-        {/* Middle: Orphan's Tithe Vestige of Malachi Status Box (4 cols) */}
+        {/* Middle: Obsidian Dagger Vestige Status Box (4 cols) */}
         <div className="p-3.5 rounded-xl bg-[#14080a] border border-[var(--color-crimson-500)]/30 lg:col-span-4 space-y-2 shadow-inner">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono text-[var(--color-crimson-400)] uppercase font-bold flex items-center gap-1">
-              <span className="animate-pulse">🩸</span> Orphan&apos;s Tithe Vestige
+              <span className="animate-pulse">🩸</span> Obsidian Dagger Vestige
             </span>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${
               character.orphansTithe.vestigeStage === 'exalted'

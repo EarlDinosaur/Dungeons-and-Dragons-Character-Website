@@ -1,5 +1,5 @@
 // ============================================================================
-// The Orphan's Tithe — Scaling Vestige Dagger Engine
+// Obsidian Dagger — Scaling Vestige Dagger Engine
 // ============================================================================
 
 import type { VestigeStage, VestigeData, SoulEffect, UltimateAbility } from './types';
@@ -69,7 +69,7 @@ export function getSoulEffects(souls: number, stage: VestigeStage): SoulEffect[]
   // Dormant effects (always available once stage >= dormant)
   effects.push({
     name: `+${getHitDmgBonus(stage)} Hit/Damage`,
-    description: `Add +${getHitDmgBonus(stage)} to attack and damage rolls with The Orphan's Tithe.`,
+    description: `Add +${getHitDmgBonus(stage)} to attack and damage rolls with Obsidian Dagger.`,
     active: souls >= 1,
     icon: 'Sword',
   });

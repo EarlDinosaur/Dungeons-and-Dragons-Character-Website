@@ -128,7 +128,7 @@ export default function VesperShadowRealm({
       <div className="absolute bottom-[-10%] left-[10%] w-[700px] h-[300px] rounded-full blur-[50px] bg-[radial-gradient(ellipse_at_center,rgba(69,10,10,0.35),transparent_70%)] cloud-anim-3" />
 
       {/* ====================================================================
-         5. HERO VESTIGE ORPHAN'S TITHE EMBLEM (TOP RIGHT BACKGROUND)
+         5. HERO VESTIGE OBSIDIAN DAGGER EMBLEM (TOP RIGHT BACKGROUND)
          ==================================================================== */}
       <div className="fixed top-12 right-8 md:right-20 z-0 opacity-20 pointer-events-none flex flex-col items-center">
         <svg

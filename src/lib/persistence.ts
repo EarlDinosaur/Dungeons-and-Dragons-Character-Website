@@ -45,14 +45,14 @@ function getDefaultDossier(): CharacterState['dossier'] {
       {
         id: 'rusted-manacle',
         title: 'The Rusted Manacle',
-        description: 'A corroded iron manacle, child-sized, found in the ruins of the orphanage. It hums faintly when held near The Orphan\'s Tithe. Who forged these chains, and what ritual were they part of? The metalwork bears symbols that no local blacksmith recognizes.',
+        description: 'A corroded iron manacle, child-sized, found in the ruins of the orphanage. It hums faintly when held near the Obsidian Dagger. Who forged these chains, and what ritual were they part of? The metalwork bears symbols that no local blacksmith recognizes.',
         clues: [],
         resolved: false,
       },
       {
         id: 'eclipse-brand',
         title: 'The Eclipse Shoulder Brand',
-        description: 'A circular burn scar on Earl\'s left shoulder blade — a solar eclipse design that appeared overnight after his first kill with The Orphan\'s Tithe. The brand occasionally pulses with warmth during new moons. Similar marks have been spotted on other individuals, all of whom are now dead.',
+        description: 'A circular burn scar on Earl\'s left shoulder blade — a solar eclipse design that appeared overnight after his first kill with the Obsidian Dagger. The brand occasionally pulses with warmth during new moons. Similar marks have been spotted on other individuals, all of whom are now dead.',
         clues: [],
         resolved: false,
       },
@@ -248,11 +248,12 @@ export function loadCharacterState(): CharacterState | null {
     // Migrate missing properties smoothly
     const defaults = createDefaultCharacterState();
 
-    return {
+    const merged: CharacterState = {
       ...defaults,
       ...parsed,
       classes: parsed.classes && parsed.classes.length > 0 ? parsed.classes : defaults.classes,
       attacks: parsed.attacks && parsed.attacks.length > 0 ? parsed.attacks : defaults.attacks,
+      inventory: parsed.inventory && parsed.inventory.length > 0 ? parsed.inventory : defaults.inventory,
       spellcasting: {
         spellSaveDC: parsed.spellcasting?.spellSaveDC ?? defaults.spellcasting.spellSaveDC,
         spellAttackBonus: parsed.spellcasting?.spellAttackBonus ?? defaults.spellcasting.spellAttackBonus,
@@ -268,10 +269,35 @@ export function loadCharacterState(): CharacterState | null {
       },
       overrides: parsed.overrides ?? {},
     };
+
+    // Migrate any legacy "The Orphan's Tithe" weapon names to "Obsidian Dagger"
+    return migrateOrphansTithe(merged);
   } catch (e) {
     console.error('Failed to load character state:', e);
     return null;
   }
+}
+
+/**
+ * Migration helper to ensure legacy weapon/attack names update to "Obsidian Dagger".
+ */
+export function migrateOrphansTithe(state: CharacterState): CharacterState {
+  if (!state) return state;
+  const inventory = (state.inventory || []).map((item) =>
+    item.name === "The Orphan's Tithe" || item.id === 'orphans-tithe'
+      ? { ...item, name: 'Obsidian Dagger' }
+      : item
+  );
+  const attacks = (state.attacks || []).map((atk) =>
+    atk.name === "The Orphan's Tithe" || atk.id === 'orphans-tithe-attack'
+      ? { ...atk, name: 'Obsidian Dagger' }
+      : atk
+  );
+  return {
+    ...state,
+    inventory,
+    attacks,
+  };
 }
 
 /**

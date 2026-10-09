@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { CharacterState, AbilityName, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId, CustomMember } from '@/lib/types';
-import { createDefaultCharacterState, recalculateForLevel, saveCharacterState, loadCharacterState } from '@/lib/persistence';
+import { createDefaultCharacterState, recalculateForLevel, saveCharacterState, loadCharacterState, migrateOrphansTithe } from '@/lib/persistence';
 import { isPhantomMurmursActive, getMaxSouls, getVestigeStage } from '@/lib/orphans-tithe';
 import type { AriaState, LunarPhase } from '@/lib/aria-engine';
 import { createDefaultAriaState, calculateAriaStats } from '@/lib/aria-engine';
@@ -367,8 +367,9 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         // Vesper / Earl
         const vesperRemote = res.characters.vesper;
         if (vesperRemote && vesperRemote.updatedAt > vesperModifiedRef.current) {
-          setCharacter(vesperRemote.data);
-          saveCharacterState(vesperRemote.data);
+          const migratedVesper = migrateOrphansTithe(vesperRemote.data);
+          setCharacter(migratedVesper);
+          saveCharacterState(migratedVesper);
         }
 
         // Aria

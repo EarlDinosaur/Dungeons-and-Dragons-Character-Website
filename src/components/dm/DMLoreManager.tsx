@@ -528,7 +528,7 @@ export default function DMLoreManager({
                   type="text"
                   value={loreForm.subtitle}
                   onChange={(e) => handleFieldChange('subtitle', e.target.value)}
-                  placeholder="e.g. Assassin of the Shadow Guild & Bearer of The Orphan's Tithe"
+                  placeholder="e.g. Assassin of the Shadow Guild & Bearer of the Obsidian Dagger"
                   className="w-full px-3 py-2 rounded-xl bg-black/70 border border-zinc-700/80 text-xs text-zinc-300 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50"
                 />
               </div>
@@ -876,7 +876,7 @@ export default function DMLoreManager({
               value={loreForm.dmSecretLore || ''}
               onChange={(e) => handleFieldChange('dmSecretLore', e.target.value)}
               rows={4}
-              placeholder="e.g. Confidential: The Orphan's Tithe dagger was originally forged not by mortals, but by a splinter cell of the Raven Queen's inquisitors..."
+              placeholder="e.g. Confidential: The Obsidian Dagger was originally forged not by mortals, but by a splinter cell of the Raven Queen's inquisitors..."
               className="w-full px-3.5 py-2.5 rounded-xl bg-black/80 border border-purple-900/60 text-purple-100 text-xs leading-relaxed focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/50 resize-y"
             />
           </section>

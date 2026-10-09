@@ -22,7 +22,7 @@ interface CombatActionsProps {
 
 // Preset weapon templates for quick selection
 const WEAPON_PRESETS = [
-  { name: "The Orphan's Tithe", dice: '1d4', damageType: 'Piercing', range: 'Melee (5 ft)', ability: 'DEX', magicBonus: 1, notes: 'Vestige blade. +1 to hit/dmg. On crit, target suffers Soul Bleed.' },
+  { name: 'Obsidian Dagger', dice: '1d4', damageType: 'Piercing', range: 'Melee (5 ft)', ability: 'DEX', magicBonus: 1, notes: 'Vestige blade. +1 to hit/dmg. On crit, target suffers Soul Bleed.' },
   { name: 'Shortsword', dice: '1d6', damageType: 'Piercing', range: 'Melee (5 ft)', ability: 'DEX', magicBonus: 0, notes: 'Finesse, Light' },
   { name: 'Rapier', dice: '1d8', damageType: 'Piercing', range: 'Melee (5 ft)', ability: 'DEX', magicBonus: 0, notes: 'Finesse' },
   { name: 'Hand Crossbow', dice: '1d6', damageType: 'Piercing', range: '30/120 ft', ability: 'DEX', magicBonus: 0, notes: 'Ammunition, Light, Loading' },

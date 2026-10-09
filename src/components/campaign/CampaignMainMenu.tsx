@@ -415,7 +415,7 @@ export default function CampaignMainMenu() {
 
               {/* Aged Parchment Lore Fragment */}
               <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[var(--color-crimson-500)] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic min-h-[62px] flex items-center">
-                &ldquo;Deadly assassin of the Ashen Pact, wielding the soul-stealing vestige dagger Orphan&apos;s Tithe.&rdquo;
+                &ldquo;Deadly assassin of the Ashen Pact, wielding the soul-stealing Obsidian Dagger.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}

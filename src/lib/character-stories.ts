@@ -14,7 +14,7 @@ export interface CharacterStoryData {
 export const CHARACTER_STORIES: Record<string, CharacterStoryData> = {
   vesper: {
     title: 'The Story of Vesper Ashwood',
-    subtitle: "Assassin of the Shadow Guild & Bearer of The Orphan's Tithe",
+    subtitle: "Assassin of the Shadow Guild & Bearer of the Obsidian Dagger",
     chapters: [
       {
         id: 'orphanageMassacre',

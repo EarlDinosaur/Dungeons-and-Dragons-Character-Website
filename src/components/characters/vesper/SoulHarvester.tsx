@@ -156,12 +156,12 @@ export default function SoulHarvester({
       // Auto Harvest soul if enabled and souls < maxSouls
       if (autoHarvestOnHit && souls < vestige.maxSouls) {
         onSoulsChange(souls + 1);
-        showToast('Soul Harvested!', '+1 Soul trapped in The Orphan\'s Tithe', 'power');
+        showToast('Soul Harvested!', '+1 Soul trapped in Obsidian Dagger', 'power');
       }
 
       setActiveRollModal({
         type: 'attack',
-        title: "The Orphan's Tithe — Strike",
+        title: 'Obsidian Dagger — Strike',
         d20,
         totalToHit,
         isNat20,
@@ -240,7 +240,7 @@ export default function SoulHarvester({
               <div className="py-6 flex flex-col items-center justify-center gap-3">
                 <Dices size={44} className="text-[var(--color-crimson-400)] animate-spin" />
                 <span className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)] uppercase tracking-wider">
-                  {activeRollModal?.type === 'ultimate' ? 'Unleashing Trapped Souls...' : 'Striking with The Orphan\'s Tithe...'}
+                  {activeRollModal?.type === 'ultimate' ? 'Unleashing Trapped Souls...' : 'Striking with Obsidian Dagger...'}
                 </span>
               </div>
             ) : activeRollModal ? (
@@ -327,7 +327,7 @@ export default function SoulHarvester({
                     <button
                       onClick={() => {
                         onSoulsChange(souls + 1);
-                        showToast('Soul Harvested!', '+1 Soul trapped in The Orphan\'s Tithe', 'power');
+                        showToast('Soul Harvested!', '+1 Soul trapped in Obsidian Dagger', 'power');
                       }}
                       className="flex-1 py-2.5 bg-gradient-to-r from-red-900 to-amber-900 hover:from-red-800 hover:to-amber-800 text-white font-bold text-xs rounded-xl font-mono transition-all cursor-pointer border border-amber-500/40 flex items-center justify-center gap-1.5"
                     >
@@ -357,7 +357,7 @@ export default function SoulHarvester({
       <div className="text-center">
         <h2 className="text-2xl font-[family-name:var(--font-heading)] font-bold text-glow-crimson"
             style={{ color: stageColor.primary }}>
-          The Orphan&apos;s Tithe
+          Obsidian Dagger
         </h2>
         <p className="text-sm text-[var(--color-parchment-dim)] font-[family-name:var(--font-body)] italic">
           Scaling Vestige Dagger
@@ -490,7 +490,7 @@ export default function SoulHarvester({
           <div className="flex items-center gap-2">
             <Sword size={20} className="text-[var(--color-crimson-400)]" />
             <h3 className="font-[family-name:var(--font-heading)] font-bold text-base text-[var(--color-parchment)] uppercase tracking-wider">
-              Attack with The Orphan&apos;s Tithe
+              Attack with Obsidian Dagger
             </h3>
           </div>
           <span className="text-xs font-mono font-bold text-[var(--color-gold-400)] bg-black/60 px-2.5 py-1 rounded-lg border border-[var(--color-gold-500)]/30">
