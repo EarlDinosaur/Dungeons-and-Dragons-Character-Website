@@ -354,22 +354,22 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 1: EARL (VESPER ASHWOOD)
              ================================================================ */}
-          <div className="medieval-card p-5 border-2 border-[var(--color-crimson-500)]/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(26,16,18,0.98)_0%,rgba(14,8,10,0.99)_100%)] relative group hover:border-[var(--color-crimson-400)] shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(220,38,38,0.18)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-emerald-600/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(16,185,129,0.14)_0%,transparent_70%),linear-gradient(145deg,rgba(10,24,18,0.98)_0%,rgba(6,16,12,0.99)_100%)] relative group hover:border-emerald-500 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(16,185,129,0.18)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
-            <span className="medieval-corner tl text-[var(--color-crimson-400)]/70">❖</span>
-            <span className="medieval-corner tr text-[var(--color-crimson-400)]/70">❖</span>
-            <span className="medieval-corner bl text-[var(--color-crimson-400)]/70">❖</span>
-            <span className="medieval-corner br text-[var(--color-crimson-400)]/70">❖</span>
+            <span className="medieval-corner tl text-emerald-400/70">❖</span>
+            <span className="medieval-corner tr text-emerald-400/70">❖</span>
+            <span className="medieval-corner bl text-emerald-400/70">❖</span>
+            <span className="medieval-corner br text-emerald-400/70">❖</span>
 
             {/* Inner Hairline Filigree Border */}
-            <div className="absolute inset-[5px] border border-[var(--color-crimson-500)]/20 rounded-xl pointer-events-none group-hover:border-[var(--color-crimson-400)]/40 transition-colors" />
+            <div className="absolute inset-[5px] border border-emerald-500/20 rounded-xl pointer-events-none group-hover:border-emerald-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(220,38,38,0.25)] to-red-950/90 border-b border-[var(--color-crimson-500)]/40 flex items-center justify-between gap-2 shadow-xs">
-              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-[var(--color-crimson-300)] flex items-center gap-1.5 truncate">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-emerald-950/90 via-[rgba(16,185,129,0.25)] to-emerald-950/90 border-b border-emerald-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-emerald-300 flex items-center gap-1.5 truncate">
                 <span>⚜</span> Shadow Guild Oath
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-[var(--color-gold-400)] font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-amber-500/20">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-200 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-emerald-500/30">
                 Silent Blade
               </span>
             </div>
@@ -378,7 +378,7 @@ export default function CampaignMainMenu() {
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-[var(--color-crimson-500)]/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-[var(--color-crimson-400)] transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-emerald-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-emerald-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('vesper')}
                       alt="Earl (Vesper Ashwood)"
@@ -386,7 +386,7 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-red-700 via-red-800 to-red-950 border border-red-400 text-[11px] text-amber-200">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-950 border border-emerald-400 text-[11px] text-emerald-200">
                     🗡️
                   </div>
                 </div>
@@ -396,15 +396,15 @@ export default function CampaignMainMenu() {
                     <h3 className="text-xl sm:text-2xl font-black text-amber-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Earl
                     </h3>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-[var(--color-crimson-500)]/50 text-rose-200 uppercase tracking-wider shrink-0 shadow-inner">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {character.level}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
-                    <span className="text-rose-300">Human</span>
-                    <span className="text-rose-500/50">&bull;</span>
-                    <span className="text-rose-200">Rogue Assassin</span>
+                    <span className="text-emerald-300">Human</span>
+                    <span className="text-emerald-500/50">&bull;</span>
+                    <span className="text-emerald-200">Rogue Assassin</span>
                   </div>
 
                   <p className="text-xs text-[var(--color-gold-400)] italic font-serif truncate" title="Vesper Ashwood">
@@ -414,17 +414,17 @@ export default function CampaignMainMenu() {
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-[var(--color-crimson-500)] text-xs text-[var(--color-parchment-muted)] leading-relaxed italic min-h-[62px] flex items-center">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-emerald-500 text-xs text-[var(--color-parchment-muted)] leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Deadly assassin of the Ashen Pact, wielding the soul-stealing Obsidian Dagger.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-[var(--color-crimson-500)]/30 text-center font-mono">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-emerald-500/30 text-center font-mono">
                 <div>
                   <span className="block text-[8.5px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-rose-400 text-xs sm:text-sm">{character.combat.currentHP}/{character.combat.maxHP}</span>
+                  <span className="font-black text-emerald-400 text-xs sm:text-sm">{character.combat.currentHP}/{character.combat.maxHP}</span>
                 </div>
-                <div className="border-x border-[var(--color-crimson-500)]/20">
+                <div className="border-x border-emerald-500/20">
                   <span className="block text-[8.5px] text-[var(--color-parchment-dim)] uppercase tracking-wider font-bold">Armor</span>
                   <span className="font-black text-[var(--color-gold-400)] text-xs sm:text-sm">{character.ac}</span>
                 </div>
@@ -437,10 +437,10 @@ export default function CampaignMainMenu() {
 
             <button
               onClick={() => navigateToCharacter('vesper')}
-              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-amber-200 hover:text-emerald-200 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
-              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight size={14} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
@@ -633,22 +633,22 @@ export default function CampaignMainMenu() {
           {/* ================================================================
              ROSTER CARD 4: WYN'EL AELUIN
              ================================================================ */}
-          <div className="medieval-card p-5 border-2 border-pink-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(236,72,153,0.18)_0%,transparent_70%),linear-gradient(145deg,rgba(38,10,25,0.98)_0%,rgba(20,4,14,0.99)_100%)] relative group hover:border-pink-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(236,72,153,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-red-600/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.18)_0%,transparent_70%),linear-gradient(145deg,rgba(36,10,14,0.98)_0%,rgba(20,4,6,0.99)_100%)] relative group hover:border-red-500 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(220,38,38,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
-            <span className="medieval-corner tl text-pink-400/70">❖</span>
-            <span className="medieval-corner tr text-pink-400/70">❖</span>
-            <span className="medieval-corner bl text-pink-400/70">❖</span>
-            <span className="medieval-corner br text-pink-400/70">❖</span>
+            <span className="medieval-corner tl text-red-400/70">❖</span>
+            <span className="medieval-corner tr text-red-400/70">❖</span>
+            <span className="medieval-corner bl text-red-400/70">❖</span>
+            <span className="medieval-corner br text-red-400/70">❖</span>
 
             {/* Inner Hairline Filigree Border */}
-            <div className="absolute inset-[5px] border border-pink-500/20 rounded-xl pointer-events-none group-hover:border-pink-400/40 transition-colors" />
+            <div className="absolute inset-[5px] border border-red-500/20 rounded-xl pointer-events-none group-hover:border-red-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-pink-950/90 via-[rgba(236,72,153,0.25)] to-pink-950/90 border-b border-pink-500/40 flex items-center justify-between gap-2 shadow-xs">
-              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-pink-300 flex items-center gap-1.5 truncate">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-red-950/90 via-[rgba(220,38,38,0.25)] to-red-950/90 border-b border-red-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-red-300 flex items-center gap-1.5 truncate">
                 <span>👑</span> House Aeluin Crown
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-pink-200 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-pink-500/30">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-red-200 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-red-500/30">
                 Archfey Exile
               </span>
             </div>
@@ -657,7 +657,7 @@ export default function CampaignMainMenu() {
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-pink-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-pink-400 transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-red-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-red-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('wynel')}
                       alt="Wyn'el Aeluin"
@@ -665,83 +665,83 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-pink-600 via-rose-700 to-pink-950 border border-pink-400 text-[11px] text-pink-100">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border border-red-400 text-[11px] text-red-100">
                     👑
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-1.5">
-                    <h3 className="text-xl sm:text-2xl font-black text-pink-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    <h3 className="text-xl sm:text-2xl font-black text-red-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Wyn’el Aeluin
                     </h3>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-pink-950/80 border border-pink-500/50 text-pink-300 uppercase tracking-wider shrink-0 shadow-inner">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {wynel.level}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
-                    <span className="text-pink-200">Half-Elf</span>
-                    <span className="text-pink-500/50">&bull;</span>
-                    <span className="text-pink-300">Archfey Warlock</span>
+                    <span className="text-red-200">Half-Elf</span>
+                    <span className="text-red-500/50">&bull;</span>
+                    <span className="text-red-300">Archfey Warlock</span>
                   </div>
 
-                  <p className="text-xs text-pink-300/80 italic font-serif truncate" title="Prince of House Aeluin">
+                  <p className="text-xs text-red-300/80 italic font-serif truncate" title="Prince of House Aeluin">
                     &ldquo;Prince of House Aeluin&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-pink-500 text-xs text-pink-100/90 leading-relaxed italic min-h-[62px] flex items-center">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-red-500 text-xs text-red-100/90 leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Exiled noble prince bound to the Crimson Heart-Tattoo, wielding scarlet chaos magic and eldritch secrets.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-pink-500/30 text-center font-mono">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-red-500/30 text-center font-mono">
                 <div>
-                  <span className="block text-[8.5px] text-pink-200/60 uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-pink-400 text-xs sm:text-sm">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-red-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-red-400 text-xs sm:text-sm">{wynel.combat.currentHP}/{wynel.combat.maxHP}</span>
                 </div>
-                <div className="border-x border-pink-500/20">
-                  <span className="block text-[8.5px] text-pink-200/60 uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-pink-300 text-xs sm:text-sm">{wynel.combat.ac}</span>
+                <div className="border-x border-red-500/20">
+                  <span className="block text-[8.5px] text-red-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-red-300 text-xs sm:text-sm">{wynel.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[8.5px] text-pink-200/60 uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-pink-300 text-xs sm:text-sm">{wynel.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-red-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-red-300 text-xs sm:text-sm">{wynel.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('wynel')}
-              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-pink-200 hover:text-pink-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-red-200 hover:text-red-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
-              <ArrowRight size={14} className="text-pink-400 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight size={14} className="text-red-400 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
           {/* ================================================================
              ROSTER CARD 5: KASTORIEL, THE GROUNDED STAR
              ================================================================ */}
-          <div className="medieval-card p-5 border-2 border-teal-500/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(20,184,166,0.18)_0%,transparent_70%),linear-gradient(145deg,rgba(8,24,28,0.98)_0%,rgba(4,14,18,0.99)_100%)] relative group hover:border-teal-400 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(20,184,166,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
+          <div className="medieval-card p-5 border-2 border-orange-600/60 bg-[radial-gradient(ellipse_at_50%_0%,rgba(234,88,12,0.18)_0%,transparent_70%),linear-gradient(145deg,rgba(32,16,6,0.98)_0%,rgba(18,8,2,0.99)_100%)] relative group hover:border-orange-500 shadow-[0_16px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(234,88,12,0.22)] transition-all duration-300 rounded-2xl flex flex-col justify-between overflow-hidden">
             {/* Corner Filigree Glyphs */}
-            <span className="medieval-corner tl text-teal-400/70">❖</span>
-            <span className="medieval-corner tr text-teal-400/70">❖</span>
-            <span className="medieval-corner bl text-teal-400/70">❖</span>
-            <span className="medieval-corner br text-teal-400/70">❖</span>
+            <span className="medieval-corner tl text-orange-400/70">❖</span>
+            <span className="medieval-corner tr text-orange-400/70">❖</span>
+            <span className="medieval-corner bl text-orange-400/70">❖</span>
+            <span className="medieval-corner br text-orange-400/70">❖</span>
 
             {/* Inner Hairline Filigree Border */}
-            <div className="absolute inset-[5px] border border-teal-500/20 rounded-xl pointer-events-none group-hover:border-teal-400/40 transition-colors" />
+            <div className="absolute inset-[5px] border border-orange-500/20 rounded-xl pointer-events-none group-hover:border-orange-400/40 transition-colors" />
 
             {/* Heraldic Top Ribbon Banner */}
-            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-teal-950/90 via-[rgba(20,184,166,0.25)] to-teal-950/90 border-b border-teal-500/40 flex items-center justify-between gap-2 shadow-xs">
-              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-teal-300 flex items-center gap-1.5 truncate">
+            <div className="relative z-10 -mx-5 -mt-5 mb-4 px-4 py-1.5 bg-gradient-to-r from-orange-950/90 via-[rgba(234,88,12,0.25)] to-orange-950/90 border-b border-orange-500/40 flex items-center justify-between gap-2 shadow-xs">
+              <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-orange-300 flex items-center gap-1.5 truncate">
                 <span>⭐</span> Starlight Coven
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-teal-200 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-teal-500/30">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-orange-200 font-semibold shrink-0 px-2 py-0.5 rounded bg-black/40 border border-orange-500/30">
                 The Grounded Star
               </span>
             </div>
@@ -750,7 +750,7 @@ export default function CampaignMainMenu() {
               {/* Header & Portrait Block */}
               <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
-                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-teal-400/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-teal-400 transition-all duration-300 relative">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-orange-500/70 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group-hover:border-orange-400 transition-all duration-300 relative">
                     <img
                       src={getPortraitUrl('kastoriel')}
                       alt="Kastoriel, The Grounded Star"
@@ -758,61 +758,61 @@ export default function CampaignMainMenu() {
                     />
                   </div>
                   {/* Embossed Wax Seal Stamp */}
-                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-teal-600 via-emerald-700 to-teal-950 border border-teal-300 text-[11px] text-teal-100">
+                  <div className="medieval-wax-seal absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-orange-600 via-amber-700 to-orange-950 border border-orange-400 text-[11px] text-orange-100">
                     ⭐
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-1.5">
-                    <h3 className="text-xl sm:text-2xl font-black text-teal-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    <h3 className="text-xl sm:text-2xl font-black text-orange-100 font-['Cormorant_Garamond',serif] leading-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                       Kastoriel
                     </h3>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/50 text-teal-300 uppercase tracking-wider shrink-0 shadow-inner">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-950/80 border border-orange-500/50 text-orange-300 uppercase tracking-wider shrink-0 shadow-inner">
                       Lv {kastoriel.level}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono font-semibold">
-                    <span className="text-teal-200">Half-Elf</span>
-                    <span className="text-teal-500/50">&bull;</span>
-                    <span className="text-teal-300">Stars Druid</span>
+                    <span className="text-orange-200">Half-Elf</span>
+                    <span className="text-orange-500/50">&bull;</span>
+                    <span className="text-orange-300">Stars Druid</span>
                   </div>
 
-                  <p className="text-xs text-teal-200/90 italic font-serif truncate" title="The Grounded Star">
+                  <p className="text-xs text-orange-200/90 italic font-serif truncate" title="The Grounded Star">
                     &ldquo;The Grounded Star&rdquo;
                   </p>
                 </div>
               </div>
 
               {/* Aged Parchment Lore Fragment */}
-              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-teal-500 text-xs text-teal-100/90 leading-relaxed italic min-h-[62px] flex items-center">
+              <div className="medieval-parchment-scroll p-3 rounded-xl border-l-[3px] border-l-orange-500 text-xs text-orange-100/90 leading-relaxed italic min-h-[62px] flex items-center">
                 &ldquo;Exiled star druid bound to the blade Pendulum, guiding celestial constellations to track and protect his twin Poluxien.&rdquo;
               </div>
 
               {/* Clean 3-Col Medieval Stat Plaque */}
-              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-teal-500/30 text-center font-mono">
+              <div className="medieval-stat-plaque grid grid-cols-3 gap-1.5 p-2.5 rounded-xl border border-orange-500/30 text-center font-mono">
                 <div>
-                  <span className="block text-[8.5px] text-teal-200/60 uppercase tracking-wider font-bold">Vitality</span>
-                  <span className="font-black text-teal-400 text-xs sm:text-sm">{kastoriel.combat.currentHP}/{kastoriel.combat.maxHP}</span>
+                  <span className="block text-[8.5px] text-orange-200/60 uppercase tracking-wider font-bold">Vitality</span>
+                  <span className="font-black text-orange-400 text-xs sm:text-sm">{kastoriel.combat.currentHP}/{kastoriel.combat.maxHP}</span>
                 </div>
-                <div className="border-x border-teal-500/20">
-                  <span className="block text-[8.5px] text-teal-200/60 uppercase tracking-wider font-bold">Armor</span>
-                  <span className="font-black text-teal-300 text-xs sm:text-sm">{kastoriel.combat.ac}</span>
+                <div className="border-x border-orange-500/20">
+                  <span className="block text-[8.5px] text-orange-200/60 uppercase tracking-wider font-bold">Armor</span>
+                  <span className="font-black text-orange-300 text-xs sm:text-sm">{kastoriel.combat.ac}</span>
                 </div>
                 <div>
-                  <span className="block text-[8.5px] text-teal-200/60 uppercase tracking-wider font-bold">Spell DC</span>
-                  <span className="font-black text-teal-300 text-xs sm:text-sm">{kastoriel.spellcasting.spellSaveDC}</span>
+                  <span className="block text-[8.5px] text-orange-200/60 uppercase tracking-wider font-bold">Spell DC</span>
+                  <span className="font-black text-orange-300 text-xs sm:text-sm">{kastoriel.spellcasting.spellSaveDC}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => navigateToCharacter('kastoriel')}
-              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-teal-200 hover:text-teal-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+              className="medieval-writ-btn w-full mt-4 py-2.5 px-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-orange-200 hover:text-orange-100 flex items-center justify-center gap-2 relative z-10 cursor-pointer"
             >
               <span>📜 Inspect Hero Sheet</span>
-              <ArrowRight size={14} className="text-teal-400 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight size={14} className="text-orange-400 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 

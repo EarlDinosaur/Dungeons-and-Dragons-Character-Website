@@ -290,10 +290,10 @@ export default function DMDashboardGrid({
                   {isRestMenuOpen && (
                     <>
                       <div
-                        className="fixed inset-0 z-20"
+                        className="fixed inset-0 z-40"
                         onClick={() => setIsRestMenuOpen(false)}
                       />
-                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#0d0f17] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-30 font-mono text-xs space-y-1 animate-pop-in">
+                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#0d0f17] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50 font-mono text-xs space-y-1 animate-pop-in">
                         <button
                           onClick={() => {
                             onBulkRest('short');
@@ -386,6 +386,7 @@ export default function DMDashboardGrid({
             onTriggerRest={onTriggerRest}
             onInspectCharacter={onInspectCharacter}
             onOpenLoreEditor={(charId) => setLoreModalCharId(charId)}
+            onOpenInventory={(charId) => setInventoryCharId(charId)}
           />
         )}
 

@@ -758,7 +758,7 @@ export default function DMNPCCodex({
 
       {/* 3. Create / Edit NPC Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in">
           <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden text-xs font-mono">
             {/* Modal Header */}
             <div className="p-3 bg-[#0a0c12] border-b border-zinc-800 flex items-center justify-between">

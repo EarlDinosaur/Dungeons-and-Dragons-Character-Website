@@ -261,37 +261,37 @@ export default function TabNavigation({
   } = useCharacterTabs();
 
   const getPrimaryThemeColor = () => {
-    if (isVesper) return '#dc2626';
+    if (isVesper) return '#10b981';
     if (isCyrus) return '#f59e0b';
-    if (isWynel) return '#ec4899';
-    if (isKastoriel) return '#14b8a6';
+    if (isWynel) return '#dc2626';
+    if (isKastoriel) return '#ea580c';
     if (isAria) return '#a992e8';
     return '#f59e0b';
   };
 
   const getActiveStyle = () => {
-    if (isVesper) return 'text-[var(--color-gold-400)] bg-[var(--color-surface-raised)] border border-[rgba(255,215,0,0.25)] shadow-[0_0_15px_rgba(255,215,0,0.15)]';
+    if (isVesper) return 'text-emerald-300 bg-[#062016] border border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.35)]';
     if (isCyrus) return 'text-amber-300 bg-[#261d10] border border-[#f59e0b]/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
-    if (isWynel) return 'text-pink-200 bg-[#2b081a] border border-pink-500/60 shadow-[0_0_15px_rgba(236,72,153,0.35)]';
-    if (isKastoriel) return 'text-teal-200 bg-[#081f21] border border-teal-500/60 shadow-[0_0_15px_rgba(20,184,166,0.35)]';
+    if (isWynel) return 'text-red-200 bg-[#2a0808] border border-red-500/60 shadow-[0_0_15px_rgba(220,38,38,0.35)]';
+    if (isKastoriel) return 'text-orange-200 bg-[#261204] border border-orange-600/60 shadow-[0_0_15px_rgba(234,88,12,0.35)]';
     if (isAria) return 'text-[#a992e8] bg-[#1d2249] border border-[#a992e8]/50 shadow-[0_0_15px_rgba(169,146,232,0.25)]';
     return 'text-amber-200 bg-zinc-900 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]';
   };
 
   const getIconStyle = () => {
-    if (isVesper) return 'text-[var(--color-gold-400)]';
+    if (isVesper) return 'text-emerald-400';
     if (isCyrus) return 'text-amber-400';
-    if (isWynel) return 'text-pink-400';
-    if (isKastoriel) return 'text-teal-400';
+    if (isWynel) return 'text-red-400';
+    if (isKastoriel) return 'text-orange-400';
     if (isAria) return 'text-[#a992e8]';
     return 'text-amber-400';
   };
 
   const getLineStyle = () => {
-    if (isVesper) return 'bg-[var(--color-gold-bright)] shadow-[0_0_8px_rgba(255,215,0,0.8)]';
+    if (isVesper) return 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
     if (isCyrus) return 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
-    if (isWynel) return 'bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.8)]';
-    if (isKastoriel) return 'bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-300 shadow-[0_0_8px_rgba(20,184,166,0.8)]';
+    if (isWynel) return 'bg-red-500 shadow-[0_0_8px_rgba(220,38,38,0.8)]';
+    if (isKastoriel) return 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 shadow-[0_0_8px_rgba(234,88,12,0.8)]';
     if (isAria) return 'bg-[#a992e8] shadow-[0_0_8px_rgba(169,146,232,0.8)]';
     return 'bg-amber-400';
   };
@@ -450,10 +450,10 @@ export function FloatingFantasyDock({
   };
 
   const getPillActiveColor = () => {
-    if (isVesper) return 'from-red-600 to-rose-900 border-red-400 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]';
+    if (isVesper) return 'from-emerald-600 to-emerald-950 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]';
     if (isCyrus) return 'from-amber-600 to-yellow-800 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]';
-    if (isWynel) return 'from-pink-600 to-rose-950 border-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]';
-    if (isKastoriel) return 'from-teal-600 to-emerald-950 border-teal-400 text-white shadow-[0_0_15px_rgba(20,184,166,0.5)]';
+    if (isWynel) return 'from-red-600 to-rose-950 border-red-400 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]';
+    if (isKastoriel) return 'from-orange-600 to-amber-950 border-orange-400 text-white shadow-[0_0_15px_rgba(234,88,12,0.5)]';
     if (isAria) return 'from-purple-600 to-indigo-900 border-purple-400 text-white shadow-[0_0_15px_rgba(168,85,247,0.5)]';
     return 'from-amber-600 to-amber-900 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]';
   };

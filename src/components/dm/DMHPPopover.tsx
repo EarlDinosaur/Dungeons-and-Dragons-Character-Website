@@ -119,12 +119,12 @@ export default function DMHPPopover({
   return (
     <>
       {/* Transparent click-catcher: closes without dimming the screen */}
-      <div className="fixed inset-0 z-[60]" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 z-[120]" onClick={onClose} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
         aria-label={`Adjust ${title}`}
-        className="fixed z-[61] rounded-xl bg-[#0e1018] border border-amber-500/30 shadow-[0_18px_50px_rgba(0,0,0,0.75)] font-mono text-xs animate-pop-in"
+        className="fixed z-[121] rounded-xl bg-[#0e1018] border border-amber-500/30 shadow-[0_18px_50px_rgba(0,0,0,0.75)] font-mono text-xs animate-pop-in"
         style={{ top: pos.top, left: pos.left, width: POPOVER_WIDTH, maxWidth: `calc(100vw - ${MARGIN * 2}px)` }}
       >
         {/* Header */}

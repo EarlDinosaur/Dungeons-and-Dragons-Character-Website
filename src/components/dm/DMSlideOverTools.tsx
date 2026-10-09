@@ -118,7 +118,7 @@ export default function DMSlideOverTools({ open, onClose, atmosphere, onUpdateAt
   const latest = log[0];
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="DM tools">
+    <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-label="DM tools">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] animate-fade-in" onClick={onClose} />
 
       <aside className="absolute right-0 top-0 h-full w-full max-w-[400px] bg-[#0b0c12] border-l border-amber-500/20 shadow-[-20px_0_60px_rgba(0,0,0,0.6)] flex flex-col font-mono text-xs animate-slide-in-right">

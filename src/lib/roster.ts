@@ -25,8 +25,8 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
     player: 'You',
     isUser: true,
     portraitUrl: '/vesper-portrait.png',
-    primaryColor: '#dc2626', // Crimson
-    accentColor: '#ffd700',  // Gold
+    primaryColor: '#10b981', // Emerald Green
+    accentColor: '#34d399',  // Mint Accent
   },
   {
     id: 'aria',
@@ -67,8 +67,8 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
     player: 'Friend',
     isUser: false,
     portraitUrl: '/wynel-portrait.png',
-    primaryColor: '#ef4444', // Scarlet
-    accentColor: '#f43f5e',
+    primaryColor: '#dc2626', // Crimson Red
+    accentColor: '#ef4444',  // Scarlet Accent
   },
   {
     id: 'kastoriel',
@@ -81,8 +81,8 @@ export const PARTY_ROSTER: CharacterRosterItem[] = [
     player: 'Friend',
     isUser: false,
     portraitUrl: '/kastoriel-portrait.png',
-    primaryColor: '#f59e0b', // Amber Starlight Gold
-    accentColor: '#fb923c',  // Orange Starlight
+    primaryColor: '#ea580c', // Dark Orange
+    accentColor: '#f97316',  // Amber/Orange Accent
   },
 ];
 

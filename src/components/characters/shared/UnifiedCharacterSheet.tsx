@@ -117,8 +117,8 @@ interface UnifiedCharacterSheetProps {
 export default function UnifiedCharacterSheet({
   character,
   activeTab,
-  primaryColor = '#dc2626',
-  accentColor = '#ffd700',
+  primaryColor = '#10b981',
+  accentColor = '#34d399',
   portraitUrl,
   signatureTab,
   onLevelChange,

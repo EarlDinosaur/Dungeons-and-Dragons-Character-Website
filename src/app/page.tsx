@@ -819,15 +819,15 @@ export default function Home() {
     : { ...character, id: 'vesper' };
 
   const activeTheme = isVesper
-    ? { primary: '#dc2626', accent: '#ffd700', portraitUrl: getPortraitUrl('vesper') }
+    ? { primary: '#10b981', accent: '#34d399', portraitUrl: getPortraitUrl('vesper') }
     : isAria
     ? { primary: '#a992e8', accent: '#d9b872', portraitUrl: getPortraitUrl('aria') }
     : isCyrus
     ? { primary: '#eab308', accent: '#fbbf24', portraitUrl: getPortraitUrl('cyrus') }
     : isWynel
-    ? { primary: '#ec4899', accent: '#f472b6', portraitUrl: getPortraitUrl('wynel') }
+    ? { primary: '#dc2626', accent: '#ef4444', portraitUrl: getPortraitUrl('wynel') }
     : isKastoriel
-    ? { primary: '#14b8a6', accent: '#2dd4bf', portraitUrl: getPortraitUrl('kastoriel') }
+    ? { primary: '#ea580c', accent: '#f97316', portraitUrl: getPortraitUrl('kastoriel') }
     : (customThemes[activeCharacterId] || { primary: '#3b82f6', accent: '#38bdf8', portraitUrl: '/vesper-portrait.png' });
 
   // Resolve Anchored Signature Tab Component
@@ -1142,8 +1142,8 @@ export default function Home() {
       subclass: character.subclass || 'Assassin',
       level: character.level,
       portraitUrl: getPortraitUrl('vesper'),
-      primaryColor: '#e11d48',
-      accentColor: '#f43f5e',
+      primaryColor: '#10b981',
+      accentColor: '#34d399',
       currentHP: character.combat.currentHP,
       maxHP: character.combat.maxHP,
       tempHP: character.combat.tempHP,
@@ -1240,8 +1240,8 @@ export default function Home() {
       subclass: wynel?.subclass || 'Archfey / Crimson Pact',
       level: wynel?.level || 10,
       portraitUrl: getPortraitUrl('wynel'),
-      primaryColor: '#ec4899',
-      accentColor: '#f472b6',
+      primaryColor: '#dc2626',
+      accentColor: '#ef4444',
       currentHP: wynel?.combat?.currentHP || 72,
       maxHP: wynel?.combat?.maxHP || 72,
       tempHP: wynel?.combat?.tempHP || 0,
@@ -1272,8 +1272,8 @@ export default function Home() {
       subclass: kastoriel?.subclass || 'Circle of the Stars',
       level: kastoriel?.level || 10,
       portraitUrl: getPortraitUrl('kastoriel'),
-      primaryColor: '#14b8a6',
-      accentColor: '#2dd4bf',
+      primaryColor: '#ea580c',
+      accentColor: '#f97316',
       currentHP: kastoriel?.combat?.currentHP || 73,
       maxHP: kastoriel?.combat?.maxHP || 73,
       tempHP: kastoriel?.combat?.tempHP || 0,

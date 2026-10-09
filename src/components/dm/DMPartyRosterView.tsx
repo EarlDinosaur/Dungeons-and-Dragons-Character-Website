@@ -33,6 +33,7 @@ interface DMPartyRosterViewProps {
   onTriggerRest: (charId: string, type: 'short' | 'long') => void;
   onInspectCharacter?: (charId: string) => void;
   onOpenLoreEditor?: (charId: string) => void;
+  onOpenInventory?: (charId: string) => void;
 }
 
 export default function DMPartyRosterView({
@@ -43,6 +44,7 @@ export default function DMPartyRosterView({
   onTriggerRest,
   onInspectCharacter,
   onOpenLoreEditor,
+  onOpenInventory,
 }: DMPartyRosterViewProps) {
   const [viewMode, setViewMode] = useState<'matrix' | 'cards'>('matrix');
 
@@ -59,8 +61,16 @@ export default function DMPartyRosterView({
     anchor: HPPopoverAnchor;
   } | null>(null);
 
-  // Active Inventory & Equipment Manager State
+  // Active Inventory & Equipment Manager State (fallback when not managed by parent)
   const [inventoryCharId, setInventoryCharId] = useState<string | null>(null);
+
+  const handleOpenGear = (memberId: string) => {
+    if (onOpenInventory) {
+      onOpenInventory(memberId);
+    } else {
+      setInventoryCharId(memberId);
+    }
+  };
 
   return (
     <div className="w-full space-y-4 animate-fade-in font-mono text-xs">
@@ -309,7 +319,7 @@ export default function DMPartyRosterView({
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setInventoryCharId(member.id)}
+                            onClick={() => handleOpenGear(member.id)}
                             className="p-1.5 rounded bg-zinc-900 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 cursor-pointer transition-colors"
                             title="Manage Inventory & Equipment"
                           >
@@ -541,7 +551,7 @@ export default function DMPartyRosterView({
                 {/* Actions Ribbon */}
                 <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1.5 mt-auto">
                   <button
-                    onClick={() => setInventoryCharId(member.id)}
+                    onClick={() => handleOpenGear(member.id)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 text-[10px] font-bold transition-colors cursor-pointer"
                   >
                     <Package size={12} className="text-amber-400" />
@@ -596,8 +606,8 @@ export default function DMPartyRosterView({
         />
       )}
 
-      {/* 5. DM Party Inventory & Equipment Modal */}
-      {inventoryCharId && (
+      {/* 5. DM Party Inventory & Equipment Modal (fallback) */}
+      {!onOpenInventory && inventoryCharId && (
         <DMPartyInventoryManager
           initialCharacterId={inventoryCharId}
           onClose={() => setInventoryCharId(null)}

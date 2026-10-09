@@ -861,7 +861,7 @@ export default function DMShopManager({
 
       {/* 3. Shop Create / Edit Modal */}
       {isShopModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-lg bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <span className="font-bold text-amber-300 text-xs uppercase">
@@ -974,7 +974,7 @@ export default function DMShopManager({
 
       {/* 4. Add Catalogue Modal */}
       {isAddCatalogueModalOpen && currentShop && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-md bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <div className="flex items-center gap-1.5">
@@ -1061,7 +1061,7 @@ export default function DMShopManager({
 
       {/* 5. Manage Catalogues Modal */}
       {isManageCataloguesModalOpen && currentShop && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-md bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <div className="flex items-center gap-1.5">
@@ -1198,7 +1198,7 @@ export default function DMShopManager({
 
       {/* 6. Item Create / Edit Modal */}
       {isItemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-xs animate-fade-in font-mono">
           <div className="w-full max-w-lg bg-[#0d0f17] border border-amber-500/40 rounded-2xl shadow-2xl p-4 text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <span className="font-bold text-amber-300 text-xs uppercase">

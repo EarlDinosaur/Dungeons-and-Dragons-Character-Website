@@ -102,7 +102,7 @@ export default function DMLoreManager({
         className: `${character.race || 'Human'} ${character.class || 'Rogue'} (${character.subclass || 'Assassin'})`,
         portrait: getPortraitUrl('vesper'),
         isCustom: false,
-        color: '#e11d48',
+        color: '#10b981',
       },
       {
         id: 'aria',
@@ -126,7 +126,7 @@ export default function DMLoreManager({
         className: `${wynel?.race || 'High Elf'} ${wynel?.characterClass || 'Warlock'} (${wynel?.subclass || 'Archfey'})`,
         portrait: getPortraitUrl('wynel'),
         isCustom: false,
-        color: '#ec4899',
+        color: '#dc2626',
       },
       {
         id: 'kastoriel',
@@ -134,7 +134,7 @@ export default function DMLoreManager({
         className: `${kastoriel?.race || 'Half-Elf'} ${kastoriel?.characterClass || 'Druid'} (${kastoriel?.subclass || 'Stars'})`,
         portrait: getPortraitUrl('kastoriel'),
         isCustom: false,
-        color: '#14b8a6',
+        color: '#ea580c',
       },
     ];
 
