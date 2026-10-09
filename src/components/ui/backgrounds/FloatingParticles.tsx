@@ -14,7 +14,7 @@ interface Particle {
 
 interface FloatingParticlesProps {
   count?: number;
-  color?: 'crimson' | 'gold' | 'arcane' | 'mixed';
+  color?: 'crimson' | 'gold' | 'arcane' | 'emerald' | 'orange' | 'mixed';
 }
 
 /**
@@ -33,6 +33,8 @@ export default function FloatingParticles({
       case 'crimson': return { min: 0, max: 10 };
       case 'gold': return { min: 40, max: 55 };
       case 'arcane': return { min: 270, max: 290 };
+      case 'emerald': return { min: 145, max: 165 };
+      case 'orange': return { min: 20, max: 35 };
       case 'mixed': return { min: 0, max: 360 };
     }
   }, [color]);

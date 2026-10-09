@@ -32,13 +32,13 @@ export default function CrimsonTattooEngine({
   return (
     <div className="space-y-6">
       {/* 1. Pact Magic Slots & Rest Management Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-pink-950/90 via-[#1c0816]/95 to-black border-2 border-pink-500/50 shadow-[0_12px_40px_rgba(236,72,153,0.2)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-pink-900/40">
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-red-950/90 via-[#1c0808]/95 to-black border-2 border-red-500/50 shadow-[0_12px_40px_rgba(220,38,38,0.2)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-red-900/40">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-900/40 border border-pink-500/40 text-pink-300 text-xs font-mono font-bold uppercase tracking-wider mb-2">
-              <Flame size={13} className="text-pink-400" /> Warlock Pact Magic
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-900/40 border border-red-500/40 text-red-300 text-xs font-mono font-bold uppercase tracking-wider mb-2">
+              <Flame size={13} className="text-red-400" /> Warlock Pact Magic
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-pink-100 font-['Cormorant_Garamond',serif] tracking-wider">
+            <h2 className="text-2xl sm:text-3xl font-black text-red-100 font-['Cormorant_Garamond',serif] tracking-wider">
               Pact Slots (Level {pactEngine.slotLevel})
             </h2>
             <p className="text-xs text-zinc-300 max-w-xl leading-relaxed mt-1">
@@ -51,9 +51,9 @@ export default function CrimsonTattooEngine({
           <div className="flex items-center gap-2">
             <button
               onClick={onShortRest}
-              className="px-4 py-2 rounded-xl bg-pink-900/60 hover:bg-pink-800 text-pink-100 border border-pink-500/50 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md hover:-translate-y-0.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-red-900/60 hover:bg-red-800 text-red-100 border border-red-500/50 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md hover:-translate-y-0.5 cursor-pointer"
             >
-              <RefreshCw size={13} className="text-pink-300" />
+              <RefreshCw size={13} className="text-red-300" />
               Short Rest (1 hr)
             </button>
             <button
@@ -78,11 +78,11 @@ export default function CrimsonTattooEngine({
                   className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border-2 transition-all cursor-pointer select-none ${
                     isUsed
                       ? 'bg-zinc-900/80 border-zinc-700 text-zinc-600'
-                      : 'bg-pink-950/80 border-pink-500 text-pink-200 shadow-[0_0_25px_rgba(236,72,153,0.5)] animate-pulse'
+                      : 'bg-red-950/80 border-red-500 text-red-200 shadow-[0_0_25px_rgba(220,38,38,0.5)] animate-pulse'
                   }`}
                   title={isUsed ? 'Click to restore slot' : 'Click to expend slot'}
                 >
-                  <Flame size={20} className={isUsed ? 'text-zinc-600' : 'text-pink-400'} />
+                  <Flame size={20} className={isUsed ? 'text-zinc-600' : 'text-red-400'} />
                   <span className="text-[10px] font-mono font-bold mt-0.5">
                     {isUsed ? 'Used' : `Lv ${pactEngine.slotLevel}`}
                   </span>
@@ -95,7 +95,7 @@ export default function CrimsonTattooEngine({
                 <strong>{availableSlots}</strong> of <strong>{pactEngine.slotsMax}</strong> Available
               </div>
               <div className="text-[11px] font-mono text-zinc-400">
-                Spell DC: <strong className="text-pink-300">{spellcasting.spellSaveDC}</strong> &bull; Spell Attack: <strong className="text-pink-300">+{spellcasting.spellAttackBonus}</strong>
+                Spell DC: <strong className="text-red-300">{spellcasting.spellSaveDC}</strong> &bull; Spell Attack: <strong className="text-red-300">+{spellcasting.spellAttackBonus}</strong>
               </div>
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function CrimsonTattooEngine({
             <button
               onClick={onUsePactSlot}
               disabled={availableSlots <= 0}
-              className="px-3.5 py-1.5 rounded-xl bg-pink-950 hover:bg-pink-900 border border-pink-500/50 text-pink-200 text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-red-950 hover:bg-red-900 border border-red-500/50 text-red-200 text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
             >
               Cast Leveled Spell (-1 Slot)
             </button>
@@ -122,18 +122,18 @@ export default function CrimsonTattooEngine({
       {/* 2. The Crimson Heart-Tattoo & Scarlet Chaos Array */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Pact Emblem: The Crimson Heart-Tattoo Card */}
-        <SpotlightCard className="p-6 rounded-3xl bg-zinc-950/90 border border-pink-500/40 shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <SpotlightCard className="p-6 rounded-3xl bg-zinc-950/90 border border-red-500/40 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-pink-950 border border-pink-500/60 text-pink-400">
-                  <Heart size={20} className="fill-pink-500 animate-pulse" />
+                <div className="p-2 rounded-xl bg-red-950 border border-red-500/60 text-red-400">
+                  <Heart size={20} className="fill-red-500 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-pink-100 font-serif">
+                  <h3 className="text-lg font-bold text-red-100 font-serif">
                     The Crimson Heart-Tattoo
                   </h3>
-                  <span className="text-[11px] font-mono text-pink-400 uppercase tracking-widest block font-bold">
+                  <span className="text-[11px] font-mono text-red-400 uppercase tracking-widest block font-bold">
                     Pact of the Tome &bull; Maternal Grimoire
                   </span>
                 </div>
@@ -144,14 +144,14 @@ export default function CrimsonTattooEngine({
                 className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all border ${
                   pactEngine.crimsonPulseUsed
                     ? 'bg-zinc-900 border-zinc-700 text-zinc-500'
-                    : 'bg-pink-900/60 border-pink-500 text-pink-100 shadow-[0_0_15px_rgba(236,72,153,0.4)] cursor-pointer'
+                    : 'bg-red-900/60 border-red-500 text-red-100 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer'
                 }`}
               >
                 {pactEngine.crimsonPulseUsed ? 'Used this Rest' : 'Channel Pulse (+1d4)'}
               </button>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed bg-black/40 p-3.5 rounded-2xl border border-pink-950/60">
+            <p className="text-xs text-zinc-300 leading-relaxed bg-black/40 p-3.5 rounded-2xl border border-red-950/60">
               Before the palace fell, Wyn&apos;el&apos;s mother burned her ancestral grimoire into his very flesh.
               The ink beats like a living heart across his collarbone, allowing him to channel reality-warping chaos sigils and ritual enchantments.
             </p>
@@ -161,16 +161,16 @@ export default function CrimsonTattooEngine({
                 Tome Cantrips (Any Class List):
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
-                <div className="p-2 rounded-xl bg-pink-950/40 border border-pink-900/50 text-pink-200">
-                  <div className="font-bold text-pink-100">Guidance</div>
+                <div className="p-2 rounded-xl bg-red-950/40 border border-red-900/50 text-red-200">
+                  <div className="font-bold text-red-100">Guidance</div>
                   <div className="text-[10px] text-zinc-400">Touch &bull; +1d4 Check</div>
                 </div>
-                <div className="p-2 rounded-xl bg-pink-950/40 border border-pink-900/50 text-pink-200">
-                  <div className="font-bold text-pink-100">Vicious Mockery</div>
+                <div className="p-2 rounded-xl bg-red-950/40 border border-red-900/50 text-red-200">
+                  <div className="font-bold text-red-100">Vicious Mockery</div>
                   <div className="text-[10px] text-zinc-400">60ft &bull; 1d4 Psychic</div>
                 </div>
-                <div className="p-2 rounded-xl bg-pink-950/40 border border-pink-900/50 text-pink-200">
-                  <div className="font-bold text-pink-100">Spare the Dying</div>
+                <div className="p-2 rounded-xl bg-red-950/40 border border-red-900/50 text-red-200">
+                  <div className="font-bold text-red-100">Spare the Dying</div>
                   <div className="text-[10px] text-zinc-400">Touch &bull; Stabilize</div>
                 </div>
               </div>
@@ -183,8 +183,8 @@ export default function CrimsonTattooEngine({
               onClick={onToggleChaosAura}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer ${
                 pactEngine.chaosAuraActive
-                  ? 'bg-pink-600 text-white shadow-[0_0_15px_#ec4899]'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-pink-300'
+                  ? 'bg-red-600 text-white shadow-[0_0_15px_#dc2626]'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-red-300'
               }`}
             >
               {pactEngine.chaosAuraActive ? 'Chaos Flare Active' : 'Toggle Chaos Flare'}
@@ -193,18 +193,18 @@ export default function CrimsonTattooEngine({
         </SpotlightCard>
 
         {/* Archfey Patron Feature: Fey Presence */}
-        <SpotlightCard className="p-6 rounded-3xl bg-zinc-950/90 border border-pink-500/40 shadow-xl flex flex-col justify-between">
+        <SpotlightCard className="p-6 rounded-3xl bg-zinc-950/90 border border-red-500/40 shadow-xl flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-pink-950 border border-pink-500/60 text-pink-400">
+                <div className="p-2 rounded-xl bg-red-950 border border-red-500/60 text-red-400">
                   <Eye size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-pink-100 font-serif">
-                    Fey Presence (Rose Wave)
+                  <h3 className="text-lg font-bold text-red-100 font-serif">
+                    Fey Presence (Crimson Wave)
                   </h3>
-                  <span className="text-[11px] font-mono text-pink-400 uppercase tracking-widest block font-bold">
+                  <span className="text-[11px] font-mono text-red-400 uppercase tracking-widest block font-bold">
                     The Archfey &bull; 10-ft Cube
                   </span>
                 </div>
@@ -215,22 +215,22 @@ export default function CrimsonTattooEngine({
                 className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all border ${
                   pactEngine.feyPresenceUsed
                     ? 'bg-zinc-900 border-zinc-700 text-zinc-500'
-                    : 'bg-pink-900/60 border-pink-500 text-pink-100 shadow-[0_0_15px_rgba(236,72,153,0.4)] cursor-pointer'
+                    : 'bg-red-900/60 border-red-500 text-red-100 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer'
                 }`}
               >
                 {pactEngine.feyPresenceUsed ? 'Expended' : 'Unleash Presence'}
               </button>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed bg-black/40 p-3.5 rounded-2xl border border-pink-950/60">
+            <p className="text-xs text-zinc-300 leading-relaxed bg-black/40 p-3.5 rounded-2xl border border-red-950/60">
               As an action, you can cause each creature in a <strong>10-foot cube</strong> originating from you to make a <strong>WIS saving throw (DC {spellcasting.spellSaveDC})</strong>.
               On a failed save, the creatures become <strong>charmed or frightened</strong> by you (your choice) until the end of your next turn.
             </p>
 
-            <div className="p-3 rounded-2xl bg-pink-950/30 border border-pink-900/40 space-y-1 text-xs font-mono">
+            <div className="p-3 rounded-2xl bg-red-950/30 border border-red-900/40 space-y-1 text-xs font-mono">
               <div className="flex justify-between">
                 <span className="text-zinc-400">Save DC:</span>
-                <strong className="text-pink-300">DC {spellcasting.spellSaveDC} Wisdom</strong>
+                <strong className="text-red-300">DC {spellcasting.spellSaveDC} Wisdom</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Range:</span>
@@ -244,16 +244,16 @@ export default function CrimsonTattooEngine({
           </div>
 
           <div className="mt-4 pt-3 border-t border-zinc-800/80 text-[11px] font-mono text-zinc-400 flex items-center gap-1.5">
-            <Shield size={12} className="text-pink-400" />
+            <Shield size={12} className="text-red-400" />
             Empowered by his bargain with the Gloaming Court of the Archfey.
           </div>
         </SpotlightCard>
       </div>
 
       {/* 3. Eldritch Invocations Grid */}
-      <div className="p-6 rounded-3xl bg-zinc-950/80 border border-pink-900/40 shadow-xl">
-        <h3 className="text-xs font-mono uppercase tracking-widest text-pink-300 font-bold mb-4 flex items-center gap-2">
-          <Zap size={14} className="text-pink-400" />
+      <div className="p-6 rounded-3xl bg-zinc-950/80 border border-red-900/40 shadow-xl">
+        <h3 className="text-xs font-mono uppercase tracking-widest text-red-300 font-bold mb-4 flex items-center gap-2">
+          <Zap size={14} className="text-red-400" />
           Eldritch Invocations (Level 3 &bull; 2 Active)
         </h3>
 
@@ -261,12 +261,12 @@ export default function CrimsonTattooEngine({
           {wynel.invocations.map((inv) => (
             <div
               key={inv.id}
-              className="p-4 rounded-2xl bg-zinc-900/80 border border-pink-900/30 hover:border-pink-500/50 transition-all flex flex-col justify-between"
+              className="p-4 rounded-2xl bg-zinc-900/80 border border-red-900/30 hover:border-red-500/50 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <h4 className="text-sm font-bold text-pink-100 font-serif">{inv.name}</h4>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-pink-950 text-pink-300 border border-pink-500/30 font-bold">
+                  <h4 className="text-sm font-bold text-red-100 font-serif">{inv.name}</h4>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/30 font-bold">
                     Active
                   </span>
                 </div>

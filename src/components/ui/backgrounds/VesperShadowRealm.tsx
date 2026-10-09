@@ -25,7 +25,7 @@ export default function VesperShadowRealm({
       size: (i % 3) + 2, // 2px to 4px
       duration: 12 + (i % 10) * 2, // 12s to 30s
       delay: (i % 5) * 1.5,
-      color: i % 4 === 0 ? 'rgba(255, 215, 0, 0.7)' : i % 2 === 0 ? 'rgba(239, 68, 68, 0.8)' : 'rgba(168, 85, 247, 0.65)',
+      color: i % 4 === 0 ? 'rgba(52, 211, 153, 0.7)' : i % 2 === 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(5, 150, 105, 0.65)',
     }));
   }, []);
 
@@ -33,9 +33,9 @@ export default function VesperShadowRealm({
   const isAwakened = vestigeStage === 'awakened' || currentSouls >= 20;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#07050a]">
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#040c08]">
       {/* ====================================================================
-         1. HERO CRIMSON CATHEDRAL BACKGROUND IMAGE (vesper-bg.jpg or Custom)
+         1. HERO EMERALD CATHEDRAL BACKGROUND IMAGE (vesper-bg.jpg or Custom)
          ==================================================================== */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -43,9 +43,9 @@ export default function VesperShadowRealm({
           alt="Vesper Cathedral Background"
           className="w-full h-full object-cover object-center scale-105 opacity-70 transition-all duration-1000 filter blur-[1.5px] brightness-95 contrast-115 pointer-events-none"
         />
-        {/* Soft Candle Flame Breathing Animation Overlay */}
+        {/* Soft Flame Breathing Animation Overlay */}
         <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_85%,rgba(255,42,42,0.22),transparent_60%)] animate-pulse-glow"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_85%,rgba(16,185,129,0.22),transparent_60%)] animate-pulse-glow"
           style={{ animationDuration: '4s' }}
         />
       </div>
@@ -62,8 +62,8 @@ export default function VesperShadowRealm({
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 25%, black 85%)',
           }}
         />
-        {/* Smooth Dark Crimson Candle Mist Fade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(7,5,10,0.70)] to-[#07050a]" />
+        {/* Smooth Dark Emerald Candle Mist Fade */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(4,12,8,0.70)] to-[#040c08]" />
       </div>
 
       {/* ====================================================================
@@ -75,9 +75,9 @@ export default function VesperShadowRealm({
         }`}
         style={{
           background: `
-            radial-gradient(ellipse at 50% 35%, rgba(7, 5, 10, 0.15), rgba(5, 3, 8, 0.65) 90%),
-            radial-gradient(circle at 15% 15%, rgba(220, 38, 38, ${isExalted ? '0.20' : '0.10'}), transparent 50%),
-            radial-gradient(circle at 85% 85%, rgba(168, 85, 247, ${isAwakened ? '0.15' : '0.06'}), transparent 55%)
+            radial-gradient(ellipse at 50% 35%, rgba(4, 12, 8, 0.15), rgba(3, 8, 5, 0.65) 90%),
+            radial-gradient(circle at 15% 15%, rgba(16, 185, 129, ${isExalted ? '0.20' : '0.10'}), transparent 50%),
+            radial-gradient(circle at 85% 85%, rgba(52, 211, 153, ${isAwakened ? '0.15' : '0.06'}), transparent 55%)
           `,
         }}
       />
@@ -89,17 +89,17 @@ export default function VesperShadowRealm({
         className="absolute inset-0 opacity-15"
         style={{
           backgroundImage: `
-            radial-gradient(1px 1px at 20px 30px, rgba(220,38,38,0.8), transparent),
-            radial-gradient(1px 1px at 40px 70px, rgba(255,215,0,0.5), transparent),
-            radial-gradient(1px 1px at 70px 150px, rgba(168,85,247,0.6), transparent),
-            radial-gradient(1.5px 1.5px at 120px 90px, rgba(220,38,38,0.7), transparent)
+            radial-gradient(1px 1px at 20px 30px, rgba(16,185,129,0.8), transparent),
+            radial-gradient(1px 1px at 40px 70px, rgba(52,211,153,0.5), transparent),
+            radial-gradient(1px 1px at 70px 150px, rgba(5,150,105,0.6), transparent),
+            radial-gradient(1.5px 1.5px at 120px 90px, rgba(16,185,129,0.7), transparent)
           `,
           backgroundSize: '160px 160px',
         }}
       />
 
       {/* ====================================================================
-         3. FLOATING CRIMSON EMBERS & ETHEREAL SOUL MOTES
+         3. FLOATING EMERALD EMBERS & ETHEREAL SOUL MOTES
          ==================================================================== */}
       <div className="absolute inset-0">
         {particles.map((p) => (
@@ -123,9 +123,9 @@ export default function VesperShadowRealm({
       {/* ====================================================================
          4. SWIRLING SHADOW SMOKE & FOG LAYERS
          ==================================================================== */}
-      <div className="absolute top-[-10%] -left-[15%] w-[580px] h-[320px] rounded-full blur-[40px] bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.12),transparent_70%)] cloud-anim-1" />
-      <div className="absolute top-[40%] -right-[20%] w-[640px] h-[360px] rounded-full blur-[45px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.12),transparent_70%)] cloud-anim-2" />
-      <div className="absolute bottom-[-10%] left-[10%] w-[700px] h-[300px] rounded-full blur-[50px] bg-[radial-gradient(ellipse_at_center,rgba(69,10,10,0.35),transparent_70%)] cloud-anim-3" />
+      <div className="absolute top-[-10%] -left-[15%] w-[580px] h-[320px] rounded-full blur-[40px] bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.12),transparent_70%)] cloud-anim-1" />
+      <div className="absolute top-[40%] -right-[20%] w-[640px] h-[360px] rounded-full blur-[45px] bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.12),transparent_70%)] cloud-anim-2" />
+      <div className="absolute bottom-[-10%] left-[10%] w-[700px] h-[300px] rounded-full blur-[50px] bg-[radial-gradient(ellipse_at_center,rgba(6,32,22,0.35),transparent_70%)] cloud-anim-3" />
 
       {/* ====================================================================
          5. HERO VESTIGE OBSIDIAN DAGGER EMBLEM (TOP RIGHT BACKGROUND)
@@ -139,20 +139,20 @@ export default function VesperShadowRealm({
         >
           <defs>
             <linearGradient id="vesperDaggerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ffd700" />
-              <stop offset="50%" stopColor="#dc2626" />
-              <stop offset="100%" stopColor="#450a0a" />
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="50%" stopColor="#10b981" />
+              <stop offset="100%" stopColor="#064e3b" />
             </linearGradient>
             <radialGradient id="soulOrbGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
-              <stop offset="60%" stopColor="#7e22ce" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="#34d399" stopOpacity="0.8" />
+              <stop offset="60%" stopColor="#059669" stopOpacity="0.4" />
               <stop offset="100%" stopColor="#000000" stopOpacity="0" />
             </radialGradient>
           </defs>
 
           {/* Outer Runic Ring */}
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(220,38,38,0.4)" strokeWidth="1" strokeDasharray="4 4" />
-          <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(255,215,0,0.3)" strokeWidth="1.5" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="1" strokeDasharray="4 4" />
+          <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(52,211,153,0.3)" strokeWidth="1.5" />
 
           {/* Central Soul Core Glow */}
           <circle cx="60" cy="60" r="32" fill="url(#soulOrbGlow)" />
@@ -160,9 +160,9 @@ export default function VesperShadowRealm({
           {/* Crossed Assassin Daggers */}
           <g fill="url(#vesperDaggerGrad)">
             {/* Dagger 1 */}
-            <path d="M60 20 L64 55 L60 62 L56 55 Z M60 62 L60 76 M54 66 L66 66" stroke="#ffd700" strokeWidth="1.5" />
+            <path d="M60 20 L64 55 L60 62 L56 55 Z M60 62 L60 76 M54 66 L66 66" stroke="#34d399" strokeWidth="1.5" />
             {/* Dagger 2 Crossed */}
-            <path d="M20 60 L55 64 L62 60 L55 56 Z M62 60 L76 60 M66 54 L66 66" stroke="#dc2626" strokeWidth="1.5" transform="rotate(45 60 60)" />
+            <path d="M20 60 L55 64 L62 60 L55 56 Z M62 60 L76 60 M66 54 L66 66" stroke="#10b981" strokeWidth="1.5" transform="rotate(45 60 60)" />
           </g>
         </svg>
       </div>

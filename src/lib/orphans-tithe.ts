@@ -52,11 +52,11 @@ export function getStageLabel(stage: VestigeStage): string {
 export function getStageColor(stage: VestigeStage): { primary: string; glow: string; bg: string } {
   switch (stage) {
     case 'dormant':
-      return { primary: '#6b7280', glow: 'rgba(107,114,128,0.4)', bg: 'rgba(107,114,128,0.1)' };
+      return { primary: '#059669', glow: 'rgba(5,150,105,0.4)', bg: 'rgba(5,150,105,0.1)' };
     case 'awakened':
-      return { primary: '#a855f7', glow: 'rgba(168,85,247,0.4)', bg: 'rgba(168,85,247,0.1)' };
+      return { primary: '#10b981', glow: 'rgba(16,185,129,0.5)', bg: 'rgba(16,185,129,0.12)' };
     case 'exalted':
-      return { primary: '#ffd700', glow: 'rgba(255,215,0,0.4)', bg: 'rgba(255,215,0,0.1)' };
+      return { primary: '#34d399', glow: 'rgba(52,211,153,0.5)', bg: 'rgba(52,211,153,0.12)' };
   }
 }
 

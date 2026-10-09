@@ -216,15 +216,14 @@ export default function SoulHarvester({
     }, 500);
   };
 
-  const particleColor = vestige.stage === 'exalted' ? 'gold' :
-                         vestige.stage === 'awakened' ? 'arcane' : 'crimson';
+  const particleColor = vestige.stage === 'exalted' ? 'gold' : 'emerald';
 
   return (
     <div className="space-y-6 relative">
       {/* Centered Roll Result Modal Overlay */}
       {(isRolling || activeRollModal) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-[family-name:var(--font-body)]">
-          <div className="w-full max-w-md p-6 border-2 border-[var(--color-crimson-500)] bg-[var(--color-surface-dark)] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(220,38,38,0.4)]">
+          <div className="w-full max-w-md p-6 border-2 border-emerald-500/60 bg-[var(--color-surface-dark)] text-center relative overflow-hidden rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.35)]">
             <button
               onClick={() => {
                 setIsRolling(false);
@@ -238,7 +237,7 @@ export default function SoulHarvester({
 
             {isRolling ? (
               <div className="py-6 flex flex-col items-center justify-center gap-3">
-                <Dices size={44} className="text-[var(--color-crimson-400)] animate-spin" />
+                <Dices size={44} className="text-emerald-400 animate-spin" />
                 <span className="text-sm font-bold text-[var(--color-parchment)] font-[family-name:var(--font-heading)] uppercase tracking-wider">
                   {activeRollModal?.type === 'ultimate' ? 'Unleashing Trapped Souls...' : 'Striking with Obsidian Dagger...'}
                 </span>
@@ -253,7 +252,7 @@ export default function SoulHarvester({
                   {activeRollModal.type === 'attack' ? (
                     <div>
                       <div className="flex items-center justify-center gap-2 mt-2">
-                        <span className="text-5xl font-extrabold text-[var(--color-crimson-400)]">
+                        <span className="text-5xl font-extrabold text-emerald-400">
                           {activeRollModal.totalToHit}
                         </span>
                       </div>
@@ -288,7 +287,7 @@ export default function SoulHarvester({
                   <div className="bg-black/50 p-3 rounded-xl border border-white/10 space-y-2 text-left text-xs">
                     <div className="flex justify-between items-center">
                       <span className="text-[var(--color-parchment-dim)]">Base Dagger Damage (1d4+{dexMod + vestige.hitDmgBonus}):</span>
-                      <span className="font-bold text-[var(--color-crimson-400)]">{activeRollModal.baseDamageTotal} Piercing</span>
+                      <span className="font-bold text-emerald-400">{activeRollModal.baseDamageTotal} Piercing</span>
                     </div>
 
                     {activeRollModal.sneakDamageTotal > 0 && (
@@ -329,7 +328,7 @@ export default function SoulHarvester({
                         onSoulsChange(souls + 1);
                         showToast('Soul Harvested!', '+1 Soul trapped in Obsidian Dagger', 'power');
                       }}
-                      className="flex-1 py-2.5 bg-gradient-to-r from-red-900 to-amber-900 hover:from-red-800 hover:to-amber-800 text-white font-bold text-xs rounded-xl font-mono transition-all cursor-pointer border border-amber-500/40 flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-emerald-900 to-teal-900 hover:from-emerald-800 hover:to-teal-800 text-white font-bold text-xs rounded-xl font-mono transition-all cursor-pointer border border-emerald-500/40 flex items-center justify-center gap-1.5"
                     >
                       <Plus size={14} /> Harvest Soul (+1)
                     </button>
@@ -337,7 +336,7 @@ export default function SoulHarvester({
 
                   <button
                     onClick={() => setActiveRollModal(null)}
-                    className="flex-1 py-2.5 bg-[var(--color-crimson-500)] hover:bg-[var(--color-crimson-400)] text-white font-bold text-xs rounded-xl font-mono transition-all cursor-pointer shadow-[0_0_10px_rgba(220,38,38,0.4)]"
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl font-mono transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.4)]"
                   >
                     Dismiss Result
                   </button>
@@ -355,7 +354,7 @@ export default function SoulHarvester({
 
       {/* Artifact Title */}
       <div className="text-center">
-        <h2 className="text-2xl font-[family-name:var(--font-heading)] font-bold text-glow-crimson"
+        <h2 className="text-2xl font-[family-name:var(--font-heading)] font-bold drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]"
             style={{ color: stageColor.primary }}>
           Obsidian Dagger
         </h2>
@@ -452,7 +451,7 @@ export default function SoulHarvester({
           <button
             onClick={handleSpend}
             disabled={souls <= 0}
-            className="btn btn-crimson !rounded-full !w-12 !h-12 !p-0 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="btn !bg-emerald-950 hover:!bg-emerald-900 !border-emerald-600 text-emerald-200 !rounded-full !w-12 !h-12 !p-0 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(16,185,129,0.3)]"
             id="spend-soul"
             aria-label="Spend a soul"
           >
@@ -485,10 +484,10 @@ export default function SoulHarvester({
       </div>
 
       {/* Interactive Dagger Attack Execution Panel */}
-      <SpotlightCard className="p-5 border-2 border-[var(--color-crimson-500)]/60 bg-gradient-to-b from-[#1a0c0c] to-[#0f0707] shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--color-crimson-800)]/40">
+      <SpotlightCard className="p-5 border-2 border-emerald-500/60 bg-gradient-to-b from-[#0a1812] to-[#06100c] shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-emerald-800/40">
           <div className="flex items-center gap-2">
-            <Sword size={20} className="text-[var(--color-crimson-400)]" />
+            <Sword size={20} className="text-emerald-400" />
             <h3 className="font-[family-name:var(--font-heading)] font-bold text-base text-[var(--color-parchment)] uppercase tracking-wider">
               Attack with Obsidian Dagger
             </h3>
@@ -501,7 +500,7 @@ export default function SoulHarvester({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-center font-mono text-xs">
           <div className="bg-black/50 p-2 rounded-lg border border-white/5">
             <span className="text-[10px] text-[var(--color-parchment-dim)] block">Attack Roll</span>
-            <span className="font-bold text-[var(--color-crimson-400)]">d20 + {dexMod + profBonus + vestige.hitDmgBonus}</span>
+            <span className="font-bold text-emerald-400">d20 + {dexMod + profBonus + vestige.hitDmgBonus}</span>
           </div>
           <div className="bg-black/50 p-2 rounded-lg border border-white/5">
             <span className="text-[10px] text-[var(--color-parchment-dim)] block">Base Damage</span>
@@ -524,7 +523,7 @@ export default function SoulHarvester({
               type="checkbox"
               checked={includeSneak}
               onChange={(e) => setIncludeSneak(e.target.checked)}
-              className="accent-[var(--color-crimson-500)] w-4 h-4 rounded cursor-pointer"
+              className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
             />
             <span>Include Sneak Attack (+{sneakDiceCount}d6)</span>
           </label>
@@ -542,7 +541,7 @@ export default function SoulHarvester({
 
         <button
           onClick={executeDaggerAttack}
-          className="w-full py-3 bg-gradient-to-r from-[var(--color-crimson-600)] via-red-700 to-[var(--color-crimson-800)] hover:from-red-600 hover:to-red-700 text-white font-bold text-sm rounded-xl font-mono transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer"
+          className="w-full py-3 bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-900 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold text-sm rounded-xl font-mono transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer"
         >
           <Sword size={16} /> Execute Dagger Strike &amp; Roll Damage
         </button>
@@ -651,45 +650,45 @@ export default function SoulHarvester({
 
       {/* Drawbacks */}
       <div>
-        <h3 className="text-sm font-[family-name:var(--font-heading)] text-[var(--color-crimson-400)] mb-2 flex items-center gap-2">
+        <h3 className="text-sm font-[family-name:var(--font-heading)] text-emerald-400 mb-2 flex items-center gap-2">
           <AlertTriangle size={14} />
           Drawbacks
-          <span className="flex-1 h-[1px] bg-gradient-to-r from-[var(--color-crimson-800)] to-transparent" />
+          <span className="flex-1 h-[1px] bg-gradient-to-r from-emerald-800 to-transparent" />
         </h3>
 
         <div className="space-y-2">
           {/* Phantom Murmurs */}
           <div className={cn(
-            'glass-card-crimson p-3 transition-all',
+            'p-3 rounded-xl border transition-all bg-emerald-950/30 border-emerald-800/50',
             murmursActive ? 'opacity-100' : 'opacity-40'
           )}>
             <div className="flex items-center gap-2 mb-1">
-              <div className={cn('w-2 h-2 rounded-full', murmursActive ? 'bg-[var(--color-crimson-500)] animate-pulse-glow' : 'bg-[#4b5563]')} />
-              <span className="text-xs font-[family-name:var(--font-heading)] font-semibold text-[var(--color-crimson-400)]">
+              <div className={cn('w-2 h-2 rounded-full', murmursActive ? 'bg-emerald-500 animate-pulse-glow' : 'bg-[#4b5563]')} />
+              <span className="text-xs font-[family-name:var(--font-heading)] font-semibold text-emerald-400">
                 Phantom Murmurs
               </span>
               <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-parchment-dim)] ml-auto">
                 {murmursActive ? 'ACTIVE' : 'INACTIVE'} (≥50% souls)
               </span>
             </div>
-            <ul className="text-[11px] text-[var(--color-crimson-300)] space-y-0.5 pl-4">
+            <ul className="text-[11px] text-emerald-300 space-y-0.5 pl-4">
               <li>• {murmursPenalties.perception}</li>
               <li>• {murmursPenalties.initiative} Initiative penalty</li>
             </ul>
           </div>
 
           {/* Altar Trauma */}
-          <div className="glass-card-crimson p-3">
+          <div className="p-3 rounded-xl border bg-emerald-950/30 border-emerald-800/50">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-crimson-500)]" />
-              <span className="text-xs font-[family-name:var(--font-heading)] font-semibold text-[var(--color-crimson-400)]">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-[family-name:var(--font-heading)] font-semibold text-emerald-400">
                 Altar Trauma
               </span>
-              <span className="text-[10px] font-[family-name:var(--font-mono)] text-[var(--color-crimson-300)] ml-auto">
+              <span className="text-[10px] font-[family-name:var(--font-mono)] text-emerald-300 ml-auto">
                 PERMANENT
               </span>
             </div>
-            <p className="text-[11px] text-[var(--color-crimson-300)] pl-4">
+            <p className="text-[11px] text-emerald-300 pl-4">
               • Disadvantage on saves vs. Frightened/Charmed from Divine/Unholy spellcasters
             </p>
           </div>

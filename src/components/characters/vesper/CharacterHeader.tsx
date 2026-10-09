@@ -223,16 +223,16 @@ export default function CharacterHeader({
         </div>
 
         {/* Middle: Obsidian Dagger Vestige Status Box (4 cols) */}
-        <div className="p-3.5 rounded-xl bg-[#14080a] border border-[var(--color-crimson-500)]/30 lg:col-span-4 space-y-2 shadow-inner">
+        <div className="p-3.5 rounded-xl bg-[#061810] border border-emerald-500/30 lg:col-span-4 space-y-2 shadow-inner">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-[var(--color-crimson-400)] uppercase font-bold flex items-center gap-1">
-              <span className="animate-pulse">🩸</span> Obsidian Dagger Vestige
+            <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
+              <span className="animate-pulse">🗡️</span> Obsidian Dagger Vestige
             </span>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${
               character.orphansTithe.vestigeStage === 'exalted'
-                ? 'bg-red-950 text-rose-300 border-red-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]'
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                 : character.orphansTithe.vestigeStage === 'awakened'
-                ? 'bg-purple-950 text-purple-300 border-purple-500'
+                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500'
                 : 'bg-zinc-900 text-zinc-400 border-zinc-700'
             }`}>
               Stage {character.orphansTithe.vestigeStage === 'exalted' ? 'III (Exalted)' : character.orphansTithe.vestigeStage === 'awakened' ? 'II (Awakened)' : 'I (Dormant)'}
@@ -240,16 +240,16 @@ export default function CharacterHeader({
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-[rgba(220,38,38,0.08)] border border-[var(--color-crimson-500)]/20 rounded-lg p-2 flex flex-col justify-center">
+            <div className="bg-[rgba(16,185,129,0.08)] border border-emerald-500/20 rounded-lg p-2 flex flex-col justify-center">
               <span className="text-[9px] font-mono text-[var(--color-parchment-dim)] uppercase block">
                 Harvested Souls
               </span>
-              <span className="text-xs font-mono font-bold text-rose-200 mt-0.5">
+              <span className="text-xs font-mono font-bold text-emerald-300 mt-0.5">
                 {character.orphansTithe.currentSouls} / 100 Souls
               </span>
             </div>
 
-            <div className="bg-[rgba(220,38,38,0.08)] border border-[var(--color-crimson-500)]/20 rounded-lg p-2 flex flex-col justify-center">
+            <div className="bg-[rgba(16,185,129,0.08)] border border-emerald-500/20 rounded-lg p-2 flex flex-col justify-center">
               <span className="text-[9px] font-mono text-[var(--color-parchment-dim)] uppercase block">
                 Assassin Edge
               </span>
