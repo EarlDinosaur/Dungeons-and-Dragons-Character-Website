@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { CharacterState, AbilityName, InventoryItem, Currency, JournalEntry, CampaignMystery, TabId, CustomMember } from '@/lib/types';
 import { createDefaultCharacterState, recalculateForLevel, saveCharacterState, loadCharacterState, migrateOrphansTithe } from '@/lib/persistence';
-import { isPhantomMurmursActive, getMaxSouls, getVestigeStage } from '@/lib/orphans-tithe';
+import { isPhantomMurmursActive, getMaxSouls, getVestigeStage, longRestDecay } from '@/lib/orphans-tithe';
 import type { AriaState, LunarPhase } from '@/lib/aria-engine';
 import { createDefaultAriaState, calculateAriaStats } from '@/lib/aria-engine';
 import type { CyrusState } from '@/lib/cyrus-engine';

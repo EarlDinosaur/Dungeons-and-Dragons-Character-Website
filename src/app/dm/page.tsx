@@ -240,9 +240,9 @@ export default function DMPage() {
       initiativeBonus: ariaDexMod,
       conditions: aria?.combat?.conditions || [],
       inspiration: !!partyInspiration['aria'],
-      deathSaves: { successes: 0, failures: 0 },
+      deathSaves: aria?.combat?.deathSaves || { successes: 0, failures: 0 },
       slots: aria?.spellcasting?.slots || {},
-      hitDice: { total: aria?.level || 10, used: 0, diceType: 'd6' },
+      hitDice: aria?.combat?.hitDice || { total: aria?.level || 10, used: 0, diceType: 'd6' },
     };
 
     // 3. Cyrus
@@ -273,7 +273,7 @@ export default function DMPage() {
       inspiration: !!partyInspiration['cyrus'],
       deathSaves: cyrus?.combat?.deathSaves || { successes: 0, failures: 0 },
       slots: cyrus?.spellcasting?.slots || {},
-      hitDice: { total: cyrus?.level || 10, used: 0, diceType: 'd8' },
+      hitDice: cyrus?.combat?.hitDice || { total: cyrus?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 4. Wyn'el
@@ -303,9 +303,14 @@ export default function DMPage() {
       initiativeBonus: wynelDexMod,
       conditions: wynel?.combat?.conditions || [],
       inspiration: !!partyInspiration['wynel'],
-      deathSaves: { successes: 0, failures: 0 },
-      slots: { 5: { max: 2, used: 0 } },
-      hitDice: { total: wynel?.level || 10, used: 0, diceType: 'd8' },
+      deathSaves: wynel?.combat?.deathSaves || { successes: 0, failures: 0 },
+      slots: {
+        [wynel?.pactEngine?.slotLevel || 5]: {
+          max: wynel?.pactEngine?.slotsMax || 2,
+          used: wynel?.pactEngine?.slotsUsed || 0,
+        },
+      },
+      hitDice: wynel?.combat?.hitDice || { total: wynel?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 5. Kastoriel
@@ -334,9 +339,9 @@ export default function DMPage() {
       initiativeBonus: kastorielDexMod,
       conditions: kastoriel?.combat?.conditions || [],
       inspiration: !!partyInspiration['kastoriel'],
-      deathSaves: { successes: 0, failures: 0 },
+      deathSaves: kastoriel?.combat?.deathSaves || { successes: 0, failures: 0 },
       slots: kastoriel?.spellcasting?.slots || {},
-      hitDice: { total: kastoriel?.level || 10, used: 0, diceType: 'd8' },
+      hitDice: kastoriel?.combat?.hitDice || { total: kastoriel?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 6. Custom Characters

@@ -47,6 +47,7 @@ export interface AriaState {
     ac: number;
     initiative: number;
     speed: number;
+    hitDice: { total: number; used: number };
     deathSaves: { successes: number; failures: number };
     conditions?: string[];
   };
@@ -149,6 +150,7 @@ export function calculateAriaStats(state: AriaState): AriaState {
       currentHP: Math.min(state.combat.currentHP, calculatedMaxHP),
       ac,
       initiative: dexMod,
+      hitDice: { total: level, used: state.combat.hitDice?.used || 0 },
     },
     lunarEngine: {
       ...state.lunarEngine,
@@ -199,6 +201,7 @@ export function createDefaultAriaState(): AriaState {
       ac: 16,
       initiative: 2,
       speed: 30,
+      hitDice: { total: 10, used: 0 },
       deathSaves: { successes: 0, failures: 0 },
       conditions: [],
     },
