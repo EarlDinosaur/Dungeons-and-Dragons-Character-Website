@@ -38,12 +38,12 @@ export default function MobileCharacterDock({
 
   // Thematic gradient for primary floating buttons
   const getButtonGradient = () => {
-    if (isVesper) return 'from-red-600 to-red-800 border-red-400/40 shadow-[0_4px_20px_rgba(220,38,38,0.5)]';
-    if (isWynel) return 'from-pink-600 to-rose-900 border-pink-400/40 shadow-[0_4px_20px_rgba(236,72,153,0.5)]';
+    if (isVesper) return 'from-emerald-600 to-emerald-900 border-emerald-400/40 shadow-[0_4px_20px_rgba(16,185,129,0.5)]';
+    if (isWynel) return 'from-red-600 to-red-900 border-red-400/40 shadow-[0_4px_20px_rgba(220,38,38,0.5)]';
     if (isCyrus) return 'from-amber-600 to-amber-800 border-amber-400/40 shadow-[0_4px_20px_rgba(245,158,11,0.5)]';
     if (isAria) return 'from-purple-600 to-indigo-900 border-purple-400/40 shadow-[0_4px_20px_rgba(168,85,247,0.5)]';
-    if (isKastoriel) return 'from-teal-600 to-emerald-900 border-teal-400/40 shadow-[0_4px_20px_rgba(20,184,166,0.5)]';
-    return 'from-red-600 to-red-800 border-red-400/40 shadow-[0_4px_20px_rgba(220,38,38,0.5)]';
+    if (isKastoriel) return 'from-orange-600 to-amber-950 border-orange-400/40 shadow-[0_4px_20px_rgba(234,88,12,0.5)]';
+    return 'from-emerald-600 to-emerald-900 border-emerald-400/40 shadow-[0_4px_20px_rgba(16,185,129,0.5)]';
   };
 
   return (

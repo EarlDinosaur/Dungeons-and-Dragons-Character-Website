@@ -209,6 +209,7 @@ interface CharacterContextType {
   setKastorielStarryForm: (form: StarryConstellation) => void;
   rollKastorielCosmicOmen: (dieRoll?: number) => void;
   useKastorielCosmicOmen: () => void;
+  restoreKastorielCosmicOmen: () => void;
   useKastorielGuidingBolt: () => void;
   restoreKastorielGuidingBolt: () => void;
   kastorielShortRest: () => void;
@@ -1203,16 +1204,31 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [updateCharacter]);
 
   const longRest = useCallback(() => {
-    updateCharacter((prev) => ({
-      ...prev,
-      combat: {
-        ...prev.combat,
-        currentHP: prev.combat.maxHP,
-        tempHP: 0,
-        hitDice: { ...prev.combat.hitDice, used: Math.max(0, prev.combat.hitDice.used - Math.floor(prev.combat.hitDice.total / 2)) },
-        deathSaves: { successes: 0, failures: 0 },
-      },
-    }));
+    updateCharacter((prev) => {
+      const decayedSouls = longRestDecay(prev.orphansTithe.currentSouls);
+      const stage = getVestigeStage(prev.level);
+      const maxSouls = getMaxSouls(stage);
+      const murmurs = isPhantomMurmursActive(decayedSouls, maxSouls);
+      return {
+        ...prev,
+        combat: {
+          ...prev.combat,
+          currentHP: prev.combat.maxHP,
+          tempHP: 0,
+          hitDice: {
+            ...prev.combat.hitDice,
+            used: Math.max(0, prev.combat.hitDice.used - Math.max(1, Math.floor(prev.combat.hitDice.total / 2))),
+          },
+          deathSaves: { successes: 0, failures: 0 },
+        },
+        orphansTithe: {
+          ...prev.orphansTithe,
+          currentSouls: decayedSouls,
+          phantomMurmursActive: murmurs,
+        },
+        initiative: prev.abilityScores.DEX.modifier + (murmurs ? -2 : 0),
+      };
+    });
     showToast('Long Rest Completed', 'Vesper restored HP to max. Souls decayed by 50%.', 'rest');
   }, [updateCharacter, showToast]);
 
@@ -2136,6 +2152,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           ...prev.combat,
           currentHP: prev.combat.maxHP,
           tempHP: 0,
+          hitDice: {
+            ...prev.combat.hitDice,
+            used: Math.max(0, (prev.combat.hitDice?.used || 0) - Math.max(1, Math.floor((prev.combat.hitDice?.total || prev.level) / 2))),
+          },
           deathSaves: { successes: 0, failures: 0 },
         },
         lunarEngine: {
@@ -2291,6 +2311,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           ...prev.combat,
           currentHP: prev.combat.maxHP,
           tempHP: 0,
+          hitDice: {
+            ...prev.combat.hitDice,
+            used: Math.max(0, (prev.combat.hitDice?.used || 0) - Math.max(1, Math.floor((prev.combat.hitDice?.total || prev.level) / 2))),
+          },
           deathSaves: { successes: 0, failures: 0 },
         },
         oracleEngine: {
@@ -2398,6 +2422,10 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         ...prev.combat,
         currentHP: prev.combat.maxHP,
         tempHP: 0,
+        hitDice: {
+          ...prev.combat.hitDice,
+          used: Math.max(0, (prev.combat.hitDice?.used || 0) - Math.max(1, Math.floor((prev.combat.hitDice?.total || prev.level) / 2))),
+        },
         deathSaves: { successes: 0, failures: 0 },
       },
       pactEngine: {
@@ -2569,7 +2597,9 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
   }, [updateKastoriel, showToast]);
 
   const rollKastorielCosmicOmen = useCallback((dieRoll?: number) => {
-    const roll = dieRoll !== undefined ? dieRoll : Math.floor(Math.random() * 6) + 1;
+    const roll = typeof dieRoll === 'number' && !isNaN(dieRoll) && dieRoll >= 1 && dieRoll <= 6
+      ? dieRoll
+      : Math.floor(Math.random() * 6) + 1;
     const omen: CosmicOmen = roll % 2 === 0 ? 'weal' : 'woe';
     updateKastoriel((prev) => ({
       ...prev,
@@ -2594,6 +2624,16 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         },
       };
     });
+  }, [updateKastoriel]);
+
+  const restoreKastorielCosmicOmen = useCallback(() => {
+    updateKastoriel((prev) => ({
+      ...prev,
+      starryEngine: {
+        ...prev.starryEngine,
+        cosmicOmenUsesUsed: Math.max(0, prev.starryEngine.cosmicOmenUsesUsed - 1),
+      },
+    }));
   }, [updateKastoriel]);
 
   const useKastorielGuidingBolt = useCallback(() => {
@@ -2642,7 +2682,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           ...prev.combat,
           currentHP: prev.combat.maxHP,
           tempHP: 0,
-          hitDice: { ...prev.combat.hitDice, used: Math.max(0, prev.combat.hitDice.used - Math.floor(prev.combat.hitDice.total / 2)) },
+          hitDice: { ...prev.combat.hitDice, used: Math.max(0, prev.combat.hitDice.used - Math.max(1, Math.floor(prev.combat.hitDice.total / 2))) },
           deathSaves: { successes: 0, failures: 0 },
         },
         starryEngine: {
@@ -2650,10 +2690,9 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
           wildShapeUsed: 0,
           starryFormActive: false,
           activeConstellation: 'none',
-          freeGuidingBoltsUsed: 0,
-          cosmicOmen: null,
-          cosmicOmenUsed: 0,
-          cosmicOmenDieRoll: null,
+          freeGuidingBoltUsed: 0,
+          cosmicOmen: prev.starryEngine.cosmicOmen,
+          cosmicOmenUsesUsed: 0,
         },
         spellcasting: {
           ...prev.spellcasting,
@@ -3591,6 +3630,7 @@ function CharacterProviderContent({ children }: { children: React.ReactNode }) {
         setKastorielStarryForm,
         rollKastorielCosmicOmen,
         useKastorielCosmicOmen,
+        restoreKastorielCosmicOmen,
         useKastorielGuidingBolt,
         restoreKastorielGuidingBolt,
         kastorielShortRest,

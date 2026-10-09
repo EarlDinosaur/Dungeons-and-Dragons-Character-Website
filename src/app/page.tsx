@@ -155,6 +155,7 @@ export default function Home() {
     setKastorielStarryForm,
     rollKastorielCosmicOmen,
     useKastorielCosmicOmen,
+    restoreKastorielCosmicOmen,
     useKastorielGuidingBolt,
     restoreKastorielGuidingBolt,
     kastorielShortRest,
@@ -902,6 +903,7 @@ export default function Home() {
             onRestoreWildShape={restoreKastorielWildShape}
             onRollCosmicOmen={rollKastorielCosmicOmen}
             onUseCosmicOmen={useKastorielCosmicOmen}
+            onRestoreCosmicOmen={restoreKastorielCosmicOmen}
             onUseGuidingBoltFree={useKastorielGuidingBolt}
             onRestoreGuidingBoltFree={restoreKastorielGuidingBolt}
             onLongRest={kastorielLongRest}
@@ -941,12 +943,16 @@ export default function Home() {
   const handleShortRest = () => {
     if (isWynel) wynelShortRest();
     else if (isKastoriel) kastorielShortRest();
-    else if (isVesper) {
-      setCurrentHP(Math.min(character.combat.maxHP, character.combat.currentHP + 10));
+    else if (isAria) {
+      setAriaHP(Math.min(aria.combat.maxHP, aria.combat.currentHP + 15));
+    } else if (isCyrus) {
+      setCyrusHP(Math.min(cyrus.combat.maxHP, cyrus.combat.currentHP + 15));
+    } else if (isVesper) {
+      setCurrentHP(Math.min(character.combat.maxHP, character.combat.currentHP + 15));
     } else if (isCustom) {
       updateCustomCharacter(activeCharacterId, (prev) => ({
         ...prev,
-        combat: { ...prev.combat, currentHP: Math.min(prev.combat.maxHP, prev.combat.currentHP + 10) },
+        combat: { ...prev.combat, currentHP: Math.min(prev.combat.maxHP, prev.combat.currentHP + 15) },
       }));
     }
   };
@@ -1109,10 +1115,17 @@ export default function Home() {
       else handleLongRest();
       showToastNotification('Long Rest', `Completed for ${charId}`, 'rest');
     } else {
-      if (charId === 'vesper') handleShortRest();
+      if (charId === 'vesper') setCurrentHP(Math.min(character.combat.maxHP, character.combat.currentHP + 15));
+      else if (charId === 'aria') setAriaHP(Math.min(aria.combat.maxHP, aria.combat.currentHP + 15));
+      else if (charId === 'cyrus') setCyrusHP(Math.min(cyrus.combat.maxHP, cyrus.combat.currentHP + 15));
       else if (charId === 'wynel') wynelShortRest();
       else if (charId === 'kastoriel') kastorielShortRest();
-      else handleShortRest();
+      else {
+        updateCustomCharacter(charId, (prev) => ({
+          ...prev,
+          combat: { ...prev.combat, currentHP: Math.min(prev.combat.maxHP, prev.combat.currentHP + 15) },
+        }));
+      }
       showToastNotification('Short Rest', `Completed for ${charId}`, 'rest');
     }
   };
@@ -1126,7 +1139,9 @@ export default function Home() {
       kastorielLongRest();
       showToastNotification('Party Long Rest', 'All party members completed a Long Rest', 'rest');
     } else {
-      handleShortRest();
+      setCurrentHP(Math.min(character.combat.maxHP, character.combat.currentHP + 15));
+      setAriaHP(Math.min(aria.combat.maxHP, aria.combat.currentHP + 15));
+      setCyrusHP(Math.min(cyrus.combat.maxHP, cyrus.combat.currentHP + 15));
       wynelShortRest();
       kastorielShortRest();
       showToastNotification('Party Short Rest', 'All party members completed a Short Rest', 'rest');
@@ -1191,7 +1206,7 @@ export default function Home() {
       inspiration: !!partyInspiration['aria'],
       deathSaves: aria.combat.deathSaves || { successes: 0, failures: 0 },
       slots: aria.spellcasting?.slots || {},
-      hitDice: { total: aria.level, used: 0, diceType: 'd6' },
+      hitDice: aria.combat?.hitDice || { total: aria.level, used: 0, diceType: 'd6' },
     };
 
     // 3. Cyrus
@@ -1223,7 +1238,7 @@ export default function Home() {
       inspiration: !!partyInspiration['cyrus'],
       deathSaves: cyrus?.combat?.deathSaves || { successes: 0, failures: 0 },
       slots: cyrus?.spellcasting?.slots || {},
-      hitDice: { total: cyrus?.level || 10, used: 0, diceType: 'd8' },
+      hitDice: cyrus?.combat?.hitDice || { total: cyrus?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 4. Wyn'el
@@ -1254,9 +1269,14 @@ export default function Home() {
       initiativeBonus: wynelDexMod,
       conditions: wynel?.combat?.conditions || [],
       inspiration: !!partyInspiration['wynel'],
-      deathSaves: { successes: 0, failures: 0 },
-      slots: { 5: { max: 2, used: 0 } },
-      hitDice: { total: wynel?.level || 10, used: 0, diceType: 'd8' },
+      deathSaves: wynel?.combat?.deathSaves || { successes: 0, failures: 0 },
+      slots: {
+        [wynel?.pactEngine?.slotLevel || 5]: {
+          max: wynel?.pactEngine?.slotsMax || 2,
+          used: wynel?.pactEngine?.slotsUsed || 0,
+        },
+      },
+      hitDice: wynel?.combat?.hitDice || { total: wynel?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 5. Kastoriel
@@ -1286,9 +1306,9 @@ export default function Home() {
       initiativeBonus: kastorielDexMod,
       conditions: kastoriel?.combat?.conditions || [],
       inspiration: !!partyInspiration['kastoriel'],
-      deathSaves: { successes: 0, failures: 0 },
+      deathSaves: kastoriel?.combat?.deathSaves || { successes: 0, failures: 0 },
       slots: kastoriel?.spellcasting?.slots || {},
-      hitDice: { total: kastoriel?.level || 10, used: 0, diceType: 'd8' },
+      hitDice: kastoriel?.combat?.hitDice || { total: kastoriel?.level || 10, used: 0, diceType: 'd8' },
     };
 
     // 6. Custom Characters

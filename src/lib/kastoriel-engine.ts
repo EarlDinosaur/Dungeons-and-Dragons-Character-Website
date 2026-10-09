@@ -135,9 +135,15 @@ export function calculateKastorielStats(state: KastorielState): KastorielState {
   // Dragon constellation gives 20 ft flying hover speed at Level 10
   const isDragonActive = state.starryEngine?.activeConstellation === 'dragon';
   const baseSpeed = 30;
+  const speed = state.overrides?.speed ?? (isDragonActive ? 30 : baseSpeed);
 
   const spellSaveDC = 8 + prof + wisMod;
   const spellAttackBonus = prof + wisMod;
+
+  const rawRoll = state.starryEngine?.cosmicOmenRoll;
+  const validRoll = typeof rawRoll === 'number' && !isNaN(rawRoll) ? rawRoll : (state.starryEngine?.cosmicOmen ? 4 : null);
+  const rawOmen = state.starryEngine?.cosmicOmen;
+  const validOmen = rawOmen === 'weal' || rawOmen === 'woe' ? rawOmen : (validRoll ? (validRoll % 2 === 0 ? 'weal' : 'woe') : null);
 
   return {
     ...state,
@@ -148,14 +154,23 @@ export function calculateKastorielStats(state: KastorielState): KastorielState {
       currentHP: Math.min(state.combat.currentHP ?? maxHP, maxHP),
       ac: state.overrides?.ac ?? baseAC,
       initiative: state.overrides?.initiative ?? dexMod,
-      speed: state.overrides?.speed ?? baseSpeed,
+      speed,
       hitDice: { total: level, used: state.combat.hitDice?.used || 0 },
     },
     starryEngine: {
-      ...state.starryEngine,
-      cosmicOmenUsesMax: prof,
-      freeGuidingBoltMax: prof,
+      activeConstellation: state.starryEngine?.activeConstellation || 'none',
+      starryFormActive: Boolean(state.starryEngine?.starryFormActive),
       wildShapeMax: 2,
+      wildShapeUsed: Math.max(0, Math.min(2, state.starryEngine?.wildShapeUsed || 0)),
+      cosmicOmen: validOmen,
+      cosmicOmenRoll: validRoll,
+      cosmicOmenUsesMax: prof,
+      cosmicOmenUsesUsed: Math.max(0, Math.min(prof, state.starryEngine?.cosmicOmenUsesUsed || 0)),
+      freeGuidingBoltMax: prof,
+      freeGuidingBoltUsed: Math.max(0, Math.min(prof, state.starryEngine?.freeGuidingBoltUsed || 0)),
+      pendulumTetherActive: state.starryEngine?.pendulumTetherActive ?? true,
+      poluxienDistance: state.starryEngine?.poluxienDistance || 'Approximately 60 leagues to the Northeast',
+      poluxienDirection: state.starryEngine?.poluxienDirection || 'Toward the Cloudpeak Mountains',
     },
     spellcasting: {
       ...state.spellcasting,

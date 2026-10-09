@@ -28,6 +28,7 @@ interface StarryFormEngineProps {
   onRestoreWildShape: () => void;
   onRollCosmicOmen: () => void;
   onUseCosmicOmen: () => void;
+  onRestoreCosmicOmen?: () => void;
   onUseGuidingBoltFree: () => void;
   onRestoreGuidingBoltFree: () => void;
   onLongRest: () => void;
@@ -40,6 +41,7 @@ export default function StarryFormEngine({
   onRestoreWildShape,
   onRollCosmicOmen,
   onUseCosmicOmen,
+  onRestoreCosmicOmen,
   onUseGuidingBoltFree,
   onRestoreGuidingBoltFree,
   onLongRest,
@@ -47,6 +49,15 @@ export default function StarryFormEngine({
   const { showToastNotification } = useCharacter();
   const [confirmRest, setConfirmRest] = useState(false);
   const [pulseAnimation, setPulseAnimation] = useState(false);
+  const [isConsulting, setIsConsulting] = useState(false);
+
+  const handleConsultStars = () => {
+    setIsConsulting(true);
+    setTimeout(() => {
+      onRollCosmicOmen();
+      setIsConsulting(false);
+    }, 500);
+  };
 
   const sEngine = kastoriel.starryEngine;
   const activeConstellation = sEngine.activeConstellation;
@@ -227,38 +238,59 @@ export default function StarryFormEngine({
             </span>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-zinc-950 border border-zinc-800">
             <div>
-              <span className="text-[10px] font-mono uppercase text-zinc-500 block mb-0.5">Current Omen:</span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-base font-bold font-mono uppercase px-2.5 py-0.5 rounded-lg border ${
-                    sEngine.cosmicOmen === 'weal'
-                      ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
-                      : 'bg-red-950/80 border-red-500 text-red-300'
-                  }`}
-                >
-                  {sEngine.cosmicOmen === 'weal' ? 'WEAL (Add 1d6)' : 'WOE (Subtract 1d6)'}
-                </span>
-                <span className="text-xs font-mono text-zinc-400">
-                  (Rolled {sEngine.cosmicOmenRoll})
-                </span>
+              <span className="text-[10px] font-mono uppercase text-zinc-500 block mb-1">Current Omen:</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {isConsulting ? (
+                  <span className="text-xs font-bold font-mono px-3 py-1 rounded-lg border bg-orange-950/80 border-orange-500 text-orange-200 animate-pulse flex items-center gap-1.5">
+                    <Sparkles size={14} className="animate-spin text-orange-300" /> Divining the Heavens...
+                  </span>
+                ) : sEngine.cosmicOmen === 'weal' ? (
+                  <>
+                    <span className="text-base font-bold font-mono uppercase px-2.5 py-0.5 rounded-lg border bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                      WEAL (Add 1d6)
+                    </span>
+                    <span className="text-xs font-mono text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                      Rolled {sEngine.cosmicOmenRoll ?? 4} (Even)
+                    </span>
+                  </>
+                ) : sEngine.cosmicOmen === 'woe' ? (
+                  <>
+                    <span className="text-base font-bold font-mono uppercase px-2.5 py-0.5 rounded-lg border bg-red-950/80 border-red-500 text-red-300 shadow-[0_0_12px_rgba(220,38,38,0.3)]">
+                      WOE (Subtract 1d6)
+                    </span>
+                    <span className="text-xs font-mono text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                      Rolled {sEngine.cosmicOmenRoll ?? 3} (Odd)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs font-mono text-zinc-400 italic">
+                    ✦ Unaligned &bull; Click &ldquo;Consult Stars&rdquo; to divine an omen!
+                  </span>
+                )}
               </div>
             </div>
 
             <button
               type="button"
-              onClick={onRollCosmicOmen}
-              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-orange-300 border border-zinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer"
+              disabled={isConsulting}
+              onClick={handleConsultStars}
+              className="px-3.5 py-2 rounded-xl bg-orange-950/70 hover:bg-orange-900 text-orange-200 border border-orange-500/50 hover:border-orange-400 text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-95 disabled:opacity-50"
             >
-              <Dices size={14} />
-              <span>Consult Stars</span>
+              <Dices size={15} className={isConsulting ? 'animate-spin' : ''} />
+              <span>{isConsulting ? 'Reading Stars...' : 'Consult Stars'}</span>
             </button>
           </div>
 
           {/* Omen Reaction Uses Pips */}
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-zinc-400">Omen Reactions Available:</span>
+          <div className="flex items-center justify-between text-xs font-mono p-1">
+            <div className="flex flex-col">
+              <span className="text-zinc-300 font-semibold">Omen Reactions Available:</span>
+              <span className="text-[10px] text-zinc-500">
+                {Math.max(0, sEngine.cosmicOmenUsesMax - sEngine.cosmicOmenUsesUsed)} of {sEngine.cosmicOmenUsesMax} uses remaining
+              </span>
+            </div>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: sEngine.cosmicOmenUsesMax }).map((_, idx) => {
                 const isAvailable = idx < sEngine.cosmicOmenUsesMax - sEngine.cosmicOmenUsesUsed;
@@ -266,13 +298,19 @@ export default function StarryFormEngine({
                   <button
                     key={idx}
                     type="button"
-                    onClick={onUseCosmicOmen}
-                    className={`w-4.5 h-4.5 rounded-full border transition-all cursor-pointer ${
+                    onClick={() => {
+                      if (isAvailable) {
+                        onUseCosmicOmen();
+                      } else if (onRestoreCosmicOmen) {
+                        onRestoreCosmicOmen();
+                      }
+                    }}
+                    className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
                       isAvailable
                         ? 'bg-orange-500 border-orange-300 shadow-[0_0_8px_rgba(249,115,22,0.6)]'
                         : 'bg-black/80 border-zinc-700'
                     }`}
-                    title={isAvailable ? 'Click to expend Cosmic Omen' : 'Expended'}
+                    title={isAvailable ? 'Click to expend Cosmic Omen reaction' : 'Expended — Click to restore'}
                   />
                 );
               })}
